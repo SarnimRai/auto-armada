@@ -4221,6 +4221,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         });
         
         // Go to Multiplayer
+        // --- LIVE MULTIPLAYER SOCKET CONNECTIONS ---
+        // Moved to the top of the block to prevent initialization errors!
+        const socket = io(); 
+
         document.getElementById('btnMultiPlayer').addEventListener('click', () => {
             modeSelectMenu.style.display = 'none';
             multiplayerLoginMenu.style.display = 'flex';
@@ -4263,9 +4267,6 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
             return code;
         }
-        
-        // --- LIVE MULTIPLAYER SOCKET CONNECTIONS ---
-        const socket = io(); // Connects to your Python backend!
         
         const lobbyMenu = document.getElementById('lobbyMenu');
         const lobbyRoomCode = document.getElementById('lobbyRoomCode');
