@@ -4576,8 +4576,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             socket.emit('launch_game', { roomCode: lobbyRoomCode.innerText, ships: ships, rounds: rounds, aiCount: mpAiCount });
         });
         
-        // SERVER SAYS: Start the match!
-        socket.on('start_multiplayer_match', (data) => {
+        // Step 1: Prepare the memory, map global colors, and wait for the starting gun
+        socket.on('prepare_match', (data) => {
             isMultiplayer = true;
             activeFactionCount = data.playerCount + data.aiCount;
             mpAiCount = data.aiCount;
@@ -4585,25 +4585,23 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             winsNeeded = Math.ceil(maxRounds / 2); 
             shipsPerFaction = data.ships;
             
-            // Sync the random math engine to the server-provided room seed!
+            // Sync the random math engine to the server-provided room seed
             let sharedSeed = data.seed || lobbyRoomCode.innerText;
             setDeterministicSeed(sharedSeed);
             
-            // Assign player ID based on their order in the room
+            // Assign player ID
             const myUsername = usernameInput.value.trim();
             playerFactionId = data.playersList.indexOf(myUsername);
             
-            // UI UPGRADE: Map real pilot usernames to the scoreboard!
+            // COLOR SYNC FIX: Map everyone's colors exactly as the server sees them!
             for (let i = 0; i < data.playerCount; i++) {
                 factionNames[i] = data.playersList[i].toUpperCase();
+                factionColors[i] = data.factionColors[i]; 
             }
             
-            // Sync colors locally to the player's chosen color
-            factionColors[playerFactionId] = myMpColor;
-            
-            // Generate AI colors & Names if needed
+            // Setup AI profiles
             for (let i = data.playerCount; i < activeFactionCount; i++) {
-                factionColors[i] = '#ff00ff'; // Default AI color
+                factionColors[i] = data.factionColors[i]; 
                 factionNames[i] = 'AI BOT ' + (i - data.playerCount + 1);
             }
             
@@ -4612,21 +4610,33 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             soundsEnabled = document.getElementById('startSoundToggle').checked;
             if (soundsEnabled && audioCtx.state === 'suspended') audioCtx.resume();
             
-            // Reset base perks
             factionPerks = [getBasePerks(), getBasePerks(), getBasePerks(), getBasePerks(), getBasePerks(), getBasePerks()];
             
+            // Show the synchronized waiting screen
             document.getElementById('multiplayerConfigMenu').style.display = 'none';
+            document.getElementById('perkScreen').style.display = 'flex';
+            document.getElementById('perkPhaseTitle').innerText = "SYNCHRONIZING FLEETS...";
+            document.getElementById('perkContainer').innerHTML = '<h3 style="color:#44aaff; margin-top:20px;">Establishing quantum lockstep...</h3>';
+            document.getElementById('perkTimerContainer').style.display = 'none';
+        });
+        
+        // Step 2: The server fires the starting gun!
+        socket.on('begin_match_physics', () => {
+            document.getElementById('perkScreen').style.display = 'none';
             pauseHint.innerText = "Press 'P' for Match Menu";
             pauseHint.style.display = 'block';
             gameStarted = true;
             
+            // Lock the frame timer instantly to prevent skip-jumping
+            lastFrameTime = Date.now();
             spawnFleets(true);
         });
         
-        // SERVER SAYS: All players picked perks, resume match!
+        // SERVER SAYS: All players picked perks, resume match simultaneously!
         socket.on('resume_round', () => {
             document.getElementById('perkScreen').style.display = 'none';
             isPerkPhase = false; 
+            lastFrameTime = Date.now(); // Sync protection
             spawnFleets(false); 
         });
         
