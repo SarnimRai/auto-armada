@@ -252,6 +252,14 @@
         }
         .epic-card .perk-title { color: #aa44ff; text-shadow: 0 0 5px rgba(170, 68, 255, 0.5); }
         
+        /* Temporary Rarity Styling */
+        .perk-card.temp-card {
+            border-color: #ffcc00;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+            background: #1a1500;
+        }
+        .temp-card .perk-title { color: #ffcc00; text-shadow: 0 0 5px rgba(255, 204, 0, 0.5); }
+        
         #controls h3 {
             margin: 0 0 5px 0;
             color: #fff;
@@ -685,6 +693,7 @@
         let explosions = []; 
         let walls = []; 
         let flagshipAlive = [false, false, false, false];
+        let flagshipCount = [0, 0, 0, 0, 0, 0]; // Allows stacking multiple flagships!
         
         // Maze Pathfinding Globals
         let mazeGrid = null;
@@ -2411,14 +2420,36 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'veteranFireRate', name: "Bloodlust", desc: "Requires Veteran. Every kill a ship gets increases its fire rate by 10%.", maxLevel: 1, requires: 'veteran', rarity: 'standard' }
         ];
         
+        // NEW: Temporary Perk Pool
+        const tempPerkDefs = [
+            { id: 'temp_speed', name: "Overdrive Engines", desc: "Double the movement speed of all your ships for this round.", rarity: 'temp' },
+            { id: 'temp_fireRate', name: "Hyper Capacitors", desc: "Double the fire rate of all your ships for this round.", rarity: 'temp' },
+            { id: 'temp_shield', name: "Deflector Surge", desc: "All your ships gain a +1 HP Shield for this round.", rarity: 'temp' },
+            { id: 'temp_extraShips', name: "Mercenary Squadron", desc: "Gain +10 extra ships instantly for this round.", rarity: 'temp' },
+            { id: 'temp_extraFlagship', name: "Escort Flagship", desc: "Gain an extra Flagship this round. Its buffs stack with your existing Flagship!", requires: 'flagship', rarity: 'temp' }
+        ];
+        
         function getBasePerks() {
             return { 
                 ricochet: 0, veteran: 0, fireRate: 0, extraHp: 0, extraShips: 0, 
                 shield: 0, crash: 0, dualShot: 0, burstShot: 0, projSpeed: 0, 
                 mineLayer: 0, vampiric: 0, heavyArmor: 0, phaseArmor: 0, 
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
-                sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0
+                sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
+                // Temps
+                temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0
             };
+        }
+        
+        // Purges consumable buffs before a new round starts
+        function resetTempPerks() {
+            for (let f = 0; f < factionPerks.length; f++) {
+                factionPerks[f].temp_speed = 0;
+                factionPerks[f].temp_fireRate = 0;
+                factionPerks[f].temp_shield = 0;
+                factionPerks[f].temp_extraShips = 0;
+                factionPerks[f].temp_extraFlagship = 0;
+            }
         }
         
         // 6 Slots to cover players + dummies safely
@@ -3546,7 +3577,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         activeSteerWeight = 0.25; 
                         baseSpeed = 2.0;      
                     }
-                    if (flagshipAlive[this.faction]) baseSpeed *= 1.15;
+                    if (flagshipCount[this.faction] > 0) baseSpeed *= (1 + (0.15 * flagshipCount[this.faction]));
+                    if (perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].temp_speed > 0) baseSpeed *= 2.0; // DOUBLE SPEED!
+                    
                     // While actively threading a corridor, let pathfinding win out over
                     // flocking/wall-separation instead of fighting it the whole way
                     if (inMazeNav) activeSteerWeight *= 2.2;
@@ -3596,7 +3629,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             playSound('laser');
                             
                             let cdReduc = (perksEnabled && this.faction >= 0 && this.faction < 4) ? (factionPerks[this.faction].fireRate * 0.10) : 0;
-                            if (flagshipAlive[this.faction]) cdReduc += 0.15; 
+                            if (flagshipCount[this.faction] > 0) cdReduc += (0.15 * flagshipCount[this.faction]); 
                             
                             // Bloodlust Perk: +10% faster fire rate for every kill the ship has!
                             if (perksEnabled && this.faction >= 0 && this.faction < 4 && factionPerks[this.faction].veteranFireRate > 0) {
@@ -3606,6 +3639,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             // Cap reduction at 85% so it doesn't break the engine by firing every frame
                             let finalCooldown = 60 * (1 - Math.min(0.85, cdReduc));
                             if (this.isSniper) finalCooldown *= 1.25; // 20% decreased fire rate (+25% time between shots)
+                            
+                            if (perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].temp_fireRate > 0) {
+                                finalCooldown *= 0.5; // HALVE COOLDOWN = DOUBLE FIRE RATE
+                            }
                             
                             this.laserCooldown = finalCooldown; 
                         }
@@ -3980,7 +4017,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             if (s.hp <= 0) {
                 if (s.isFlagship) {
-                    flagshipAlive[s.faction] = false;
+                    flagshipCount[s.faction]--;
+                    if (flagshipCount[s.faction] <= 0) flagshipAlive[s.faction] = false;
                     // Escape Pods Perk
                     if (perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].splitFlagship > 0) {
                         let numToSpawn = factionPerks[s.faction].splitFlagship + 1;
@@ -4117,6 +4155,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 let actualNumShips = shipsPerFaction;
                 if (perksEnabled) actualNumShips += (factionPerks[f].extraShips * 2);
+                if (perksEnabled && factionPerks[f].temp_extraShips > 0) actualNumShips += 10;
                 
                 let factionSpawnStartIndex = ships.length;
                 
@@ -4147,6 +4186,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (perksEnabled && factionPerks[f].shield > 0) {
                     let shieldCount = factionPerks[f].shield * 2;
                     for (let i = 0; i < Math.min(shieldCount, actualNumShips); i++) {
+                        ships[factionSpawnStartIndex + i].shield++;
+                    }
+                }
+                
+                if (perksEnabled && factionPerks[f].temp_shield > 0) {
+                    for (let i = 0; i < actualNumShips; i++) {
                         ships[factionSpawnStartIndex + i].shield++;
                     }
                 }
@@ -4190,9 +4235,15 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
                 
                 if (perksEnabled && factionPerks[f].flagship > 0) {
-                    let fs = ships[factionSpawnStartIndex]; 
-                    fs.isFlagship = true;
-                    fs.maxHp = 6; fs.hp = 6; fs.shield = 2;
+                    let numFlagships = 1 + (factionPerks[f].temp_extraFlagship > 0 ? 1 : 0);
+                    for(let k = 0; k < numFlagships; k++) {
+                        let fs = ships[factionSpawnStartIndex + k]; 
+                        if(fs) {
+                            fs.isFlagship = true;
+                            fs.maxHp = 6; fs.hp = 6; fs.shield = 2;
+                        }
+                    }
+                    flagshipCount[f] = numFlagships;
                     flagshipAlive[f] = true;
                 }
                 
@@ -5141,48 +5192,67 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             let isEpicRound = (round % 5 === 0);
             
-            // Auto-level AI perks instantly (Single player AND Multiplayer AI bots)
+            // Wipe last round's temporary consumables!
+            resetTempPerks();
+            
+            // Auto-level AI perks instantly
             for (let f = 0; f < activeFactionCount; f++) {
                 if (f === playerFactionId || (isMultiplayer && f < activeFactionCount - mpAiCount)) continue; 
+                
                 let validAIPerks = perkDefs.filter(p => {
-                    if (p.allowed === false) return false; // Ignore disabled perks
+                    if (p.allowed === false) return false;
                     if (isEpicRound && p.rarity !== 'epic') return false;
                     if (!isEpicRound && p.rarity === 'epic') return false;
                     if (factionPerks[f][p.id] >= p.maxLevel) return false;
                     if (p.requires && factionPerks[f][p.requires] === 0) return false;
                     return true;
                 });
-                if (validAIPerks.length > 0) {
-                    let randomPerk = validAIPerks[Math.floor(Math.random() * validAIPerks.length)];
+                
+                let validAITemps = tempPerkDefs.filter(p => !p.requires || factionPerks[f][p.requires] > 0);
+                let aiPool = [...validAIPerks, ...validAITemps];
+                
+                if (aiPool.length > 0) {
+                    let randomPerk = aiPool[Math.floor(Math.random() * aiPool.length)];
                     factionPerks[f][randomPerk.id]++;
                 }
             }
             
+            // Generate Player Permanent Perks (3 Max)
             let validPlayerPerks = perkDefs.filter(p => {
-                if (p.allowed === false) return false; // Ignore disabled perks
+                if (p.allowed === false) return false;
                 if (isEpicRound && p.rarity !== 'epic') return false;
                 if (!isEpicRound && p.rarity === 'epic') return false;
                 if (factionPerks[playerFactionId][p.id] >= p.maxLevel) return false;
                 if (p.requires && factionPerks[playerFactionId][p.requires] === 0) return false; 
                 return true;
             });
-            
             validPlayerPerks.sort(() => 0.5 - Math.random());
-            let choices = validPlayerPerks.slice(0, 3);
+            let permChoices = validPlayerPerks.slice(0, 3);
+            
+            // Generate Player Temporary Perks (3 Max)
+            let validPlayerTemps = tempPerkDefs.filter(p => !p.requires || factionPerks[playerFactionId][p.requires] > 0);
+            validPlayerTemps.sort(() => 0.5 - Math.random());
+            let tempChoices = validPlayerTemps.slice(0, 3);
+            
+            // Combine them for a total of 6 cards
+            let choices = [...permChoices, ...tempChoices];
             
             if (choices.length === 0) {
-                handlePerkSelectionCompleted(null); // No choices left
+                handlePerkSelectionCompleted(null); 
                 return;
             }
             
             choices.forEach(perk => {
                 let card = document.createElement('div');
-                card.className = perk.rarity === 'epic' ? 'perk-card epic-card' : 'perk-card';
+                card.className = perk.rarity === 'epic' ? 'perk-card epic-card' : (perk.rarity === 'temp' ? 'perk-card temp-card' : 'perk-card');
+                
                 let currentLevel = factionPerks[playerFactionId][perk.id];
+                let levelText = perk.rarity === 'temp' ? 'Duration: 1 Round Only' : `Level: ${currentLevel} / ${perk.maxLevel}`;
+                
                 card.innerHTML = `
                     <div class="perk-title">${perk.name}</div>
                     <div class="perk-desc">${perk.desc}</div>
-                    <div class="perk-level">Level: ${currentLevel} / ${perk.maxLevel}</div>
+                    <div class="perk-level">${levelText}</div>
                 `;
                 
                 card.addEventListener('click', () => {
