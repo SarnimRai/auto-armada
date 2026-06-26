@@ -284,6 +284,11 @@
         
         canvas {
             display: block;
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain; /* Forces letterboxing to maintain 16:9 */
+            max-width: 100%;
+            max-height: 100%;
         }
     </style>
 </head>
