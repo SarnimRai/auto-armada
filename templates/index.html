@@ -3133,43 +3133,78 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.x = x;
                 this.y = -100; 
                 this.targetY = y; 
-                this.hp = 25;
-                this.maxHp = 25;
+                this.hp = 50; // Increased as requested! (Hint: Crank this to 250+ for 4-player matches!)
+                this.maxHp = 50;
                 this.size = 50;
                 this.faction = -1; 
                 this.attackTimer = 0;
                 this.pattern = 0;
+                this.moveAngle = 0; // Added for side-to-side strafing!
             }
             update() {
                 if (isCountingDown) return; 
                 
+                // 1. Cinematic Drop-in
                 if (this.y < this.targetY) {
                     this.y += 2;
                     return; 
                 }
                 
+                // 2. Boss Movement (Strafe side to side instead of just sitting there)
+                this.moveAngle += 0.02;
+                this.x += Math.cos(this.moveAngle) * 2;
+                
+                // Keep inside screen bounds
+                if (this.x < this.size) this.x = this.size;
+                if (this.x > canvas.width - this.size) this.x = canvas.width - this.size;
+                
+                // 3. Attack Pattern Controller
                 this.attackTimer++;
+                
+                // Switch patterns every 3 seconds (180 frames)
                 if (this.attackTimer > 180) {
-                    this.pattern = (this.pattern + 1) % 2;
+                    this.pattern = (this.pattern + 1) % 4; // Now cycles through 4 distinct phases!
                     this.attackTimer = 0;
                 }
                 
-                if (this.pattern === 0 && this.attackTimer % 45 === 0) {
-                    for (let i = 0; i < Math.PI * 2; i += Math.PI / 4) {
-                        lasers.push(new Laser(this.x, this.y, i, this.faction, this));
-                        playSound('laser');
+                // PHASE 0: Death Blossom (Rotating Laser Spiral)
+                if (this.pattern === 0 && this.attackTimer % 20 === 0) {
+                    let offset = (this.attackTimer * 0.1); 
+                    for (let i = 0; i < Math.PI * 2; i += Math.PI / 3) {
+                        lasers.push(new Laser(this.x, this.y, i + offset, this.faction, this));
                     }
+                    playSound('laser');
                 }
-                if (this.pattern === 1 && this.attackTimer % 60 === 0) {
-                    let targets = ships.sort((a,b) => Math.hypot(a.position.x-this.x, a.position.y-this.y) - Math.hypot(b.position.x-this.x, b.position.y-this.y)).slice(0, 3);
+                
+                // PHASE 1: Tracker Swarm (Homing Missiles)
+                if (this.pattern === 1 && this.attackTimer % 45 === 0) {
+                    let targets = ships.sort((a,b) => Math.hypot(a.position.x-this.x, a.position.y-this.y) - Math.hypot(b.position.x-this.x, b.position.y-this.y)).slice(0, 4);
                     targets.forEach(t => {
                         missiles.push(new Missile(this.x, this.y, t, this.faction, this));
-                        playSound('missile');
                     });
+                    if (targets.length > 0) playSound('missile');
+                }
+                
+                // PHASE 2: Minefield Carpet Drop
+                if (this.pattern === 2 && this.attackTimer % 15 === 0) {
+                    mines.push(new Mine(this.x + (Math.random() - 0.5) * 80, this.y + 30, this.faction, this));
+                }
+                
+                // PHASE 3: Rapid Fire Machine Gun
+                if (this.pattern === 3 && this.attackTimer % 8 === 0) {
+                    let targets = ships.sort((a,b) => Math.hypot(a.position.x-this.x, a.position.y-this.y) - Math.hypot(b.position.x-this.x, b.position.y-this.y));
+                    if (targets.length > 0) {
+                        let t = targets[0];
+                        let angle = Math.atan2(t.position.y - this.y, t.position.x - this.x);
+                        // Add slight scatter/inaccuracy so it's a spray
+                        angle += (Math.random() - 0.5) * 0.3;
+                        lasers.push(new Laser(this.x, this.y, angle, this.faction, this));
+                        if (this.attackTimer % 16 === 0) playSound('laser');
+                    }
                 }
             }
             draw() {
-                ctx.fillStyle = '#444';
+                ctx.fillStyle = '#111'; // Darker, menacing armor
                 ctx.strokeStyle = '#ff0044';
                 ctx.lineWidth = 4;
                 ctx.beginPath();
@@ -3177,16 +3212,22 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.fill();
                 ctx.stroke();
                 
-                ctx.fillStyle = '#ff0044';
+                // Core pulse color changes based on the active pattern!
+                let coreColor = this.pattern === 0 ? '#ff0044' : (this.pattern === 1 ? '#ffcc00' : (this.pattern === 2 ? '#44aaff' : '#ffffff'));
+                ctx.fillStyle = coreColor;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = coreColor;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size * 0.4, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowBlur = 0; // Reset glow
                 
-                ctx.fillStyle = 'red';
-                ctx.fillRect(this.x - 40, this.y - 70, 80 * (this.hp / this.maxHp), 10);
+                // Boss HP Bar (Floating above the boss)
+                ctx.fillStyle = '#ff0044';
+                ctx.fillRect(this.x - 60, this.y - 80, 120 * (Math.max(0, this.hp) / this.maxHp), 10);
                 ctx.strokeStyle = 'white';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(this.x - 40, this.y - 70, 80, 10);
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.x - 60, this.y - 80, 120, 10);
             }
         }
         
