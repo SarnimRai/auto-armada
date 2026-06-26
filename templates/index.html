@@ -3969,15 +3969,18 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 scores = [0, 0, 0, 0];
                 matchActive = true;
                 gameWinner = null;
+                
                 // Initialize the base seed sequence for multiplayer or single player
                 if (!isMultiplayer) setDeterministicSeed(Math.floor(Math.random() * 100000));
+                
+                // PERFORMANCE & SYNC FIX: Generate the massive background planet and stars ONLY on Round 1!
+                // The entire match will take place in this specific sector of space.
+                initBackgroundPlanet(); 
+                generateStars();
             } else {
                 // Step the seed deterministically for the next round so all clients stay in lockstep
                 setDeterministicSeed(currentMatchSeed + round * 777);
             }
-            
-            // Re-draw background planets using the exact same room seed step so space landscapes stay identical!
-            initBackgroundPlanet(); 
             
             roundActive = true;
             roundWinner = null;
@@ -3995,7 +3998,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             particles = [];
             explosions = [];
             flagshipAlive = [false, false, false, false];
-            generateStars();
+            flagshipCount = [0, 0, 0, 0, 0, 0]; 
             
             if (!adminModeEnabled) {
                 asteroids = [];
