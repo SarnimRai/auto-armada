@@ -606,8 +606,12 @@
     <script>
         // --- DETERMINISTIC LOCKSTEP ENGINE ---
         let currentMatchSeed = 12345;
+        let originalMatchSeed = 12345; // Fixed baseline for the whole match. Never mutated
+                                        // by gameplay random calls — only set once per match.
+                                        // Rounds reseed FROM this, not from the drifting
+                                        // currentMatchSeed, so a desync can't compound forever.
 
-        function setDeterministicSeed(seedValue) {
+        function setDeterministicSeed(seedValue, isNewMatch = false) {
             // If passed a string, hash it into an integer
             if (typeof seedValue === 'string') {
                 let hash = 0;
@@ -618,6 +622,7 @@
             }
             
             currentMatchSeed = seedValue;
+            if (isNewMatch) originalMatchSeed = seedValue;
             
             // Override JavaScript's native Math.random with a deterministic Mulberry32 generator
             Math.random = function() {
@@ -3979,10 +3984,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 scores = [0, 0, 0, 0];
                 matchActive = true;
                 gameWinner = null;
-                if (!isMultiplayer) setDeterministicSeed(Math.floor(Math.random() * 100000));
+                if (!isMultiplayer) setDeterministicSeed(Math.floor(Math.random() * 100000), true);
             } else {
-                // Step the seed deterministically for the next round so all clients stay in lockstep
-                setDeterministicSeed(currentMatchSeed + round * 777);
+                // Step the seed deterministically for the next round so all clients stay in lockstep.
+                // Derives from the fixed originalMatchSeed (not the drifting currentMatchSeed) so
+                // any mid-round desync from network jitter doesn't carry forward into later rounds.
+                setDeterministicSeed(originalMatchSeed + round * 777);
             }
             
             // NEW: Only shift the background every 3 rounds (Round 1, 4, 7, 10...)
@@ -4647,7 +4654,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             // Sync the random math engine to the server-provided room seed
             let sharedSeed = data.seed || lobbyRoomCode.innerText;
-            setDeterministicSeed(sharedSeed);
+            setDeterministicSeed(sharedSeed, true);
             
             // Assign player ID
             const myUsername = usernameInput.value.trim();
@@ -4695,6 +4702,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             document.getElementById('perkScreen').style.display = 'none';
             isPerkPhase = false; 
             spawnFleets(false); 
+        });
+
+        // SERVER RELAYS: Another pilot picked a perk — apply it to our local copy
+        // of their faction so everyone's fleets match across all clients.
+        socket.on('peer_perk_selected', (data) => {
+            if (!data.perkId) return;
+            let factionIdx = factionNames.indexOf((data.username || '').toUpperCase());
+            if (factionIdx !== -1 && factionPerks[factionIdx]) {
+                factionPerks[factionIdx][data.perkId]++;
+            }
         });
 
         // SERVER SAYS: A Pilot Disconnected!
@@ -5242,7 +5259,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             if (isMultiplayer) {
                 document.getElementById('perkContainer').innerHTML = '<h3 style="color:#fff;">Upgrading systems... Waiting for other Pilots.</h3>';
                 document.getElementById('perkPhaseTitle').innerText = "SYNCHRONIZING...";
-                socket.emit('perk_selected', { roomCode: lobbyRoomCode.innerText });
+                const myUsername = usernameInput.value.trim();
+                socket.emit('perk_selected', {
+                    roomCode: lobbyRoomCode.innerText,
+                    username: myUsername,
+                    perkId: selectedPerk ? selectedPerk.id : null
+                });
             } else {
                 document.getElementById('perkScreen').style.display = 'none';
                 isPerkPhase = false; 
@@ -5777,6 +5799,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     transitionTimer--;
                     if (transitionTimer <= 0) {
                         round++;
+                        // Reseed here, before perks are rolled — otherwise AI perk picks in
+                        // showPerkScreen() consume Math.random() calls BEFORE the reseed that
+                        // normally happens inside spawnFleets(), letting clients drift apart
+                        // before they even get a chance to resync.
+                        setDeterministicSeed(originalMatchSeed + round * 777);
                         if (perksEnabled) {
                             showPerkScreen(); 
                         } else {

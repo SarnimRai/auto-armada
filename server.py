@@ -133,6 +133,14 @@ def handle_launch_game(data):
 def handle_perk_selected(data):
     room_code = data['roomCode']
     if room_code in live_rooms:
+        # Relay exactly which perk this pilot picked to everyone else in the room.
+        # Without this, every other client's copy of a human player's perks
+        # stays at level 0 forever — fleets look completely different per-client.
+        emit('peer_perk_selected', {
+            'username': data.get('username'),
+            'perkId': data.get('perkId')
+        }, to=room_code, include_self=False)
+        
         live_rooms[room_code]['perks_ready'] = live_rooms[room_code].get('perks_ready', 0) + 1
         if live_rooms[room_code]['perks_ready'] >= len(live_rooms[room_code]['players']):
             live_rooms[room_code]['perks_ready'] = 0
@@ -144,8 +152,8 @@ def handle_perk_selected(data):
 @socketio.on('update_sliders')
 def handle_slider_update(data):
     room_code = data['roomCode']
-    # MULTIPLAYER SYNC FIX: Bounce the update to EVERYONE, including the sender!
-    emit('peer_slider_update', data, to=room_code)
+    # Relay this player's slider metrics to every other peer in the room instantly
+    emit('peer_slider_update', data, to=room_code, include_self=False)
 
 
 @socketio.on('sync_color_change')
