@@ -693,8 +693,27 @@
         let explosions = []; 
         let walls = []; 
         let flagshipAlive = [false, false, false, false];
-        let flagshipCount = [0, 0, 0, 0, 0, 0]; // Allows stacking multiple flagships!
+        let flagshipCount = [0, 0, 0, 0, 0, 0]; 
+        let disconnectedPlayers = []; // NEW: Tracks players who rage-quit
         
+        // --- ANTI-THROTTLE BACKGROUND ENGINE ---
+        // Browsers pause standard animations when you change tabs. This Web Worker
+        // forces the physics engine to tick exactly 60 times a second, even if the tab is hidden!
+        const workerBlob = new Blob([`
+            let interval;
+            self.onmessage = function(e) {
+                if (e.data === 'start') {
+                    interval = setInterval(() => self.postMessage('tick'), 16);
+                } else if (e.data === 'stop') {
+                    clearInterval(interval);
+                }
+            };
+        `], { type: 'application/javascript' });
+        const engineWorker = new Worker(URL.createObjectURL(workerBlob));
+        engineWorker.onmessage = () => {
+            if (typeof animate === 'function') animate();
+        };
+
         // Maze Pathfinding Globals
         let mazeGrid = null;
         let mazeCols = 0;
@@ -4167,6 +4186,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
             
             for (let f = 0; f < activeFactionCount; f++) {
+                // SKIP SPAWNING IF THIS PLAYER DISCONNECTED!
+                if (disconnectedPlayers.includes(f)) continue;
+                
                 let startX = canvas.width / 2;
                 let startY = canvas.height / 2;
                 
@@ -4805,9 +4827,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             pauseHint.innerText = "Press 'P' for Match Menu";
             pauseHint.style.display = 'block';
             gameStarted = true;
-            
-            // Lock the frame timer instantly to prevent skip-jumping
-            lastFrameTime = Date.now();
+            disconnectedPlayers = []; // Reset leavers array for a new match
             spawnFleets(true);
         });
         
@@ -4815,8 +4835,33 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         socket.on('resume_round', () => {
             document.getElementById('perkScreen').style.display = 'none';
             isPerkPhase = false; 
-            lastFrameTime = Date.now(); // Sync protection
             spawnFleets(false); 
+        });
+
+        // SERVER SAYS: A Pilot Disconnected!
+        socket.on('player_left', (data) => {
+            if (!isMultiplayer) return;
+            
+            let leaverIndex = factionNames.indexOf(data.username.toUpperCase());
+            if (leaverIndex !== -1) {
+                disconnectedPlayers.push(leaverIndex); // Mark them as dead
+                
+                const chatBox = document.getElementById('gameChatBox');
+                if (chatBox) {
+                    chatBox.innerHTML += `<div><span style="color:#ff4444;">[SYSTEM WARNING]:</span> <span style="color:#fff;">${data.username.toUpperCase()} HAS RETREATED FROM THE WAR!</span></div>`;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+                
+                // If only 1 human player is left, crown them the victor instantly!
+                if (data.remaining <= 1 && matchActive) {
+                    matchActive = false;
+                    roundActive = false;
+                    document.getElementById('winnerText').innerText = "ALL OPPONENTS RETREATED. YOU SURVIVED!";
+                    document.getElementById('winnerText').style.color = '#22cc22';
+                    document.getElementById('leaderboard').innerHTML = "";
+                    document.getElementById('endScreen').style.display = 'flex';
+                }
+            }
         });
         
         const availableColors = {
@@ -5336,15 +5381,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
         }
         
-        let lastFrameTime = Date.now();
         function animate() {
-            // 60 FPS LOCK: Prevents 144Hz monitors from playing the game 2.4x faster than 60Hz monitors!
-            let now = Date.now();
-            if (now - lastFrameTime < 16) {
-                requestAnimationFrame(animate);
-                return;
-            }
-            lastFrameTime = now;
+            // Web Worker drives the loop now! No more tab-throttling!
             
             // Check the cosmos for an active Star to tint deep space!
             let ambientTint = null;
@@ -5367,12 +5405,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     ctx.fill();
                 }
                 ctx.globalAlpha = 1.0;
-                requestAnimationFrame(animate);
                 return;
             }
             
             if (isPaused || isPerkPhase) {
-                requestAnimationFrame(animate);
                 return; 
             }
             
@@ -5879,12 +5915,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                 }
-                
-                requestAnimationFrame(animate);
-            }
+            } // END OF ANIMATE FUNCTION
             
             initBackgroundPlanet();
-            animate();
+            // Start the unstoppable Web Worker engine!
+            engineWorker.postMessage('start'); 
         </script>
     </body>
     </html>

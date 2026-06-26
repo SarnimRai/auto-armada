@@ -15,6 +15,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # This dictionary will store our live rooms in the server's memory
 # Example: {'A1B2C3D4': {'host': 'Player1', 'players': ['Player1', 'Player2']}}
 live_rooms = {}
+active_connections = {}
 
 @app.route('/')
 def home():
@@ -27,6 +28,9 @@ def handle_create_room(data):
     username = data['username']
     room_code = data['roomCode']
     join_room(room_code)
+    
+    # NEW: Track this specific user's connection for disconnect handling
+    active_connections[request.sid] = {'room': room_code, 'username': username}
     
     # Track host initialization metrics inside the player map matrix
     live_rooms[room_code] = {
@@ -48,6 +52,9 @@ def handle_join_room(data):
             join_room(room_code)
             live_rooms[room_code]['players'].append(username)
             
+            # NEW: Track this specific user's connection
+            active_connections[request.sid] = {'room': room_code, 'username': username}
+            
             # Auto-assign an unoccupied starting slot structure
             live_rooms[room_code]['player_states'][username] = { 'color': '#44aaff', 'ready': False }
             
@@ -65,6 +72,10 @@ def handle_join_random(data):
         target_room = random.choice(open_rooms)
         join_room(target_room)
         live_rooms[target_room]['players'].append(username)
+        
+        # NEW: Track this specific user's connection
+        active_connections[request.sid] = {'room': target_room, 'username': username}
+        
         live_rooms[target_room]['player_states'][username] = { 'color': '#ffcc00', 'ready': False }
         emit('room_update', {'roomCode': target_room, 'players': live_rooms[target_room]['players'], 'host': live_rooms[target_room]['host']}, to=target_room)
     else:
@@ -181,3 +192,26 @@ def handle_add_ai_bot(data):
             
             # Immediately broadcast the new roster to all players
             emit('lobby_config_update', {'states': live_rooms[room_code]['player_states']}, to=room_code)
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    if request.sid in active_connections:
+        conn = active_connections[request.sid]
+        room_code = conn['room']
+        username = conn['username']
+        
+        if room_code in live_rooms:
+            room = live_rooms[room_code]
+            if username in room['players']:
+                room['players'].remove(username)
+                if username in room['player_states']:
+                    del room['player_states'][username]
+                
+                # Tell everyone else in the room that this player retreated!
+                emit('player_left', {'username': username, 'remaining': len(room['players'])}, to=room_code)
+                
+                # If everyone leaves, delete the room from the server memory
+                if len(room['players']) == 0:
+                    del live_rooms[room_code]
+                    
+        del active_connections[request.sid]
