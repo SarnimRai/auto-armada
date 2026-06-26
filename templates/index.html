@@ -601,8 +601,14 @@
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        
+        // MULTIPLAYER SYNC FIX: Lock the internal logic to a fixed grid!
+        canvas.width = 1920; 
+        canvas.height = 1080;
+        
+        // Let CSS stretch the fixed grid to fit whatever screen the player is using
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
         
         const alignSlider = document.getElementById('alignSlider');
         const cohereSlider = document.getElementById('cohereSlider');
@@ -4447,13 +4453,20 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             // Assign player ID based on their order in the room
             const myUsername = usernameInput.value.trim();
+            playerFactionId = data.playersList.indexOf(myUsername);
+            
+            // UI UPGRADE: Map real pilot usernames to the scoreboard!
+            for (let i = 0; i < data.playerCount; i++) {
+                factionNames[i] = data.playersList[i].toUpperCase();
+            }
             
             // Sync colors locally to the player's chosen color
             factionColors[playerFactionId] = myMpColor;
             
-            // Generate AI colors if needed
+            // Generate AI colors & Names if needed
             for (let i = data.playerCount; i < activeFactionCount; i++) {
                 factionColors[i] = '#ff00ff'; // Default AI color
+                factionNames[i] = 'AI BOT ' + (i - data.playerCount + 1);
             }
             
             adminModeEnabled = false;
@@ -4825,9 +4838,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         });
         
         window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            generateStars();
+            // SYNC FIX: We no longer change the canvas dimensions or redraw stars here.
+            // Calling Math.random() mid-match during a resize permanently breaks the deterministic seed!
         });
 
         // Global runtime matrix tracking individual flocking configurations across networks
@@ -4977,7 +4989,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
         }
         
+        let lastFrameTime = Date.now();
         function animate() {
+            // 60 FPS LOCK: Prevents 144Hz monitors from playing the game 2.4x faster than 60Hz monitors!
+            let now = Date.now();
+            if (now - lastFrameTime < 16) {
+                requestAnimationFrame(animate);
+                return;
+            }
+            lastFrameTime = now;
+
             if (!gameStarted) {
                 ctx.fillStyle = '#050510';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
