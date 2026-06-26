@@ -5280,6 +5280,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             for (let p of bgPlanets) {
                 if (p.type === 'STAR' && p.spaceTint) { ambientTint = p.spaceTint; break; }
             }
+            
+            // SEAMLESS FULLSCREEN ILLUSION: Sync the HTML background to the canvas background
+            // so the aspect-ratio letterboxes become completely invisible!
+            document.body.style.backgroundColor = ambientTint || '#050510';
 
             if (!gameStarted) {
                 ctx.fillStyle = '#050510';
