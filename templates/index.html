@@ -622,9 +622,13 @@
         canvas.width = 1920; 
         canvas.height = 1080;
         
-        // Let CSS stretch the fixed grid to fit whatever screen the player is using
+        // CROSS-PLATFORM SYNC FIX: 'object-fit: contain' forces the browser to automatically 
+        // letterbox the canvas on phones or ultrawide monitors. This guarantees perfectly 
+        // identical 16:9 visual ratios and hitboxes across all devices!
         canvas.style.width = '100vw';
         canvas.style.height = '100vh';
+        canvas.style.objectFit = 'contain';
+        canvas.style.display = 'block';
         
         const alignSlider = document.getElementById('alignSlider');
         const cohereSlider = document.getElementById('cohereSlider');
@@ -1643,6 +1647,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 dysonType: dType,
                 name: scheme.name,
                 gradient: scheme.gradient,
+                // AMBIENT TINT: Captures the mid-color of the star and turns it into a subtle 12% space wash
+                spaceTint: hexToRGBA(scheme.gradient[1], 0.12),
                 moons: [] // Stars do not have orbiting terrestrial moons in this view
             };
             
@@ -5126,10 +5132,18 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 return;
             }
             lastFrameTime = now;
+            
+            // Check the cosmos for an active Star to tint deep space!
+            let ambientTint = null;
+            for (let p of bgPlanets) {
+                if (p.type === 'STAR' && p.spaceTint) { ambientTint = p.spaceTint; break; }
+            }
 
             if (!gameStarted) {
                 ctx.fillStyle = '#050510';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+                if (ambientTint) { ctx.fillStyle = ambientTint; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+                
                 ctx.fillStyle = '#ffffff';
                 for (let star of stars) {
                     star.x -= star.radius * 0.5; 
@@ -5155,6 +5169,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             ctx.fillStyle = '#050510';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (ambientTint) { ctx.fillStyle = ambientTint; ctx.fillRect(0, 0, canvas.width, canvas.height); }
             
             ctx.fillStyle = '#ffffff';
             for (let star of stars) {
