@@ -152,8 +152,10 @@ def handle_perk_selected(data):
 @socketio.on('update_sliders')
 def handle_slider_update(data):
     room_code = data['roomCode']
-    # Relay this player's slider metrics to every other peer in the room instantly
-    emit('peer_slider_update', data, to=room_code, include_self=False)
+    # MULTIPLAYER SYNC FIX: Bounce the update to EVERYONE, including the sender!
+    # By removing include_self=False, the sender waits for the server round-trip
+    # so every computer applies the physics change on the exact same frame.
+    emit('peer_slider_update', data, to=room_code)
 
 
 @socketio.on('sync_color_change')
