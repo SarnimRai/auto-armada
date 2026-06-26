@@ -86,30 +86,49 @@ def handle_go_to_config(data):
 def handle_launch_game(data):
     room_code = data['roomCode']
     if room_code in live_rooms:
-        players_list = live_rooms[room_code]['players']
+        room = live_rooms[room_code]
+        players_list = room['players']
         
-        # Broadcast to everyone in the room to start the match!
-        emit('start_multiplayer_match', {
-            'ships': int(data['ships']),
-            'rounds': int(data['rounds']),
-            'aiCount': int(data['aiCount']),
+        # Extract the globally synchronized colors based on the exact player order
+        ordered_colors = []
+        for p in players_list:
+            ordered_colors.append(room['player_states'][p]['color'])
+            
+        # Append AI colors (Pink) if the host added bots
+        ai_count = int(data.get('aiCount', 0))
+        for i in range(ai_count):
+            ordered_colors.append('#ff00ff') 
+            
+        payload = {
+            'seed': room_code + str(random.randint(1000, 9999)),
             'playerCount': len(players_list),
-            'playersList': players_list, # Sending the list so frontend can calculate Faction IDs
-            'seed': random.randint(1, 100000) # <-- NEW: Shared random seed for deterministic synchronization
-        }, to=room_code)
+            'aiCount': ai_count,
+            'playersList': players_list,
+            'factionColors': ordered_colors, # The universal color fix!
+            'rounds': int(data.get('rounds', 3)),
+            'ships': int(data.get('ships', 30))
+        }
+        
+        # Step 1: Tell everyone to load the UI and prepare memory
+        emit('prepare_match', payload, to=room_code)
+        
+        # Step 2: Buffer time. This defeats the network latency imbalance!
+        eventlet.sleep(2.5) 
+        
+        # Step 3: Fire the starting gun for all clients simultaneously
+        emit('begin_match_physics', {}, to=room_code)
 
 @socketio.on('perk_selected')
 def handle_perk_selected(data):
     room_code = data['roomCode']
     if room_code in live_rooms:
-        live_rooms[room_code]['perks_ready'] += 1
-        
-        # Check if everyone has picked their perks
+        live_rooms[room_code]['perks_ready'] = live_rooms[room_code].get('perks_ready', 0) + 1
         if live_rooms[room_code]['perks_ready'] >= len(live_rooms[room_code]['players']):
-            # Reset counter for the next round
             live_rooms[room_code]['perks_ready'] = 0
-            # Tell everyone to resume the battle!
-            emit('resume_round', to=room_code)
+            
+            # Buffer the perk resume so everyone starts the new round together!
+            eventlet.sleep(1.5)
+            emit('resume_round', {}, to=room_code)
 
 @socketio.on('update_sliders')
 def handle_slider_update(data):
