@@ -118,7 +118,7 @@ def handle_slider_update(data):
     emit('peer_slider_update', data, to=room_code, include_self=False)
 
 
-    @socketio.on('sync_color_change')
+@socketio.on('sync_color_change')
 def handle_sync_color_change(data):
     room_code = data['roomCode']
     username = data['username']
