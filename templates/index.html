@@ -537,9 +537,9 @@
     <div id="multiplayerConfigMenu" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 16, 0.95); flex-direction: column; align-items: center; justify-content: center; z-index: 48;">
         <h2 style="color: #fff; font-size: 3rem; margin-bottom: 20px; font-family: monospace; text-shadow: 0 0 10px #44aaff;">MATCH CONFIGURATION</h2>
         
-        <div style="display: flex; gap: 40px; background: #111; padding: 30px; border: 2px solid #44aaff; border-radius: 8px;">
-            <div style="display: flex; flex-direction: column; gap: 15px; width: 250px;">
-                <h3 style="color: #ffcc00; margin: 0;">Settings</h3>
+        <div style="display: flex; gap: 40px; background: #111; padding: 30px; border: 2px solid #44aaff; border-radius: 8px; align-items: stretch;">
+            <div style="display: flex; flex-direction: column; gap: 15px; width: 230px;">
+                <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Settings</h3>
                 <label>Total Rounds:
                     <input type="number" id="mpRounds" min="3" max="30" value="3">
                 </label>
@@ -549,19 +549,31 @@
                 <button class="btn-secondary" id="btnAddAI" style="display: none; background: #aa44ff; color: white; margin-top: 10px;">+ ADD AI BOT</button>
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 10px; width: 250px;">
-                <h3 style="color: #ffcc00; margin: 0;">Select Color</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 230px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 30px;">
+                <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Select Color</h3>
                 <div id="mpColorGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
-                <div style="margin-top: 10px; color: #fff; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                <div style="margin-top: 15px; color: #fff; font-weight: bold; display: flex; align-items: center; gap: 10px;">
                     Your Color: <div id="mySelectedColorBox" style="width:25px; height:25px; border:2px solid #fff; border-radius: 4px;"></div>
                 </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 280px;">
+                <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Pilot Roster</h3>
+                <div id="mpRosterStatusContainer" style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px; background: #07070f; border: 1px solid #333; padding: 10px; border-radius: 4px; overflow-y: auto;">
+                    </div>
+                <button class="btn-primary" id="btnToggleMpReady" style="margin-top: 5px; width: 100%; font-size: 1.1rem; background: #ffcc00; color: #000;">TOGGLE READY</button>
             </div>
         </div>
         
         <div style="margin-top: 30px; display: flex; gap: 20px;">
-            <button class="btn-primary" id="btnLaunchMultiplayer" style="display: none; background: #ff4444; font-size: 2rem; padding: 15px 40px;">LAUNCH GAME</button>
-            <h3 id="mpWaitingText" style="color: #aaa; display: none;">Waiting for Host to launch...</h3>
+            <button class="btn-primary" id="btnLaunchMultiplayer" style="display: none; background: #ff4444; font-size: 2rem; padding: 15px 40px; cursor: not-allowed;" disabled>WAITING FOR PILOTS</button>
+            <h3 id="mpWaitingText" style="color: #aaa; display: none; font-size: 1.3rem;">Secure systems connection... Signal Ready.</h3>
         </div>
+    </div>
+
+    <div id="gameChatWrapper" style="display: none; position: absolute; bottom: 20px; right: 20px; width: 340px; height: 240px; background: rgba(5, 5, 16, 0.9); border: 2px solid #44aaff; border-radius: 6px; z-index: 100; flex-direction: column; padding: 10px; box-sizing: border-box; backdrop-filter: blur(4px);">
+        <div id="gameChatBox" style="flex-grow: 1; overflow-y: auto; color: #a6d8ff; font-size: 0.85rem; margin-bottom: 8px; text-align: left; font-family: monospace; padding-right: 5px;"></div>
+        <input type="text" id="gameChatInput" placeholder="Type transmission... [Enter]" style="width: 100%; background: #0c0c14; color: #fff; border: 1px solid #44aaff; padding: 6px; box-sizing: border-box; font-family: monospace; border-radius: 4px; outline: none;">
     </div>
     
     <div id="multiplayerPauseMenu" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.9); padding: 25px; border-radius: 8px; flex-direction: column; gap: 12px; border: 2px solid #44aaff; z-index: 60; min-width: 250px;">
@@ -4382,29 +4394,20 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             socket.emit('go_to_config', { roomCode: lobbyRoomCode.innerText });
         });
         
-        // SERVER SAYS: Go to Config Screen
+        // SERVER SAYS: Open match setup screen
         socket.on('show_config_screen', (data) => {
             lobbyMenu.style.display = 'none';
             document.getElementById('multiplayerConfigMenu').style.display = 'flex';
+            document.getElementById('gameChatWrapper').style.display = 'flex'; // Turn on text feeds
             
-            // Set default random color
+            // Set base random initial default colors
             const allHexes = Object.values(availableColors);
             myMpColor = allHexes[Math.floor(Math.random() * allHexes.length)];
             document.getElementById('mySelectedColorBox').style.background = myMpColor;
             
-            // Populate Colors Grid
-            const colorGrid = document.getElementById('mpColorGrid');
-            colorGrid.innerHTML = '';
-            Object.values(availableColors).forEach(hex => {
-                let swatch = document.createElement('div');
-                swatch.className = 'modal-swatch';
-                swatch.style.background = hex;
-                swatch.addEventListener('click', () => {
-                    myMpColor = hex;
-                    document.getElementById('mySelectedColorBox').style.background = hex;
-                });
-                colorGrid.appendChild(swatch);
-            });
+            // Inform server of our chosen default selection pool choice
+            const myUsername = usernameInput.value.trim();
+            socket.emit('sync_color_change', { roomCode: lobbyRoomCode.innerText, username: myUsername, color: myMpColor });
             
             if (data.isHost) {
                 document.getElementById('mpShips').disabled = false;
@@ -4420,7 +4423,106 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 document.getElementById('mpWaitingText').style.display = 'block';
             }
         });
-        
+
+        // HANDLE DYNAMIC READY CHECKS AND INTER-PLAYER COLOR EXCLUSIONS
+        socket.on('lobby_config_update', (data) => {
+            const myUsername = usernameInput.value.trim();
+            const currentRoomStates = data.states;
+            
+            // Gather colors already claimed by rivals
+            let claimedColors = [];
+            for (let name in currentRoomStates) {
+                if (name !== myUsername && currentRoomStates[name].color) {
+                    claimedColors.push(currentRoomStates[name].color);
+                }
+            }
+            
+            // Re-render color grids showing taken statuses
+            const colorGrid = document.getElementById('mpColorGrid');
+            colorGrid.innerHTML = '';
+            Object.values(availableColors).forEach(hex => {
+                let swatch = document.createElement('div');
+                swatch.className = 'modal-swatch';
+                swatch.style.background = hex;
+                
+                if (claimedColors.includes(hex)) {
+                    swatch.classList.add('taken'); // Darken taken selections
+                } else {
+                    swatch.addEventListener('click', () => {
+                        myMpColor = hex;
+                        document.getElementById('mySelectedColorBox').style.background = hex;
+                        socket.emit('sync_color_change', { roomCode: lobbyRoomCode.innerText, username: myUsername, color: hex });
+                    });
+                }
+                colorGrid.appendChild(swatch);
+            });
+            
+            // Rebuild the unified pilot roster status cards panel
+            const rosterContainer = document.getElementById('mpRosterStatusContainer');
+            rosterContainer.innerHTML = '';
+            
+            let allPlayersReady = true;
+            
+            for (let name in currentRoomStates) {
+                let playerInfo = currentRoomStates[name];
+                let readyText = playerInfo.ready ? "READY" : "NOT READY";
+                let readyColor = playerInfo.ready ? "#22cc22" : "#ff4444";
+                if (!playerInfo.ready) allPlayersReady = false;
+                
+                rosterContainer.innerHTML += `
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.04); padding:6px 12px; border-radius:4px; font-size:0.9rem;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:12px; height:12px; background:${playerInfo.color}; border-radius:2px;"></div>
+                            <span style="color:#fff; font-weight:bold;">${name.toUpperCase()}</span>
+                        </div>
+                        <span style="color:${readyColor}; font-weight:bold; font-size:0.8rem;">${readyText}</span>
+                    </div>`;
+            }
+            
+            // Host Gating Controller logic updates
+            const launchBtn = document.getElementById('btnLaunchMultiplayer');
+            if (launchBtn) {
+                if (allPlayersReady) {
+                    launchBtn.disabled = false;
+                    launchBtn.style.cursor = 'pointer';
+                    launchBtn.style.background = '#22cc22';
+                    launchBtn.innerText = "LAUNCH GAME";
+                } else {
+                    launchBtn.disabled = true;
+                    launchBtn.style.cursor = 'not-allowed';
+                    launchBtn.style.background = '#ff4444';
+                    launchBtn.innerText = "WAITING FOR PILOTS";
+                }
+            }
+        });
+
+        // Toggle ready event trigger binding handlers
+        document.getElementById('btnToggleMpReady').addEventListener('click', () => {
+            const myUsername = usernameInput.value.trim();
+            socket.emit('sync_ready_toggle', { roomCode: lobbyRoomCode.innerText, username: myUsername });
+        });
+
+        // CHAT PACKET SYSTEM ROUTERS
+        document.getElementById('gameChatInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const text = this.value.trim();
+                if (!text) return;
+                const myUsername = usernameInput.value.trim();
+                
+                socket.emit('transmit_chat_message', { roomCode: lobbyRoomCode.innerText, username: myUsername, message: text });
+                this.value = ''; // Clean box input field immediately
+            }
+        });
+
+        socket.on('receive_room_chat', (data) => {
+            const chatBox = document.getElementById('gameChatBox');
+            const cleanSender = data.sender.toUpperCase();
+            
+            // Format feed messages natively
+            chatBox.innerHTML += `<div><span style="color:#ffcc00;">[${cleanSender}]:</span> <span style="color:#fff;">${data.msg}</span></div>`;
+            chatBox.scrollTop = chatBox.scrollHeight; // Autoscroll timeline feeds
+        });
+
         // HOST ADDS AI
         document.getElementById('btnAddAI').addEventListener('click', () => {
             if (mpAiCount < 2) {
@@ -4818,6 +4920,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             document.getElementById('controls').style.display = 'none'; 
             document.getElementById('viewPerksModal').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('gameChatWrapper').style.display = 'none'; // Closes chat windows back out
             gameStarted = false; 
             isPaused = false;
             isPerkPhase = false;

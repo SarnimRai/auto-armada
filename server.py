@@ -27,12 +27,16 @@ def handle_create_room(data):
     username = data['username']
     room_code = data['roomCode']
     join_room(room_code)
+    
+    # Track host initialization metrics inside the player map matrix
     live_rooms[room_code] = {
         'host': username,
         'players': [username],
+        'player_states': {
+            username: { 'color': '#ff4444', 'ready': False } # Default initial color assignments
+        },
         'perks_ready': 0  
     }
-    # Direct targeting to request.sid cuts out processing room latency delays
     emit('room_update', {'roomCode': room_code, 'players': live_rooms[room_code]['players'], 'host': username}, to=request.sid)
 
 @socketio.on('join_room')
@@ -43,7 +47,10 @@ def handle_join_room(data):
         if len(live_rooms[room_code]['players']) < 4:
             join_room(room_code)
             live_rooms[room_code]['players'].append(username)
-            # Sends authoritative host string instead of a volatile boolean flag
+            
+            # Auto-assign an unoccupied starting slot structure
+            live_rooms[room_code]['player_states'][username] = { 'color': '#44aaff', 'ready': False }
+            
             emit('room_update', {'roomCode': room_code, 'players': live_rooms[room_code]['players'], 'host': live_rooms[room_code]['host']}, to=room_code)
         else:
             emit('error_message', {'msg': 'Room is full! (Max 4 Pilots)'})
@@ -58,6 +65,7 @@ def handle_join_random(data):
         target_room = random.choice(open_rooms)
         join_room(target_room)
         live_rooms[target_room]['players'].append(username)
+        live_rooms[target_room]['player_states'][username] = { 'color': '#ffcc00', 'ready': False }
         emit('room_update', {'roomCode': target_room, 'players': live_rooms[target_room]['players'], 'host': live_rooms[target_room]['host']}, to=target_room)
     else:
         emit('error_message', {'msg': 'No open rooms found! Please host a new match.'})
@@ -108,3 +116,34 @@ def handle_slider_update(data):
     room_code = data['roomCode']
     # Relay this player's slider metrics to every other peer in the room instantly
     emit('peer_slider_update', data, to=room_code, include_self=False)
+
+
+    @socketio.on('sync_color_change')
+def handle_sync_color_change(data):
+    room_code = data['roomCode']
+    username = data['username']
+    chosen_color = data['color']
+    
+    if room_code in live_rooms and username in live_rooms[room_code]['player_states']:
+        live_rooms[room_code]['player_states'][username]['color'] = chosen_color
+        # Broadcast full structural changes back down to all room peers
+        emit('lobby_config_update', {'states': live_rooms[room_code]['player_states']}, to=room_code)
+
+@socketio.on('sync_ready_toggle')
+def handle_sync_ready_toggle(data):
+    room_code = data['roomCode']
+    username = data['username']
+    
+    if room_code in live_rooms and username in live_rooms[room_code]['player_states']:
+        current_status = live_rooms[room_code]['player_states'][username]['ready']
+        live_rooms[room_code]['player_states'][username]['ready'] = not current_status
+        emit('lobby_config_update', {'states': live_rooms[room_code]['player_states']}, to=room_code)
+
+@socketio.on('transmit_chat_message')
+def handle_transmit_chat_message(data):
+    room_code = data['roomCode']
+    payload = {
+        'sender': data['username'],
+        'msg': data['message']
+    }
+    emit('receive_room_chat', payload, to=room_code)
