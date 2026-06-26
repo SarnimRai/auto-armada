@@ -147,3 +147,18 @@ def handle_transmit_chat_message(data):
         'msg': data['message']
     }
     emit('receive_room_chat', payload, to=room_code)
+
+@socketio.on('add_ai_bot')
+def handle_add_ai_bot(data):
+    room_code = data['roomCode']
+    if room_code in live_rooms:
+        # Tally existing bots
+        ai_count = sum(1 for name in live_rooms[room_code]['player_states'] if name.startswith('AI BOT'))
+        
+        if ai_count < 2:
+            bot_name = f"AI BOT {ai_count + 1}"
+            # Inject a permanently 'ready' bot into the synchronization matrix
+            live_rooms[room_code]['player_states'][bot_name] = {'color': '#ff00ff', 'ready': True, 'is_ai': True}
+            
+            # Immediately broadcast the new roster to all players
+            emit('lobby_config_update', {'states': live_rooms[room_code]['player_states']}, to=room_code)
