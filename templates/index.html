@@ -2426,7 +2426,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             { id: 'temp_fireRate', name: "Hyper Capacitors", desc: "Double the fire rate of all your ships for this round.", rarity: 'temp' },
             { id: 'temp_shield', name: "Deflector Surge", desc: "All your ships gain a +1 HP Shield for this round.", rarity: 'temp' },
             { id: 'temp_extraShips', name: "Mercenary Squadron", desc: "Gain +10 extra ships instantly for this round.", rarity: 'temp' },
-            { id: 'temp_extraFlagship', name: "Escort Flagship", desc: "Gain an extra Flagship this round. Its buffs stack with your existing Flagship!", requires: 'flagship', rarity: 'temp' }
+            { id: 'temp_extraFlagship', name: "Escort Flagship", desc: "Gain an extra Flagship this round. Its buffs stack with your existing Flagship!", requires: 'flagship', rarity: 'temp' },
+            // THE NEW ADDITIONS
+            { id: 'temp_missileSwarm', name: "Pre-Emptive Strike", desc: "Half of your ships instantly fire a homing missile right as the round starts.", rarity: 'temp' },
+            { id: 'temp_kamikaze', name: "Volatile Cores", desc: "For this round, 100% of your ships are guaranteed to explode upon death.", rarity: 'temp' },
+            { id: 'temp_railgun', name: "Railgun Override", desc: "All your lasers pierce infinitely through targets for this round.", rarity: 'temp' }
         ];
         
         function getBasePerks() {
@@ -2437,7 +2441,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
                 // Temps
-                temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0
+                temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
+                temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
             };
         }
         
@@ -2449,6 +2454,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 factionPerks[f].temp_shield = 0;
                 factionPerks[f].temp_extraShips = 0;
                 factionPerks[f].temp_extraFlagship = 0;
+                factionPerks[f].temp_missileSwarm = 0;
+                factionPerks[f].temp_kamikaze = 0;
+                factionPerks[f].temp_railgun = 0;
             }
         }
         
@@ -2715,7 +2723,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.life = 100; 
                 
                 // Piercing logic
-                this.isPiercing = (shooter && shooter.isSniper);
+                let isTempRailgun = (perksEnabled && faction >= 0 && faction < 4 && factionPerks[faction].temp_railgun > 0);
+                this.isPiercing = (shooter && shooter.isSniper) || isTempRailgun;
                 this.hitShips = new Set(); // Remembers ships it already passed through
             }
             update() {
@@ -3353,6 +3362,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.isFlagship = false;
                 this.isSniper = false;
                 this.teleportCooldown = 0;
+                this.tempMissileReady = false; // For the Pre-Emptive Strike
                 
                 // Pathfinding State
                 this.navPath = [];
@@ -3519,6 +3529,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
                 
                 if (nearestEnemy) {
+                    // Pre-Emptive Strike (Fires instantly on frame 1 of the battle!)
+                    if (this.tempMissileReady) {
+                        missiles.push(new Missile(this.position.x, this.position.y, nearestEnemy, this.faction, this));
+                        playSound('missile');
+                        this.tempMissileReady = false; // Only fires once!
+                    }
+                
                     let engage = { 
                         x: nearestEnemy.position.x - this.position.x, 
                         y: nearestEnemy.position.y - this.position.y 
@@ -4047,8 +4064,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     return false; 
                 }
                 
-                if (perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].explosiveDeath > 0 && Math.random() < 0.20) {
-                    explosions.push({x: s.position.x, y: s.position.y, radius: 0, maxRadius: 80, faction: s.faction, damage: 1});
+                let isKamikaze = perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].temp_kamikaze > 0;
+                let isNovaCore = perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].explosiveDeath > 0 && Math.random() < 0.20;
+
+                if (isKamikaze || isNovaCore) {
+                    // Volatile Cores do 2 Area Damage, standard Nova Core does 1.
+                    let dmg = isKamikaze ? 2 : 1; 
+                    explosions.push({x: s.position.x, y: s.position.y, radius: 0, maxRadius: 80, faction: s.faction, damage: dmg});
                 } else {
                     for(let p=0; p<20; p++) particles.push(new Particle(s.position.x, s.position.y, factionColors[s.faction]));
                 }
@@ -4163,6 +4185,14 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     let rx = startX + (Math.random() * (canvas.width * 0.4) - (canvas.width * 0.2));
                     let ry = startY + (Math.random() * (canvas.height * 0.4) - (canvas.height * 0.2));
                     ships.push(new Ship(rx, ry, f));
+                }
+                
+                // Pre-Emptive Strike: Arm exactly half the fleet
+                if (perksEnabled && factionPerks[f].temp_missileSwarm > 0) {
+                    let half = Math.floor(actualNumShips / 2);
+                    for (let i = 0; i < half; i++) {
+                        ships[factionSpawnStartIndex + i].tempMissileReady = true;
+                    }
                 }
                 
                 if (perksEnabled && factionPerks[f].extraHp > 0) {
