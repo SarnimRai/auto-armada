@@ -157,7 +157,6 @@ def handle_slider_update(data):
     # so every computer applies the physics change on the exact same frame.
     emit('peer_slider_update', data, to=room_code)
 
-
 @socketio.on('sync_color_change')
 def handle_sync_color_change(data):
     room_code = data['roomCode']

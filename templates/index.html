@@ -12,6 +12,9 @@
             background-color: #050510; 
             color: #e0e0e0;
             font-family: monospace;
+            /* Prevent accidental text highlighting when tapping fast on mobile! */
+            -webkit-user-select: none;
+            user-select: none; 
         }
         
         #controls {
@@ -290,28 +293,33 @@
             font-family: monospace;
         }
         
+        /* --- FORCED LANDSCAPE & FULL SPACE UTILIZATION --- */
         canvas {
             display: block;
-            position: absolute; /* Allows exact mathematical centering */
+            width: 100vw !important;
+            height: 100vh !important;
+            /* By removing object-fit, it stretches to kill all blank space! */
         }
         
-        #bootScreen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #050510; z-index: 99999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: #44aaff; cursor: pointer;
+        /* If the phone is held vertically, physically rotate the entire website 90 degrees */
+        @media screen and (orientation: portrait) {
+            body {
+                transform: rotate(-90deg);
+                transform-origin: center center;
+                width: 100vh;
+                height: 100vw;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-top: -50vw;
+                margin-left: -50vh;
+                overflow: hidden;
+            }
         }
-        #bootScreen h1 { font-size: 3rem; text-shadow: 0 0 15px #44aaff; margin: 0; }
-        #bootScreen p { color: #aaa; margin-top: 10px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
-    <div id="bootScreen">
-        <h1>TAP TO INITIALIZE SYSTEMS</h1>
-        <p>This will engage Fullscreen Landscape Mode</p>
-    </div>
-
-    <div id="modeSelectMenu" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #050510; flex-direction: column; align-items: center; justify-content: center; z-index: 50;">
+    <div id="modeSelectMenu" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #050510; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50;">
         <h1 style="color: #fff; font-size: 4rem; text-shadow: 0 0 15px #44aaff; font-family: monospace;">AUTO ARMADA</h1>
         <div style="display: flex; gap: 20px; margin-top: 30px;">
             <button class="btn-primary" id="btnSinglePlayer" style="padding: 20px 40px; font-size: 1.5rem;">SINGLE PLAYER</button>
@@ -650,53 +658,10 @@
         canvas.width = 1920; 
         canvas.height = 1080;
         
-        // --- BULLETPROOF CROSS-PLATFORM SCALER ---
-        // This calculates the exact maximum size the 16:9 arena can be on the player's 
-        // specific device without cutting anything off, and centers it perfectly.
-        function scaleCanvas() {
-            const targetRatio = 1920 / 1080;
-            const windowRatio = window.innerWidth / window.innerHeight;
-            let finalW, finalH;
-            
-            if (windowRatio > targetRatio) {
-                // Screen is wider than 16:9 (Ultrawide phones)
-                finalH = window.innerHeight;
-                finalW = finalH * targetRatio;
-            } else {
-                // Screen is taller than 16:9 (Tablets/Ipads)
-                finalW = window.innerWidth;
-                finalH = finalW / targetRatio;
-            }
-            
-            // Apply visual CSS sizing (Does not affect the 1920x1080 physical math!)
-            canvas.style.width = finalW + 'px';
-            canvas.style.height = finalH + 'px';
-            canvas.style.left = (window.innerWidth - finalW) / 2 + 'px';
-            canvas.style.top = (window.innerHeight - finalH) / 2 + 'px';
-        }
-        window.addEventListener('resize', scaleCanvas);
-        scaleCanvas(); // Run immediately
-
-        // --- NATIVE APP BOOTSTRAPPER ---
-        const bootScreen = document.getElementById('bootScreen');
-        bootScreen.addEventListener('click', () => {
-            // 1. Force the browser into Fullscreen
-            let docElm = document.documentElement;
-            if (docElm.requestFullscreen) docElm.requestFullscreen();
-            else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen(); // Safari
-            
-            // 2. Force the phone hardware to rotate to Landscape
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(e => console.log("Orientation lock not supported on this specific device/browser"));
-            }
-            
-            // 3. Clear the boot screen and show the game menu
-            bootScreen.style.display = 'none';
-            document.getElementById('modeSelectMenu').style.display = 'flex';
-            
-            // Re-calculate scale just in case the fullscreen transition changed window dimensions
-            setTimeout(scaleCanvas, 200); 
-        });
+        // Let CSS force it to stretch across 100% of the screen
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.display = 'block';
         
         const alignSlider = document.getElementById('alignSlider');
         const cohereSlider = document.getElementById('cohereSlider');
