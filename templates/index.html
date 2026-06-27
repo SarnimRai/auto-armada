@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Auto Armada</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.js"></script>
     <style>
@@ -316,6 +316,28 @@
                 overflow: hidden;
             }
         }
+
+        /* --- MOBILE UI RESPONSIVENESS --- */
+        @media screen and (max-height: 600px), screen and (max-width: 900px) {
+            h1 { font-size: 2rem !important; }
+            h2 { font-size: 1.5rem !important; }
+            h3 { font-size: 1.1rem !important; margin: 5px 0 !important; }
+            .btn-primary, .btn-secondary { font-size: 0.9rem !important; padding: 8px 16px !important; }
+            
+            /* Make the Start Menu scrollable internally if it exceeds screen height */
+            #startMenu { gap: 8px; justify-content: flex-start; padding: 20px 0; overflow-y: auto; }
+            #colorPickers { flex-wrap: wrap; justify-content: center; }
+            
+            /* Collapse the Multiplayer Config columns into a responsive grid */
+            .config-panel { gap: 15px !important; padding: 15px !important; flex-wrap: wrap; max-height: 85vh; overflow-y: auto; justify-content: center; }
+            .config-col { width: auto !important; min-width: 200px; border: none !important; padding: 0 !important; }
+            
+            /* Shrink Perk Cards */
+            .perk-container { max-height: 60vh; }
+            .perk-card { width: 140px; padding: 10px; }
+            .perk-desc { font-size: 0.75rem; height: 55px; }
+            .modal-content.admin-panel { padding: 15px; }
+        }
     </style>
 </head>
 <body>
@@ -431,6 +453,7 @@
                 <button class="btn-secondary" id="viewLibraryBtn" style="margin-top: 15px;">PERKS LIBRARY</button>
             </div>
             <button class="btn-secondary" id="startAdminBtn" style="color: #ff4444; border-color: #ff4444;">ENTER ADMIN MODE</button>
+            <button class="btn-secondary" id="btnBackToModeFromSp" style="margin-top: 10px; border-color: #aaa; color: #aaa;">BACK TO MODE SELECT</button>
         </div>
     </div>
     
@@ -568,8 +591,8 @@
     <div id="multiplayerConfigMenu" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 5, 16, 0.95); flex-direction: column; align-items: center; justify-content: center; z-index: 48;">
         <h2 style="color: #fff; font-size: 3rem; margin-bottom: 20px; font-family: monospace; text-shadow: 0 0 10px #44aaff;">MATCH CONFIGURATION</h2>
         
-        <div style="display: flex; gap: 40px; background: #111; padding: 30px; border: 2px solid #44aaff; border-radius: 8px; align-items: stretch;">
-            <div style="display: flex; flex-direction: column; gap: 15px; width: 230px;">
+        <div class="config-panel" style="display: flex; gap: 40px; background: #111; padding: 30px; border: 2px solid #44aaff; border-radius: 8px; align-items: stretch;">
+            <div class="config-col" style="display: flex; flex-direction: column; gap: 15px; width: 230px;">
                 <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Settings</h3>
                 <label>Total Rounds:
                     <input type="number" id="mpRounds" min="3" max="30" value="3">
@@ -580,7 +603,7 @@
                 <button class="btn-secondary" id="btnAddAI" style="display: none; background: #aa44ff; color: white; margin-top: 10px;">+ ADD AI BOT</button>
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 10px; width: 230px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 30px;">
+            <div class="config-col" style="display: flex; flex-direction: column; gap: 10px; width: 230px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 30px;">
                 <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Select Color</h3>
                 <div id="mpColorGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
                 <div style="margin-top: 15px; color: #fff; font-weight: bold; display: flex; align-items: center; gap: 10px;">
@@ -588,7 +611,7 @@
                 </div>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px; width: 280px;">
+            <div class="config-col" style="display: flex; flex-direction: column; gap: 10px; width: 280px;">
                 <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Pilot Roster</h3>
                 <div id="mpRosterStatusContainer" style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px; background: #07070f; border: 1px solid #333; padding: 10px; border-radius: 4px; overflow-y: auto;">
                     </div>
@@ -4366,11 +4389,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             modeSelectMenu.style.display = 'flex';
         });
         
-        // Main Menu Back button (You should add an HTML button to your startMenu to call this)
+        // Main Menu Back button
         function backToModeSelectFromSinglePlayer() {
             startMenu.style.display = 'none';
             modeSelectMenu.style.display = 'flex';
         }
+        document.getElementById('btnBackToModeFromSp').addEventListener('click', backToModeSelectFromSinglePlayer);
         
         // --- SECURE ROOM CODE GENERATOR ---
         function generateRoomCode() {
