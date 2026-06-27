@@ -317,26 +317,35 @@
             }
         }
 
-        /* --- MOBILE UI RESPONSIVENESS --- */
+        /* --- MOBILE UI RESPONSIVENESS (STRICT FIT, ZERO SCROLLING) --- */
         @media screen and (max-height: 600px), screen and (max-width: 900px) {
-            h1 { font-size: 2rem !important; }
-            h2 { font-size: 1.5rem !important; }
-            h3 { font-size: 1.1rem !important; margin: 5px 0 !important; }
-            .btn-primary, .btn-secondary { font-size: 0.9rem !important; padding: 8px 16px !important; }
+            /* Kills the mobile browser's ability to swipe/pan/drag completely */
+            html, body { touch-action: none; overscroll-behavior: none; overflow: hidden !important; }
+            * { overflow: hidden !important; }
             
-            /* Make the Start Menu scrollable internally if it exceeds screen height */
-            #startMenu { gap: 8px; justify-content: flex-start; padding: 20px 0; overflow-y: auto; }
-            #colorPickers { flex-wrap: wrap; justify-content: center; }
+            /* Force the massive menus to scale down to 75% of their size to guarantee they fit */
+            #startMenu > div:not(#colorPickers), #startMenu > label { transform: scale(0.8); margin: -5px 0; }
+            #startMenu > h1 { font-size: 2.5rem; margin-top: 5px; margin-bottom: 0; }
             
-            /* Collapse the Multiplayer Config columns into a responsive grid */
-            .config-panel { gap: 15px !important; padding: 15px !important; flex-wrap: wrap; max-height: 85vh; overflow-y: auto; justify-content: center; }
-            .config-col { width: auto !important; min-width: 200px; border: none !important; padding: 0 !important; }
+            #multiplayerConfigMenu > div.config-panel { transform: scale(0.70); margin-top: -30px; }
+            #multiplayerConfigMenu > h2 { margin-top: 10px; margin-bottom: 0; }
             
-            /* Shrink Perk Cards */
-            .perk-container { max-height: 60vh; }
-            .perk-card { width: 140px; padding: 10px; }
-            .perk-desc { font-size: 0.75rem; height: 55px; }
-            .modal-content.admin-panel { padding: 15px; }
+            /* Compress the perk screen horizontally to stop vertical bleed */
+            #perkScreen > h2 { font-size: 1.5rem !important; margin-top: 0; }
+            .perk-container { transform: scale(0.75); margin-top: -30px; flex-direction: row; flex-wrap: wrap; align-content: center; max-height: none; }
+            
+            /* Start Menu Tweaks */
+            #startMenu { padding: 0; justify-content: center; flex-direction: row !important; flex-wrap: wrap; align-content: center; }
+            #colorPickers { gap: 5px; margin-top: 0; transform: scale(0.85); }
+            
+            /* Config Menu Grid */
+            .config-panel { flex-direction: row !important; gap: 10px !important; padding: 10px !important; max-height: none; }
+            .config-col { min-width: 180px; width: auto !important; }
+            #mpRosterStatusContainer { max-height: 120px; }
+            
+            /* Admin Panel Compression */
+            .modal-content.admin-panel { padding: 5px; transform: scale(0.75); }
+            .admin-btn { height: 35px; font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -4024,6 +4033,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 scores = [0, 0, 0, 0];
                 matchActive = true;
                 gameWinner = null;
+                matchTicks = 0; // NEW: Reset the simulation clock!
                 if (!isMultiplayer) setDeterministicSeed(Math.floor(Math.random() * 100000), true);
             } else {
                 // Step the seed deterministically for the next round so all clients stay in lockstep.
@@ -5762,6 +5772,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             ctx.textAlign = 'center';
             ctx.fillText(`ROUND ${round} / ${maxRounds}`, canvas.width / 2, 35);
             
+            // --- RENDER SYNCHRONIZED TIMER ---
+            // Because our physics lock exactly 60 times a second, dividing matchTicks by 60 
+            // creates a perfect clock that can never desync between players.
+            let totalSeconds = Math.floor(matchTicks / 60);
+            let mins = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            let secs = (totalSeconds % 60).toString().padStart(2, '0');
+            ctx.font = 'bold 14px monospace';
+            ctx.fillStyle = '#44aaff';
+            ctx.fillText(`T+ ${mins}:${secs}`, canvas.width / 2, 55);
+            
             for (let i = 0; i < activeFactionCount; i++) {
                 ctx.fillStyle = factionColors[i];
                 let spacing = canvas.width / (activeFactionCount + 1);
@@ -5775,6 +5795,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
             
             if (matchActive && roundActive && !isCountingDown) {
+                matchTicks++; // TICK THE DETERMINISTIC CLOCK!
+                
                 // If in Admin mode, filter out factions 4 and 5 (Dummies) so they don't count towards the win logic
                 let checkShips = adminModeEnabled ? ships.filter(s => s.faction < 4) : ships;
                 let aliveFactions = [...new Set(checkShips.map(s => s.faction))];
