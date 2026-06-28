@@ -293,13 +293,12 @@
             font-family: monospace;
         }
         
-        /* --- FORCED LANDSCAPE & PERFECT PROPORTIONS --- */
+        /* --- PERFECT PROPORTIONS (MAGNIFYING GLASS) --- */
         canvas {
             display: block;
             width: 100vw !important;
             height: 100vh !important;
-            /* This puts everything back into perfect proportion! */
-            object-fit: contain !important; 
+            object-fit: contain !important; /* Restores perfect 16:9 math scaling! */
         }
         
         /* If the phone is held vertically, physically rotate the entire website 90 degrees */
@@ -4042,7 +4041,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         shooter.isVeteran = true;
                         shooter.maxHp = 4;
                         shooter.hp = 4; 
-                        shooter.size = 13; // INCREASED: Veterans now visibly bulk up! (was 10)
+                        shooter.size = 15; // INCREASED: Veterans now visibly bulk up into mini-bosses!
                         for(let p=0; p<15; p++) particles.push(new Particle(shooter.position.x, shooter.position.y, '#00ff00'));
                     }
                 }
