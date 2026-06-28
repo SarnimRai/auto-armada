@@ -2517,12 +2517,14 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'heavyArmor', name: "Heavy Plating", desc: "Requires Armor. +20% ships get +1 HP. Ships with 5+ HP start with +1 Shield.", maxLevel: 1, requires: 'extraHp', rarity: 'standard' },
         { id: 'phaseArmor', name: "Phase Armor", desc: "20% of ships ignore their first taken damage completely.", maxLevel: 1, rarity: 'standard' },
         { id: 'necrovirus', name: "Necrovirus", desc: "10% chance per level on kill to convert enemy ship to your faction.", maxLevel: 2, rarity: 'standard' },
-        { id: 'sentinelUpgrade', name: "Aegis Command", desc: "Requires Sentinel Guard. +1 Sentinel. Sentinels now shield 5 nearest allies every 3 seconds.", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
         { id: 'explosiveDeath', name: "Nova Core", desc: "20% chance to explode on death (1 AoE dmg to ships/mines).", maxLevel: 1, rarity: 'standard' },
+        { id: 'sentinelUpgrade', name: "Aegis Command", desc: "Requires Sentinel Guard. +1 Sentinel. Sentinels now shield 5 nearest allies every 3 seconds.", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
+        { id: 'sniperUpgrade', name: "Hyper-Velocity Sabots", desc: "Requires Sniper Squadron. Snipers gain +40% Range and +20% additional Projectile Speed.", maxLevel: 1, requires: 'sniperFleet', rarity: 'standard' },
         { id: 'veteranFireRate', name: "Bloodlust", desc: "Requires Veteran. Every kill a ship gets increases its fire rate by 10%.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         { id: 'veteranMissile', name: "Macross Pods", desc: "Requires Veteran. Veterans fire 2 homing missiles instead of 1.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         { id: 'splitFlagship', name: "Escape Pods", desc: "Requires Flagship. When destroyed, the Flagship splits into basic fighters based on level.", maxLevel: 3, requires: 'flagship', rarity: 'standard' },
-        { id: 'sniperUpgrade', name: "Hyper-Velocity Sabots", desc: "Requires Sniper Squadron. Snipers gain +40% Range and +20% additional Projectile Speed.", maxLevel: 1, requires: 'sniperFleet', rarity: 'standard' },
+        { id: 'droneFormation', name: "Swarm Protocol", desc: "Requires Carrier. Drones fly in formation with the Carrier. Max drones increased to 8.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
+        { id: 'carrierSplit', name: "Drone Bays", desc: "Requires Carrier. The Carrier releases 3 final drones when destroyed.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
 
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
@@ -2530,7 +2532,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'sentinelFleet', name: "Sentinel Guard", desc: "2 ships become heavy Sentinels (4 HP, 2 Shields) and permanently grant +1 Shield to their 3 nearest allies.", maxLevel: 1, rarity: 'epic' },
         { id: 'stealthFleet', name: "Ghost Spectre", desc: "4 ships become Stealth units (2 HP). They cloak for the first 3s of a round, bypassing all hazards and dealing double damage.", maxLevel: 1, rarity: 'epic' },
         { id: 'globalShield', name: "Aegis Network", desc: "Grants EVERY ship in your fleet an additional +1 Shield at the start of every round.", maxLevel: 1, rarity: 'epic' },
-        { id: 'carrierFleet', name: "Super Carrier", desc: "Spawns a massive Carrier (8 HP, 2 Shields) that cannot fire, but fabricates a combat drone every 1 second.", maxLevel: 1, rarity: 'epic' }
+        { id: 'carrierFleet', name: "Super Carrier", desc: "Spawns a massive Carrier (8 HP, 2 Shields) that fabricates a combat drone every 1 second (Max 6).", maxLevel: 1, rarity: 'epic' },    
+        { id: 'capitalEscort', name: "Capital Escort", desc: "Requires Flagship & Carrier. Capitals fly together. Drones gain +15% Speed and Fire Rate.", maxLevel: 1, requires: ['flagship', 'carrierFleet'], rarity: 'epic' }    
         ];
         
         // NEW: Temporary Perk Pool
@@ -2553,7 +2556,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 mineLayer: 0, vampiric: 0, heavyArmor: 0, phaseArmor: 0, 
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
-                sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0,
+                sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -3467,6 +3470,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.teleportCooldown = 0;
                 this.tempMissileReady = false; // For the Pre-Emptive Strike
                 
+                this.isDrone = false; // Fix: Drone boolean added
                 this.isCarrier = false;
                 this.droneSpawnTimer = 60; // 1 Drone every 60 frames (1 second)
                 this.sentinelPulseTimer = 180; // 3 seconds for continuous shielding
@@ -3595,6 +3599,23 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 // Read configuration settings directly from the synchronized server matrix
                 let currentFleetSliders = factionSliders[this.faction] || { align: 0.5, cohere: 1.0, separ: 1.5 };
                 
+                if (perksEnabled && this.faction >= 0 && this.faction < 4) {
+                    // Capital Escort: Flagships and Carriers pull toward each other
+                    if (factionPerks[this.faction].capitalEscort > 0 && (this.isFlagship || this.isCarrier)) {
+                        let partner = ships.find(s => s.faction === this.faction && (this.isFlagship ? s.isCarrier : s.isFlagship) && !s.toRemove);
+                        if (partner && Math.hypot(this.position.x - partner.position.x, this.position.y - partner.position.y) > 100) {
+                            this.applyForce({x: partner.position.x - this.position.x, y: partner.position.y - this.position.y}, 0.1);
+                        }
+                    }
+                    // Drone Formation: Drones physically orbit the Carrier
+                    if (this.isDrone && factionPerks[this.faction].droneFormation > 0) {
+                        let carrier = ships.find(s => s.faction === this.faction && s.isCarrier && !s.toRemove);
+                        if (carrier && Math.hypot(this.position.x - carrier.position.x, this.position.y - carrier.position.y) > 80) {
+                            this.applyForce({x: carrier.position.x - this.position.x, y: carrier.position.y - this.position.y}, 0.2);
+                        }
+                    }
+                }
+                
                 this.applyForce(align, currentFleetSliders.align * 0.05);
                 this.applyForce(cohere, currentFleetSliders.cohere * 0.01);
                 this.applyForce(separ, currentFleetSliders.separ * 0.1);
@@ -3607,9 +3628,15 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (this.isCarrier) {
                     this.droneSpawnTimer--;
                     if (this.droneSpawnTimer <= 0) {
-                        let drone = new Ship(this.position.x, this.position.y, this.faction);
-                        drone.maxHp = 1; drone.hp = 1; drone.shield = 0; drone.size = 6;
-                        ships.push(drone); // Dispatches a new drone immediately!
+                        let maxDrones = (perksEnabled && factionPerks[this.faction].droneFormation > 0) ? 8 : 6;
+                        let currentDrones = ships.filter(s => s.faction === this.faction && s.isDrone && !s.toRemove).length;
+                        
+                        if (currentDrones < maxDrones) {
+                            let drone = new Ship(this.position.x, this.position.y, this.faction);
+                            drone.maxHp = 1; drone.hp = 1; drone.shield = 0; drone.size = 5; // DECREASED: Tighter physical collision
+                            drone.isDrone = true; 
+                            ships.push(drone);
+                        }
                         this.droneSpawnTimer = 60; // 1 Second loop
                     }
                     return; 
@@ -3716,6 +3743,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     if (flagshipCount[this.faction] > 0) baseSpeed *= (1 + (0.15 * flagshipCount[this.faction]));
                     if (perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].temp_speed > 0) baseSpeed *= 2.0; // DOUBLE SPEED!
                     
+                    // Capital Escort Drone Speed Buff
+                    if (this.isDrone && flagshipAlive[this.faction] && perksEnabled && factionPerks[this.faction].capitalEscort > 0) {
+                        baseSpeed *= 1.15;
+                    }
+                    
                     // While actively threading a corridor, let pathfinding win out over
                     // flocking/wall-separation instead of fighting it the whole way
                     if (inMazeNav) activeSteerWeight *= 2.2;
@@ -3766,6 +3798,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             
                             let cdReduc = (perksEnabled && this.faction >= 0 && this.faction < 4) ? (factionPerks[this.faction].fireRate * 0.10) : 0;
                             if (flagshipCount[this.faction] > 0) cdReduc += (0.15 * flagshipCount[this.faction]); 
+                            
+                            // Capital Escort Drone Fire Rate Buff
+                            if (this.isDrone && flagshipAlive[this.faction] && perksEnabled && factionPerks[this.faction].capitalEscort > 0) {
+                                cdReduc += 0.15;
+                            }
                             
                             // Bloodlust Perk: +10% faster fire rate for every kill the ship has!
                             if (perksEnabled && this.faction >= 0 && this.faction < 4 && factionPerks[this.faction].veteranFireRate > 0) {
@@ -3873,10 +3910,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let s = this.size;
                 let typeKey = 'std';
                 if (this.isFlagship) { s *= 1.5; typeKey = 'flag'; }
-                else if (this.isCarrier) { s *= 1.8; typeKey = 'carr'; } // Massive scale!
+                else if (this.isCarrier) { s *= 1.8; typeKey = 'carr'; } 
                 else if (this.isSniper) typeKey = 'snip';
                 else if (this.isSentinel) typeKey = 'sent';
                 else if (this.isStealth) typeKey = 'stl';
+                else if (this.isDrone) { s = 4.5; typeKey = 'drn'; } // CRUSHED: Counteracts the wide rotor arms so it matches basic ships!
                 
                 let cacheKey = `ship_${this.faction}_${typeKey}`;
                 
@@ -3943,6 +3981,47 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         
                         cctx.fillStyle = 'rgba(200, 240, 255, 0.9)'; cctx.beginPath();
                         cctx.arc(s * 0.8, 0, s * 0.3, 0, Math.PI*2); cctx.fill(); // Forward Bridge
+                    } else if (this.isCarrier) {
+                        cctx.shadowBlur = 20; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
+                        cctx.beginPath();
+                        cctx.moveTo(s * 1.5, s * 0.8); cctx.lineTo(s * 1.5, -s * 0.8); cctx.lineTo(s * 0.5, -s * 1.2);
+                        cctx.lineTo(-s * 1.5, -s * 1.2); cctx.lineTo(-s * 1.5, s * 1.2); cctx.lineTo(s * 0.5, s * 1.2);
+                        cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
+                        cctx.fillStyle = '#111'; cctx.fillRect(-s * 1.0, -s * 0.8, s * 2.0, s * 1.6);
+                        cctx.fillStyle = '#ffaa00'; cctx.fillRect(-s * 0.8, -s * 0.05, s * 1.6, s * 0.1);
+                        cctx.fillStyle = 'rgba(200, 240, 255, 0.9)'; cctx.beginPath(); cctx.arc(s * 0.8, 0, s * 0.3, 0, Math.PI*2); cctx.fill();
+                    } else if (this.isDrone) {
+                        cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; 
+                        
+                        // 1. Structural Arms (Heavy X shape)
+                        cctx.strokeStyle = '#333'; cctx.lineWidth = s * 0.4;
+                        cctx.beginPath(); cctx.moveTo(-s*1.5, -s*1.5); cctx.lineTo(s*1.5, s*1.5); cctx.stroke();
+                        cctx.beginPath(); cctx.moveTo(s*1.5, -s*1.5); cctx.lineTo(-s*1.5, s*1.5); cctx.stroke();
+
+                        // 2. Four distinct Rotor Guards
+                        cctx.strokeStyle = factionColors[this.faction]; cctx.lineWidth = 1.5;
+                        cctx.fillStyle = '#111';
+                        let rotors = [ {x: -s*1.5, y: -s*1.5}, {x: s*1.5, y: -s*1.5}, {x: -s*1.5, y: s*1.5}, {x: s*1.5, y: s*1.5} ];
+                        rotors.forEach(r => {
+                            // Outer casing
+                            cctx.beginPath(); cctx.arc(r.x, r.y, s*0.8, 0, Math.PI*2); cctx.fill(); cctx.stroke();
+                            // Inner spinning blur illusion
+                            cctx.fillStyle = 'rgba(200, 240, 255, 0.6)';
+                            cctx.beginPath(); cctx.arc(r.x, r.y, s*0.5, 0, Math.PI*2); cctx.fill();
+                            cctx.fillStyle = '#111'; // reset
+                        });
+
+                        // 3. Central Mechanical Chassis
+                        cctx.fillStyle = '#1a1d22';
+                        cctx.beginPath(); cctx.ellipse(0, 0, s*1.1, s*0.9, 0, 0, Math.PI*2); cctx.fill();
+                        cctx.stroke();
+
+                        // 4. Forward-facing sensor array (Cyan glowing eye)
+                        cctx.fillStyle = '#00ffff'; cctx.shadowBlur = 5; cctx.shadowColor = '#00ffff';
+                        cctx.beginPath(); cctx.arc(s*0.7, 0, s*0.3, 0, Math.PI*2); cctx.fill();
+                        
+                        // Reset main shadow
+                        cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction];
                     } else if (this.isStealth) {
                         cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = '#111';
                         cctx.beginPath();
@@ -4065,6 +4144,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             let pod = new Ship(s.position.x + (Math.random() * 30 - 15), s.position.y + (Math.random() * 30 - 15), s.faction);
                             ships.push(pod);
                         }
+                    }
+                }
+                if (s.isCarrier && perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].carrierSplit > 0) {
+                    for (let k = 0; k < 3; k++) {
+                        let drone = new Ship(s.position.x + (Math.random() * 30 - 15), s.position.y + (Math.random() * 30 - 15), s.faction);
+                        drone.maxHp = 1; drone.hp = 1; drone.shield = 0; drone.size = 5; drone.isDrone = true; 
+                        ships.push(drone);
                     }
                 }
                 playSound('explosion');
@@ -4334,10 +4420,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         let s = ships[factionSpawnStartIndex + i];
                         if (!s.isFlagship && !s.isSniper && !s.isSentinel) {
                             s.isSentinel = true;
-                            s.maxHp = 4;
-                            s.hp = 4;
-                            s.shield += 2;
-                            s.size = 12; 
+                            s.maxHp = 4; s.hp = 4; s.shield += 2; s.size = 12; 
                             sentinelUnits.push(s);
                             sentinelsMade++;
                         }
@@ -4375,10 +4458,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         let s = ships[factionSpawnStartIndex + i];
                         if (!s.isFlagship && !s.isSniper && !s.isSentinel && !s.isStealth) {
                             s.isStealth = true;
-                            s.maxHp = 2;
-                            s.hp = 2;
-                            s.cloakTimer = 180; // 3 seconds calculated at 60 fps execution loops
-                            s.size = 9.5; // INCREASED: Was 7.5
+                            s.maxHp = 2; s.hp = 2; s.cloakTimer = 180; s.size = 9.5; 
                             stealthMade++;
                         }
                     }
@@ -4390,12 +4470,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         ships[factionSpawnStartIndex + i].shield += 1;
                     }
                 }
-                
+
                 // Super Carrier Fabrication Ship
                 if (perksEnabled && factionPerks[f].carrierFleet > 0) {
                     let numCarriers = 1;
                     for(let k = 0; k < numCarriers; k++) {
-                        // Find a basic fighter and convert it
                         let s = ships.find(sh => sh.faction === f && !sh.isFlagship && !sh.isSniper && !sh.isSentinel && !sh.isStealth && !sh.isCarrier);
                         if(s) {
                             s.isCarrier = true;
@@ -5322,7 +5401,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     if (isEpicRound && p.rarity !== 'epic') return false;
                     if (!isEpicRound && p.rarity === 'epic') return false;
                     if (factionPerks[f][p.id] >= p.maxLevel) return false;
-                    if (p.requires && factionPerks[f][p.requires] === 0) return false;
+                    if (p.requires) {
+                        if (Array.isArray(p.requires)) {
+                            if (p.requires.some(r => factionPerks[f][r] === 0)) return false;
+                        } else {
+                            if (factionPerks[f][p.requires] === 0) return false;
+                        }
+                    }
                     return true;
                 });
                 
@@ -5341,7 +5426,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (isEpicRound && p.rarity !== 'epic') return false;
                 if (!isEpicRound && p.rarity === 'epic') return false;
                 if (factionPerks[playerFactionId][p.id] >= p.maxLevel) return false;
-                if (p.requires && factionPerks[playerFactionId][p.requires] === 0) return false; 
+                if (p.requires) {
+                    if (Array.isArray(p.requires)) {
+                        if (p.requires.some(r => factionPerks[playerFactionId][r] === 0)) return false;
+                    } else {
+                        if (factionPerks[playerFactionId][p.requires] === 0) return false;
+                    }
+                }
                 return true;
             });
             validPlayerPerks.sort(() => 0.5 - Math.random());
