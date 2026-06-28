@@ -462,8 +462,8 @@
                 <option value="4" selected>4 Factions</option>
             </select>
         </label>
-        <label>Total Rounds (3-30):
-            <input type="number" id="startRounds" min="3" max="30" value="3">
+        <label>Total Rounds (3-100):
+            <input type="number" id="startRounds" min="3" max="100" value="3">
         </label>
         <label>Ships per Faction:
             <select id="startShipCount">
@@ -522,7 +522,7 @@
                         <input type="number" id="adminShips" min="1" max="100" value="30" style="font-size: 1.2rem; width: 80px; padding: 5px; border-color: #ff4444;">
                     </label>
                     <label style="font-size: 1rem; gap: 5px;">Rounds: 
-                        <input type="number" id="adminRounds" min="1" max="50" value="3" style="font-size: 1.2rem; width: 80px; padding: 5px; border-color: #ff4444;">
+                        <input type="number" id="adminRounds" min="1" max="100" value="3" style="font-size: 1.2rem; width: 80px; padding: 5px; border-color: #ff4444;">
                     </label>
                     <button class="btn-primary" id="adminStartMatch" style="height: 45px; padding: 0 30px; font-size: 1.2rem; margin: 0; flex-grow: 1; background: #ff4444;">INITIALIZE COMBAT</button>
                 </div>
@@ -540,6 +540,9 @@
                 <h3 style="color: #ccc; margin: 0 0 10px 0; font-size: 1.1rem;">STANDARD PERKS</h3>
                 <div id="adminStandardPerkGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 120px; overflow-y: auto; padding-right: 10px; margin-bottom: 15px;"></div>
                 
+                <h3 style="color: #ffcc00; margin: 0 0 10px 0; font-size: 1.1rem; text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);">TEMPORARY PERKS</h3>
+                <div id="adminTempPerkGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 120px; overflow-y: auto; padding-right: 10px; margin-bottom: 15px;"></div>
+
                 <h3 style="color: #aa44ff; margin: 0 0 10px 0; font-size: 1.1rem; text-shadow: 0 0 5px rgba(170, 68, 255, 0.5);">EPIC PERKS</h3>
                 <div id="adminEpicPerkGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 120px; overflow-y: auto; padding-right: 10px;"></div>
             </div>
@@ -628,7 +631,7 @@
             <div class="config-col" style="display: flex; flex-direction: column; gap: 15px; width: 230px;">
                 <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Settings</h3>
                 <label>Total Rounds:
-                    <input type="number" id="mpRounds" min="3" max="30" value="3">
+                    <input type="number" id="mpRounds" min="3" max="100" value="3">
                 </label>
                 <label>Ships per Player:
                     <input type="number" id="mpShips" min="10" max="50" value="30">
@@ -773,6 +776,7 @@
         let flagshipAlive = [false, false, false, false];
         let flagshipCount = [0, 0, 0, 0, 0, 0]; 
         let disconnectedPlayers = []; // NEW: Tracks players who rage-quit
+        let respawnQueue = []; // NEW: Tracks tethered ships waiting to revive
         
         // --- ASSET CACHING & O(1) PERFORMANCE PIPELINE ---
         const globalCache = {};
@@ -2523,9 +2527,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'veteranFireRate', name: "Bloodlust", desc: "Requires Veteran. Every kill a ship gets increases its fire rate by 10%.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         { id: 'veteranMissile', name: "Macross Pods", desc: "Requires Veteran. Veterans fire 2 homing missiles instead of 1.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         { id: 'splitFlagship', name: "Escape Pods", desc: "Requires Flagship. When destroyed, the Flagship splits into basic fighters based on level.", maxLevel: 3, requires: 'flagship', rarity: 'standard' },
-        { id: 'droneFormation', name: "Swarm Protocol", desc: "Requires Carrier. Drones fly in formation with the Carrier. Max drones increased to 8.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
+        { id: 'droneFormation', name: "Volatile Swarm", desc: "Requires Carrier. Max drones increased to 8. Drones violently explode upon destruction.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'carrierSplit', name: "Drone Bays", desc: "Requires Carrier. The Carrier releases 3 final drones when destroyed.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
-
+        { id: 'capitalEscort', name: "Capital Escort", desc: "Requires Flagship & Carrier. Capitals fly together. Drones gain +15% Speed and Fire Rate.", maxLevel: 1, requires: ['flagship', 'carrierFleet'], rarity: 'standard' },
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
@@ -2533,7 +2537,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'stealthFleet', name: "Ghost Spectre", desc: "4 ships become Stealth units (2 HP). They cloak for the first 3s of a round, bypassing all hazards and dealing double damage.", maxLevel: 1, rarity: 'epic' },
         { id: 'globalShield', name: "Aegis Network", desc: "Grants EVERY ship in your fleet an additional +1 Shield at the start of every round.", maxLevel: 1, rarity: 'epic' },
         { id: 'carrierFleet', name: "Super Carrier", desc: "Spawns a massive Carrier (8 HP, 2 Shields) that fabricates a combat drone every 1 second (Max 6).", maxLevel: 1, rarity: 'epic' },    
-        { id: 'capitalEscort', name: "Capital Escort", desc: "Requires Flagship & Carrier. Capitals fly together. Drones gain +15% Speed and Fire Rate.", maxLevel: 1, requires: ['flagship', 'carrierFleet'], rarity: 'epic' }    
+        { id: 'quantumLink', name: "Quantum Link", desc: "Tethers 5 ships together. Destroyed tethered ships respawn at 1 HP after 3s, unless all 5 are destroyed.", maxLevel: 1, rarity: 'epic' },
         ];
         
         // NEW: Temporary Perk Pool
@@ -2556,7 +2560,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 mineLayer: 0, vampiric: 0, heavyArmor: 0, phaseArmor: 0, 
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
-                sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0,
+                sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -3453,7 +3457,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 this.kills = 0;
                 this.isVeteran = false;
-                this.size = 8; // INCREASED: Base ship size up from 6
+                this.size = 8; 
                 
                 this.shield = 0; 
                 this.isCrashing = false;
@@ -3467,13 +3471,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.hasPhaseArmor = false;
                 this.isFlagship = false;
                 this.isSniper = false;
+                this.isSentinel = false;
+                this.isStealth = false;
+                this.cloakTimer = 0;
                 this.teleportCooldown = 0;
-                this.tempMissileReady = false; // For the Pre-Emptive Strike
+                this.tempMissileReady = false;
                 
-                this.isDrone = false; // Fix: Drone boolean added
+                this.isDrone = false; 
                 this.isCarrier = false;
-                this.droneSpawnTimer = 60; // 1 Drone every 60 frames (1 second)
-                this.sentinelPulseTimer = 180; // 3 seconds for continuous shielding
+                this.isTethered = false; 
+                this.droneSpawnTimer = 60; 
+                this.sentinelPulseTimer = 180; 
                 
                 // Pathfinding State
                 this.navPath = [];
@@ -3605,13 +3613,6 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         let partner = ships.find(s => s.faction === this.faction && (this.isFlagship ? s.isCarrier : s.isFlagship) && !s.toRemove);
                         if (partner && Math.hypot(this.position.x - partner.position.x, this.position.y - partner.position.y) > 100) {
                             this.applyForce({x: partner.position.x - this.position.x, y: partner.position.y - this.position.y}, 0.1);
-                        }
-                    }
-                    // Drone Formation: Drones physically orbit the Carrier
-                    if (this.isDrone && factionPerks[this.faction].droneFormation > 0) {
-                        let carrier = ships.find(s => s.faction === this.faction && s.isCarrier && !s.toRemove);
-                        if (carrier && Math.hypot(this.position.x - carrier.position.x, this.position.y - carrier.position.y) > 80) {
-                            this.applyForce({x: carrier.position.x - this.position.x, y: carrier.position.y - this.position.y}, 0.2);
                         }
                     }
                 }
@@ -4134,6 +4135,33 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             for(let p=0; p<5 * damage; p++) particles.push(new Particle(s.position.x, s.position.y, '#fff'));
             
             if (s.hp <= 0) {
+                // 1. Necrovirus check FIRST. If it triggers, the ship is stolen, not destroyed!
+                if (shooter && perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].necrovirus > 0) {
+                    if (Math.random() < factionPerks[shooter.faction].necrovirus * 0.10) {
+                        s.faction = shooter.faction;
+                        s.hp = 1; s.shield = 0; s.isCrashing = false; s.hasPhaseArmor = false;
+                        s.isTethered = false; // Strip tether status so we don't glitch the opponent's limits
+                        for(let p=0; p<10; p++) particles.push(new Particle(s.position.x, s.position.y, '#00ff00', 1.5));
+                        return false; 
+                    }
+                }
+
+                // 2. Quantum Link Respawn Logic
+                if (s.isTethered) {
+                    let livingTethers = ships.filter(sh => sh.faction === s.faction && sh.isTethered && sh !== s && !sh.toRemove);
+                    if (livingTethers.length > 0) {
+                        // Strict limit enforcement to stop the infinite clone bug
+                        let currentQueue = respawnQueue.filter(rq => rq.faction === s.faction).length;
+                        if (livingTethers.length + currentQueue < 5) {
+                            respawnQueue.push({ faction: s.faction, timer: 180, maxHp: s.maxHp });
+                        }
+                    } else {
+                        // All anchors died at the exact same time! Wipe the queue!
+                        respawnQueue = respawnQueue.filter(rq => rq.faction !== s.faction);
+                    }
+                }
+
+                // 3. Process Standard Capital Deaths
                 if (s.isFlagship) {
                     flagshipCount[s.faction]--;
                     if (flagshipCount[s.faction] <= 0) flagshipAlive[s.faction] = false;
@@ -4146,23 +4174,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                 }
+                
                 if (s.isCarrier && perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].carrierSplit > 0) {
                     for (let k = 0; k < 3; k++) {
                         let drone = new Ship(s.position.x + (Math.random() * 30 - 15), s.position.y + (Math.random() * 30 - 15), s.faction);
-                        drone.maxHp = 1; drone.hp = 1; drone.shield = 0; drone.size = 5; drone.isDrone = true; 
+                        drone.maxHp = 1; drone.hp = 1; drone.shield = 0; drone.size = 4.5; drone.isDrone = true;
+                        drone.hasPhaseArmor = true; 
                         ships.push(drone);
                     }
                 }
-                playSound('explosion');
                 
-                if (shooter && perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].necrovirus > 0) {
-                    if (Math.random() < factionPerks[shooter.faction].necrovirus * 0.10) {
-                        s.faction = shooter.faction;
-                        s.hp = 1; s.shield = 0; s.isCrashing = false; s.hasPhaseArmor = false;
-                        for(let p=0; p<10; p++) particles.push(new Particle(s.position.x, s.position.y, '#00ff00', 1.5));
-                        return false; 
-                    }
-                }
+                playSound('explosion');
                 
                 if (!s.isCrashing && perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].crash > 0 && Math.random() < 0.10) {
                     s.isCrashing = true;
@@ -4174,9 +4196,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 let isKamikaze = perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].temp_kamikaze > 0;
                 let isNovaCore = perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].explosiveDeath > 0 && Math.random() < 0.20;
+                let isVolatileSwarm = perksEnabled && s.faction >= 0 && s.faction < 4 && s.isDrone && factionPerks[s.faction].droneFormation > 0;
 
-                if (isKamikaze || isNovaCore) {
-                    // Volatile Cores do 2 Area Damage, standard Nova Core does 1.
+                if (isKamikaze || isNovaCore || isVolatileSwarm) {
+                    // Volatile Cores do 2 Area Damage, standard Nova Core & Volatile Swarm do 1.
                     let dmg = isKamikaze ? 2 : 1; 
                     explosions.push({x: s.position.x, y: s.position.y, radius: 0, maxRadius: 80, faction: s.faction, damage: dmg});
                 } else {
@@ -4241,6 +4264,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             missiles = [];
             particles = [];
             explosions = [];
+            respawnQueue = []; // Clear respawns on new round
             flagshipAlive = [false, false, false, false];
             flagshipCount = [0, 0, 0, 0, 0, 0]; 
             
@@ -4479,6 +4503,18 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         if(s) {
                             s.isCarrier = true;
                             s.maxHp = 8; s.hp = 8; s.shield = 2;
+                        }
+                    }
+                }
+                // Quantum Link Tethers
+                if (perksEnabled && factionPerks[f].quantumLink > 0) {
+                    let tetheredMade = 0;
+                    for (let i = 0; i < actualNumShips; i++) {
+                        let s = ships[factionSpawnStartIndex + i];
+                        if (!s.isFlagship && !s.isCarrier && !s.isSentinel && !s.isSniper && !s.isStealth && !s.isTethered) {
+                            s.isTethered = true;
+                            tetheredMade++;
+                            if (tetheredMade >= 5) break;
                         }
                     }
                 }
@@ -5103,7 +5139,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         
         startGameBtn.addEventListener('click', () => {
             activeFactionCount = parseInt(startFactionCount.value);
-            maxRounds = Math.max(3, Math.min(30, parseInt(document.getElementById('startRounds').value)));
+            maxRounds = Math.max(3, Math.min(100, parseInt(document.getElementById('startRounds').value))); // Max updated to 100
             winsNeeded = Math.ceil(maxRounds / 2); 
             shipsPerFaction = parseInt(document.getElementById('startShipCount').value);
             
@@ -5226,63 +5262,100 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             spawnFleets(true);
         });
         
-        // Initialize Admin Perk Pool Toggles
+        // Initialize Admin Perk Pool Toggles dynamically for ALL perk arrays
         const standardGrid = document.getElementById('adminStandardPerkGrid');
         const epicGrid = document.getElementById('adminEpicPerkGrid');
+        const tempGrid = document.getElementById('adminTempPerkGrid');
         
-        perkDefs.forEach((perk, index) => {
+        const allPerksCombined = [...perkDefs, ...tempPerkDefs]; 
+        
+        allPerksCombined.forEach((perk) => {
             perk.allowed = true; // Enabled by default
             
-            let label = document.createElement('label');
-            label.style.flexDirection = 'row';
-            label.style.alignItems = 'center';
-            label.style.gap = '8px';
-            label.style.fontSize = '0.9rem';
-            label.style.cursor = 'pointer';
-            label.style.color = perk.rarity === 'epic' ? '#aa44ff' : '#ccc';
+            let container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            container.style.gap = '8px';
+            container.style.fontSize = '0.9rem';
             
-            let checkboxId = `adminTogglePerk_${index}`;
-            label.setAttribute('for', checkboxId); // Ensures clicking text toggles the box flawlessly
-            label.innerHTML = `<input type="checkbox" id="${checkboxId}" checked> <span>${perk.name}</span>`;
+            let textColor = '#ccc';
+            if (perk.rarity === 'epic') textColor = '#aa44ff';
+            else if (perk.rarity === 'temp') textColor = '#ffcc00';
             
-            label.querySelector('input').addEventListener('change', (e) => {
+            let checkboxId = `adminTogglePerk_${perk.id}`; 
+            let levelInputId = `adminLevelPerk_${perk.id}`;
+            
+            // Only inject a number input if the perk has multiple levels
+            let levelInputHtml = (perk.maxLevel && perk.maxLevel > 1) 
+                ? `<input type="number" id="${levelInputId}" min="1" max="${perk.maxLevel}" value="${perk.maxLevel}" style="width: 40px; padding: 2px; background: #222; color: #fff; border: 1px solid #555; border-radius: 3px; font-family: monospace;">` 
+                : '';
+
+            // Layout: Checkbox -> Name (flex-grow pushes input right) -> Level Input
+            container.innerHTML = `
+                <input type="checkbox" id="${checkboxId}" checked style="cursor: pointer; margin: 0;"> 
+                <label for="${checkboxId}" style="cursor: pointer; color: ${textColor}; flex-grow: 1; margin: 0; display: inline;">${perk.name}</label>
+                ${levelInputHtml}
+            `;
+            
+            const checkbox = container.querySelector(`#${checkboxId}`);
+            const levelInput = container.querySelector(`#${levelInputId}`);
+
+            // Handle Checkbox Toggle
+            checkbox.addEventListener('change', (e) => {
                 perk.allowed = e.target.checked;
                 
-                // Instantly grant or strip the perk for all active factions
-                for (let f = 0; f < factionPerks.length; f++) {
-                    factionPerks[f][perk.id] = e.target.checked ? perk.maxLevel : 0;
-                }
+                let applyLevel = 1;
+                if (levelInput) applyLevel = parseInt(levelInput.value);
+                else applyLevel = perk.maxLevel || 1;
+
+                // ONLY apply to the active player's faction
+                factionPerks[playerFactionId][perk.id] = e.target.checked ? applyLevel : 0;
                 
-                // Silently refresh the fleets in the background so visual traits (like Sentinel/Stealth/Sniper) apply immediately
                 if (gameStarted) spawnFleets(false);
             });
-            
-            // Sort perks into their designated grids based on rarity
-            if (perk.rarity === 'epic') {
-                epicGrid.appendChild(label);
-            } else {
-                standardGrid.appendChild(label);
+
+            // Handle Dynamic Level Adjustment
+            if (levelInput) {
+                levelInput.addEventListener('change', (e) => {
+                    let val = parseInt(e.target.value);
+                    if (val < 1) val = 1;
+                    if (val > perk.maxLevel) val = perk.maxLevel;
+                    e.target.value = val;
+
+                    // Only update the live game if the perk is actually checked on
+                    if (checkbox.checked) {
+                        factionPerks[playerFactionId][perk.id] = val; // ONLY apply to Player
+                        if (gameStarted) spawnFleets(false);
+                    }
+                });
             }
+            
+            if (perk.rarity === 'epic') epicGrid.appendChild(container);
+            else if (perk.rarity === 'temp') tempGrid.appendChild(container);
+            else standardGrid.appendChild(container);
         });
 
         document.getElementById('adminEnableAllPerks').addEventListener('click', () => {
-            perkDefs.forEach((p, i) => {
+            allPerksCombined.forEach((p) => {
                 p.allowed = true;
-                document.getElementById(`adminTogglePerk_${i}`).checked = true;
-                for (let f = 0; f < factionPerks.length; f++) {
-                    factionPerks[f][p.id] = p.maxLevel;
-                }
+                let cb = document.getElementById(`adminTogglePerk_${p.id}`);
+                if (cb) cb.checked = true;
+                
+                let lvlInput = document.getElementById(`adminLevelPerk_${p.id}`);
+                let applyLvl = lvlInput ? parseInt(lvlInput.value) : (p.maxLevel || 1);
+                
+                factionPerks[playerFactionId][p.id] = applyLvl; // ONLY apply to Player
             });
             if (gameStarted) spawnFleets(false);
         });
 
         document.getElementById('adminDisableAllPerks').addEventListener('click', () => {
-            perkDefs.forEach((p, i) => {
+            allPerksCombined.forEach((p) => {
                 p.allowed = false;
-                document.getElementById(`adminTogglePerk_${i}`).checked = false;
-                for (let f = 0; f < factionPerks.length; f++) {
-                    factionPerks[f][p.id] = 0;
-                }
+                let cb = document.getElementById(`adminTogglePerk_${p.id}`);
+                if (cb) cb.checked = false;
+                
+                factionPerks[playerFactionId][p.id] = 0; // ONLY strip from Player
             });
             if (gameStarted) spawnFleets(false);
         });
@@ -5617,6 +5690,26 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
 
             walls.forEach(w => w.draw()); // Draw the maze
             
+            // Draw Quantum Link Tethers
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < activeFactionCount; i++) {
+                let tShips = ships.filter(sh => sh.faction === i && sh.isTethered && !sh.toRemove);
+                if (tShips.length > 1) {
+                    let hex = factionColors[i];
+                    let r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
+                    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
+                    ctx.beginPath();
+                    for(let a=0; a<tShips.length; a++) {
+                        for(let b=a+1; b<tShips.length; b++) {
+                            // Connect the web!
+                            ctx.moveTo(tShips[a].position.x, tShips[a].position.y);
+                            ctx.lineTo(tShips[b].position.x, tShips[b].position.y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+            }
+            
             // Update Ships
             for (let i = ships.length - 1; i >= 0; i--) {
                 let s = ships[i];
@@ -5934,6 +6027,36 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (detonated) {
                     am.explode();
                     fastRemove(arenaMines, i);
+                }
+            }
+            
+            // Process Quantum Link Respawns!
+            if (!isCountingDown && !isPaused && !isPerkPhase) {
+                for (let i = respawnQueue.length - 1; i >= 0; i--) {
+                    let rq = respawnQueue[i];
+                    let livingTethers = ships.filter(s => s.faction === rq.faction && s.isTethered && !s.toRemove);
+                    
+                    // If all the remaining anchors got wiped out simultaneously, cancel the respawn!
+                    if (livingTethers.length === 0) {
+                        respawnQueue.splice(i, 1);
+                        continue;
+                    }
+                    
+                    rq.timer--;
+                    if (rq.timer <= 0) {
+                        // Warp in directly on top of a surviving linked ship
+                        let anchor = livingTethers[Math.floor(Math.random() * livingTethers.length)];
+                        let newShip = new Ship(anchor.position.x + (Math.random() * 40 - 20), anchor.position.y + (Math.random() * 40 - 20), rq.faction);
+                        newShip.maxHp = rq.maxHp;
+                        newShip.hp = 1; // Respawns critically injured!
+                        newShip.shield = 0;
+                        newShip.isTethered = true;
+                        ships.push(newShip);
+                        
+                        for(let p=0; p<15; p++) particles.push(new Particle(newShip.position.x, newShip.position.y, '#00ffff', 2.0));
+                        playSound('laser'); // Slight warp-in sound
+                        respawnQueue.splice(i, 1);
+                    }
                 }
             }
             
