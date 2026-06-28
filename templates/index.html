@@ -2517,15 +2517,20 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'heavyArmor', name: "Heavy Plating", desc: "Requires Armor. +20% ships get +1 HP. Ships with 5+ HP start with +1 Shield.", maxLevel: 1, requires: 'extraHp', rarity: 'standard' },
         { id: 'phaseArmor', name: "Phase Armor", desc: "20% of ships ignore their first taken damage completely.", maxLevel: 1, rarity: 'standard' },
         { id: 'necrovirus', name: "Necrovirus", desc: "10% chance per level on kill to convert enemy ship to your faction.", maxLevel: 2, rarity: 'standard' },
+        { id: 'sentinelUpgrade', name: "Aegis Command", desc: "Requires Sentinel Guard. +1 Sentinel. Sentinels now shield 5 nearest allies every 3 seconds.", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
         { id: 'explosiveDeath', name: "Nova Core", desc: "20% chance to explode on death (1 AoE dmg to ships/mines).", maxLevel: 1, rarity: 'standard' },
+        { id: 'veteranFireRate', name: "Bloodlust", desc: "Requires Veteran. Every kill a ship gets increases its fire rate by 10%.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
+        { id: 'veteranMissile', name: "Macross Pods", desc: "Requires Veteran. Veterans fire 2 homing missiles instead of 1.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
+        { id: 'splitFlagship', name: "Escape Pods", desc: "Requires Flagship. When destroyed, the Flagship splits into basic fighters based on level.", maxLevel: 3, requires: 'flagship', rarity: 'standard' },
+        { id: 'sniperUpgrade', name: "Hyper-Velocity Sabots", desc: "Requires Sniper Squadron. Snipers gain +40% Range and +20% additional Projectile Speed.", maxLevel: 1, requires: 'sniperFleet', rarity: 'standard' },
+
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
         { id: 'sentinelFleet', name: "Sentinel Guard", desc: "2 ships become heavy Sentinels (4 HP, 2 Shields) and permanently grant +1 Shield to their 3 nearest allies.", maxLevel: 1, rarity: 'epic' },
         { id: 'stealthFleet', name: "Ghost Spectre", desc: "4 ships become Stealth units (2 HP). They cloak for the first 3s of a round, bypassing all hazards and dealing double damage.", maxLevel: 1, rarity: 'epic' },
         { id: 'globalShield', name: "Aegis Network", desc: "Grants EVERY ship in your fleet an additional +1 Shield at the start of every round.", maxLevel: 1, rarity: 'epic' },
-        { id: 'splitFlagship', name: "Escape Pods", desc: "Requires Flagship. When destroyed, the Flagship splits into basic fighters based on level.", maxLevel: 3, requires: 'flagship', rarity: 'standard' },
-        { id: 'veteranFireRate', name: "Bloodlust", desc: "Requires Veteran. Every kill a ship gets increases its fire rate by 10%.", maxLevel: 1, requires: 'veteran', rarity: 'standard' }
+        { id: 'carrierFleet', name: "Super Carrier", desc: "Spawns a massive Carrier (8 HP, 2 Shields) that cannot fire, but fabricates a combat drone every 1 second.", maxLevel: 1, rarity: 'epic' }
         ];
         
         // NEW: Temporary Perk Pool
