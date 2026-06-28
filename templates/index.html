@@ -2553,6 +2553,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 mineLayer: 0, vampiric: 0, heavyArmor: 0, phaseArmor: 0, 
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
+                sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -2834,8 +2835,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.y = y;
                 let speedMult = (perksEnabled && faction >= 0 && faction < 4) ? 1 + (factionPerks[faction].projSpeed * 0.10) : 1;
                 
-                // Snipers get +20% projectile speed
-                if (shooter && shooter.isSniper) speedMult *= 1.2; 
+                // Snipers get +20% projectile speed, (+40% total if upgraded)
+                if (shooter && shooter.isSniper) {
+                    speedMult *= (perksEnabled && factionPerks[faction].sniperUpgrade > 0) ? 1.4 : 1.2; 
+                }
                 
                 this.vx = Math.cos(angle) * 10 * speedMult; 
                 this.vy = Math.sin(angle) * 10 * speedMult;
@@ -3464,6 +3467,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.teleportCooldown = 0;
                 this.tempMissileReady = false; // For the Pre-Emptive Strike
                 
+                this.isCarrier = false;
+                this.droneSpawnTimer = 60; // 1 Drone every 60 frames (1 second)
+                this.sentinelPulseTimer = 180; // 3 seconds for continuous shielding
+                
                 // Pathfinding State
                 this.navPath = [];
                 this.pathTimer = Math.floor(Math.random() * 30); // Offset recalculations to prevent lag spikes
@@ -3595,6 +3602,18 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             combat(ships) {
                 if (isCountingDown) return;
+                
+                // Carriers are massive fabricators, they do not fire weapons.
+                if (this.isCarrier) {
+                    this.droneSpawnTimer--;
+                    if (this.droneSpawnTimer <= 0) {
+                        let drone = new Ship(this.position.x, this.position.y, this.faction);
+                        drone.maxHp = 1; drone.hp = 1; drone.shield = 0; drone.size = 6;
+                        ships.push(drone); // Dispatches a new drone immediately!
+                        this.droneSpawnTimer = 60; // 1 Second loop
+                    }
+                    return; 
+                }
                 
                 let nearestEnemy = null;
                 let minDist = Infinity;
@@ -3766,6 +3785,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         
                         if (this.isVeteran && minDist < this.missileRange && this.missileCooldown <= 0) {
                             missiles.push(new Missile(this.position.x, this.position.y, nearestEnemy, this.faction, this));
+                            // VETERAN UPGRADE: Fire double payload!
+                            if (perksEnabled && factionPerks[this.faction].veteranMissile > 0) {
+                                // Add slight geometry offset so they perfectly flank each other
+                                missiles.push(new Missile(this.position.x + 8, this.position.y + 8, nearestEnemy, this.faction, this));
+                            }
                             playSound('missile');
                             this.missileCooldown = 120; 
                         }
@@ -3815,6 +3839,29 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 // Tick down the cloak window ONLY after the initial 3-second round countdown ends
                 if (!isCountingDown && this.cloakTimer > 0) this.cloakTimer--;
+                
+                // Active Sentinel Pulse Shielding
+                if (!isCountingDown && this.isSentinel && perksEnabled && factionPerks[this.faction].sentinelUpgrade > 0) {
+                    this.sentinelPulseTimer--;
+                    if (this.sentinelPulseTimer <= 0) {
+                        let alliesInFleet = [];
+                        for (let alloy of ships) {
+                            if (alloy.faction === this.faction && alloy !== this && !alloy.isSentinel && alloy.hp > 0 && !alloy.toRemove) {
+                                alliesInFleet.push({ ship: alloy, dist: Math.hypot(this.position.x - alloy.position.x, this.position.y - alloy.position.y) });
+                            }
+                        }
+                        alliesInFleet.sort((a, b) => a.dist - b.dist);
+                        
+                        let shieldedCount = 0;
+                        for (let entry of alliesInFleet) {
+                            if (shieldedCount >= 5) break;
+                            entry.ship.shield += 1;
+                            shieldedCount++;
+                            for(let p=0; p<8; p++) particles.push(new Particle(entry.ship.position.x, entry.ship.position.y, '#00ffff', 1.0));
+                        }
+                        this.sentinelPulseTimer = 180; // Reset for next pulse
+                    }
+                }
             }
             
             draw() {
@@ -3826,6 +3873,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let s = this.size;
                 let typeKey = 'std';
                 if (this.isFlagship) { s *= 1.5; typeKey = 'flag'; }
+                else if (this.isCarrier) { s *= 1.8; typeKey = 'carr'; } // Massive scale!
                 else if (this.isSniper) typeKey = 'snip';
                 else if (this.isSentinel) typeKey = 'sent';
                 else if (this.isStealth) typeKey = 'stl';
@@ -3880,6 +3928,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         nodes.forEach(n => { cctx.beginPath(); cctx.arc(n.x, n.y, s * 0.25, 0, Math.PI*2); cctx.fill(); });
                         cctx.shadowBlur = 0;
                         cctx.fillStyle = factionColors[this.faction]; cctx.beginPath(); cctx.arc(0, 0, s * 0.4, 0, Math.PI*2); cctx.fill();
+                    } else if (this.isCarrier) {
+                        cctx.shadowBlur = 20; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
+                        // Super Carrier: Wide, blocky flight deck
+                        cctx.beginPath();
+                        cctx.moveTo(s * 1.5, s * 0.8); cctx.lineTo(s * 1.5, -s * 0.8); cctx.lineTo(s * 0.5, -s * 1.2);
+                        cctx.lineTo(-s * 1.5, -s * 1.2); cctx.lineTo(-s * 1.5, s * 1.2); cctx.lineTo(s * 0.5, s * 1.2);
+                        cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
+                        
+                        cctx.fillStyle = '#111';
+                        cctx.fillRect(-s * 1.0, -s * 0.8, s * 2.0, s * 1.6); // Runway / Launch Deck
+                        cctx.fillStyle = '#ffaa00';
+                        cctx.fillRect(-s * 0.8, -s * 0.05, s * 1.6, s * 0.1); // Deck lights
+                        
+                        cctx.fillStyle = 'rgba(200, 240, 255, 0.9)'; cctx.beginPath();
+                        cctx.arc(s * 0.8, 0, s * 0.3, 0, Math.PI*2); cctx.fill(); // Forward Bridge
                     } else if (this.isStealth) {
                         cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = '#111';
                         cctx.beginPath();
@@ -4245,23 +4308,25 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
                 
                 if (perksEnabled && factionPerks[f].sniperFleet > 0) {
+                    let hasSnipUp = factionPerks[f].sniperUpgrade > 0;
                     let snipersToMake = Math.min(4, actualNumShips);
                     let snipersMade = 0;
                     for (let i = actualNumShips - 1; i >= 0 && snipersMade < snipersToMake; i--) {
                         let s = ships[factionSpawnStartIndex + i];
                         if (!s.isFlagship && !s.isSniper) {
                             s.isSniper = true;
-                            s.attackRange *= 1.6; 
+                            s.attackRange *= hasSnipUp ? 2.0 : 1.6; 
                             s.maxSpeed *= 1.3;    
-                            s.size = 10.5; // INCREASED: Was 8      
+                            s.size = 10.5;    
                             snipersMade++;
                         }
                     }
                 }
                 
-                // Turn 2 basic ships into Sentinels and allocate localized bulwark guards
+                // Turn basic ships into Sentinels and allocate localized bulwark guards
                 if (perksEnabled && factionPerks[f].sentinelFleet > 0) {
-                    let sentinelsToMake = Math.min(2, actualNumShips);
+                    let hasSentUp = factionPerks[f].sentinelUpgrade > 0;
+                    let sentinelsToMake = Math.min(hasSentUp ? 3 : 2, actualNumShips);
                     let sentinelsMade = 0;
                     let sentinelUnits = [];
                     
@@ -4272,13 +4337,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             s.maxHp = 4;
                             s.hp = 4;
                             s.shield += 2;
-                            s.size = 12; // INCREASED: Was 9
+                            s.size = 12; 
                             sentinelUnits.push(s);
                             sentinelsMade++;
                         }
                     }
                     
-                    // Calculate proximity links for unique targets (no stacking overlapping fields)
+                    let maxShieldTargets = hasSentUp ? 5 : 3;
                     let shieldedAllies = new Set();
                     sentinelUnits.forEach(sentinel => {
                         let alliesInFleet = [];
@@ -4289,11 +4354,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 alliesInFleet.push({ ship: alloy, dist: distance });
                             }
                         }
-                        // Sort by absolute distance and siphon out the 3 closest non-shielded units
                         alliesInFleet.sort((a, b) => a.dist - b.dist);
                         let assignedCount = 0;
                         for (let entry of alliesInFleet) {
-                            if (assignedCount >= 3) break;
+                            if (assignedCount >= maxShieldTargets) break;
                             if (!shieldedAllies.has(entry.ship)) {
                                 entry.ship.shield += 1;
                                 shieldedAllies.add(entry.ship);
@@ -4324,6 +4388,19 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (perksEnabled && factionPerks[f].globalShield > 0) {
                     for (let i = 0; i < actualNumShips; i++) {
                         ships[factionSpawnStartIndex + i].shield += 1;
+                    }
+                }
+                
+                // Super Carrier Fabrication Ship
+                if (perksEnabled && factionPerks[f].carrierFleet > 0) {
+                    let numCarriers = 1;
+                    for(let k = 0; k < numCarriers; k++) {
+                        // Find a basic fighter and convert it
+                        let s = ships.find(sh => sh.faction === f && !sh.isFlagship && !sh.isSniper && !sh.isSentinel && !sh.isStealth && !sh.isCarrier);
+                        if(s) {
+                            s.isCarrier = true;
+                            s.maxHp = 8; s.hp = 8; s.shield = 2;
+                        }
                     }
                 }
             }
