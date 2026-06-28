@@ -562,6 +562,11 @@
                     </div>
                     
                     <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <button class="btn-secondary admin-btn" id="adminSpawnSpaceWorm" style="color: #aa44ff; border-color: #aa44ff;">Manifest Worm</button>
+                        <button class="btn-secondary admin-btn" id="adminClearSpaceWorm" style="background: #3a2222; border-color: #555;">Clear Worms</button>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
                         <button class="btn-secondary admin-btn" id="adminSpawnComet">Launch Comet</button>
                         <button class="btn-secondary admin-btn" id="adminClearComets" style="background: #3a2222; border-color: #555;">Clear Comets</button>
                     </div>
@@ -589,6 +594,11 @@
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <button class="btn-secondary admin-btn" id="adminSpawnMines">Deploy Mines</button>
                         <button class="btn-secondary admin-btn" id="adminClearMines" style="background: #3a2222; border-color: #555;">Clear Mines</button>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <button class="btn-secondary admin-btn" id="adminSpawnNebula">Release Nebula</button>
+                        <button class="btn-secondary admin-btn" id="adminClearNebula" style="background: #3a2222; border-color: #555;">Clear Nebulas</button>
                     </div>
                     
                 </div>
@@ -777,6 +787,8 @@
         let flagshipCount = [0, 0, 0, 0, 0, 0]; 
         let disconnectedPlayers = []; // NEW: Tracks players who rage-quit
         let respawnQueue = []; // NEW: Tracks tethered ships waiting to revive
+        let nebulas = []; // NEW: Blueish stealth gas clouds
+        let worms = []; // NEW: Segmented Boss Entities
         
         // --- ASSET CACHING & O(1) PERFORMANCE PIPELINE ---
         const globalCache = {};
@@ -2530,6 +2542,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'droneFormation', name: "Volatile Swarm", desc: "Requires Carrier. Max drones increased to 8. Drones violently explode upon destruction.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'carrierSplit', name: "Drone Bays", desc: "Requires Carrier. The Carrier releases 3 final drones when destroyed.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'capitalEscort', name: "Capital Escort", desc: "Requires Flagship & Carrier. Capitals fly together. Drones gain +15% Speed and Fire Rate.", maxLevel: 1, requires: ['flagship', 'carrierFleet'], rarity: 'standard' },
+        { id: 'acePilot', name: "Ace Pilot", desc: "Requires Veteran. At 7 kills, Veterans become Aces. Gains piercing lasers, +25% ricochet, +15% speed/fire rate, and +1 missile.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
@@ -2560,7 +2573,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 mineLayer: 0, vampiric: 0, heavyArmor: 0, phaseArmor: 0, 
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
-                sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0,
+                sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0, acePilot: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -2855,7 +2868,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 // Piercing logic
                 let isTempRailgun = (perksEnabled && faction >= 0 && faction < 4 && factionPerks[faction].temp_railgun > 0);
-                this.isPiercing = (shooter && shooter.isSniper) || isTempRailgun;
+                let isAcePiercing = (shooter && shooter.isAce);
+                this.isPiercing = (shooter && shooter.isSniper) || isTempRailgun || isAcePiercing;
                 this.hitShips = new Set(); // Remembers ships it already passed through
             }
             update() {
@@ -3298,6 +3312,109 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.restore();
             }
         }
+
+        class Nebula {
+            constructor() {
+                this.radius = 350 + Math.random() * 450; 
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5; 
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.rotation = Math.random() * Math.PI * 2; // NEW: Random rotation for visual variety
+                
+                let activeStarName = null;
+                for (let p of bgPlanets) {
+                    if (p.type === 'STAR') {
+                        activeStarName = p.name;
+                        break;
+                    }
+                }
+                
+                const nebulaColors = [
+                    { name: 'red', rgb: '255, 50, 50', clashes: ['Red', 'Orange'] },
+                    { name: 'yellow', rgb: '255, 210, 50', clashes: ['Yellow', 'Yellow-White', 'White'] },
+                    { name: 'orange', rgb: '255, 120, 30', clashes: ['Orange', 'Yellow', 'Red'] },
+                    { name: 'blue', rgb: '40, 150, 255', clashes: ['Blue', 'Blue-White'] },
+                    { name: 'purple', rgb: '160, 60, 255', clashes: ['Blue', 'Red'] } 
+                ];
+                
+                let validColors = nebulaColors;
+                if (activeStarName) {
+                    validColors = nebulaColors.filter(c => !c.clashes.includes(activeStarName));
+                }
+                if (validColors.length === 0) validColors = nebulaColors; 
+                
+                this.colorRGB = validColors[Math.floor(Math.random() * validColors.length)].rgb;
+                
+                // --- THE GLOBAL CACHE UPGRADE ---
+                let cacheKey = `nebula_${this.colorRGB}`;
+                if (!globalCache[cacheKey]) {
+                    // Bake a standardized high-res texture (Radius 600) ONCE per color
+                    globalCache[cacheKey] = createNebulaCache(600, this.colorRGB);
+                }
+                this.cache = globalCache[cacheKey]; // Link to the master cache
+            }
+            update() {
+                if (isCountingDown) return;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.rotation += 0.0005 * Math.sign(this.vx); // Slow cinematic spin
+                
+                // Wrap around edges gracefully
+                if (this.x < -this.radius) this.x = canvas.width + this.radius;
+                if (this.x > canvas.width + this.radius) this.x = -this.radius;
+                if (this.y < -this.radius) this.y = canvas.height + this.radius;
+                if (this.y > canvas.height + this.radius) this.y = -this.radius;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation); // Apply the unique rotation
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = 0.65; 
+                // Draw the globally cached texture, scaled specifically to THIS nebula's radius
+                ctx.drawImage(this.cache, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+                ctx.restore();
+            }
+        }
+
+        function createNebulaCache(radius, colorRGB) {
+            const buffer = document.createElement('canvas');
+            const size = Math.ceil(radius * 2);
+            buffer.width = size; buffer.height = size;
+            const bctx = buffer.getContext('2d');
+            bctx.translate(radius, radius);
+            
+            const noiseGen = new SimpleNoise();
+            const nSeed = Math.random() * 1000;
+            const step = 4; // Pixelation resolution for performance
+            
+            for (let y = -radius; y < radius; y += step) {
+                for (let x = -radius; x < radius; x += step) {
+                    let dist = Math.hypot(x, y);
+                    if (dist > radius) continue;
+                    
+                    // Complex noise for fluffy texture
+                    let nVal = noiseGen.fbm((x + nSeed) * 0.012, (y + nSeed) * 0.012, 3);
+                    let edgeFade = Math.pow(Math.max(0, 1 - (dist / radius)), 1.5); 
+                    let density = nVal * edgeFade;
+                    
+                    if (density > 0.12) {
+                        let alpha = Math.min(1, (density - 0.12) * 2.5);
+                        bctx.fillStyle = `rgba(${colorRGB}, ${alpha})`; // Dynamic color injection
+                        bctx.fillRect(x, y, step * 1.5, step * 1.5);
+                    }
+                }
+            }
+            
+            // Blur the hard edges to make it soft gas
+            const finalBuffer = document.createElement('canvas');
+            finalBuffer.width = size; finalBuffer.height = size;
+            const fctx = finalBuffer.getContext('2d');
+            fctx.filter = 'blur(12px)';
+            fctx.drawImage(buffer, 0, 0);
+            return finalBuffer;
+        }
         
         class Boss {
             constructor(x, y) {
@@ -3438,6 +3555,190 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
         }
         
+        class WormBoss {
+            constructor(x, y, segmentCount = 30, splitCount = 0, initialSegments = null) {
+                this.splitCount = splitCount;
+                // Slower base speed (4.0), scales up 10% per split, max 4 times
+                this.speed = 4.0 * Math.pow(1.1, Math.min(this.splitCount, 4));
+                this.segmentRadius = 26; // Massive segments
+                this.spacing = 20; 
+                this.faction = -1; // Hostile
+                
+                this.state = 'WANDER'; // WANDER or ATTACK
+                this.stateTimer = 60;
+                this.moveAngle = Math.random() * Math.PI * 2;
+                this.targetAngle = this.moveAngle;
+                
+                if (initialSegments) {
+                    this.segments = initialSegments;
+                } else {
+                    this.segments = [];
+                    for(let i=0; i<segmentCount; i++) {
+                        this.segments.push({x: x - i*this.spacing, y: y, hp: 5, maxHp: 5});
+                    }
+                }
+                
+                // Init High-Res Texture Cache
+                if (!globalCache['wormBody']) {
+                    globalCache['wormBody'] = createWormBodyCache(this.segmentRadius);
+                    globalCache['wormHead'] = createWormHeadCache(this.segmentRadius);
+                }
+            }
+            
+            splitAt(index) {
+                playSound('explosion');
+                explosions.push({x: this.segments[index].x, y: this.segments[index].y, radius: 0, maxRadius: 90, faction: -1, damage: 2});
+                
+                let headHalf = this.segments.slice(0, index);
+                let tailHalf = this.segments.slice(index + 1);
+                
+                worms.splice(worms.indexOf(this), 1); 
+                if (headHalf.length > 0) worms.push(new WormBoss(0, 0, 0, this.splitCount + 1, headHalf));
+                if (tailHalf.length > 0) worms.push(new WormBoss(0, 0, 0, this.splitCount + 1, tailHalf));
+            }
+            
+            update(ships) {
+                if (isCountingDown || this.segments.length === 0) return;
+                
+                let head = this.segments[0];
+                
+                // STATE MACHINE LOGIC
+                this.stateTimer--;
+                if (this.stateTimer <= 0) {
+                    if (this.state === 'WANDER') {
+                        this.state = 'ATTACK';
+                        this.stateTimer = 120 + Math.random() * 120; // 2 to 4 seconds of aggressive charging
+                    } else {
+                        this.state = 'WANDER';
+                        this.stateTimer = 180 + Math.random() * 120; // 3 to 5 seconds of slithering around
+                        this.targetAngle = this.moveAngle + (Math.random() - 0.5) * Math.PI * 1.5; 
+                    }
+                }
+
+                if (this.state === 'ATTACK') {
+                    let nearest = null; let minDist = Infinity;
+                    for (let s of ships) {
+                        if (s.hp > 0 && !s.toRemove && !(s.isStealth && s.cloakTimer > 0)) {
+                            let d = Math.hypot(head.x - s.position.x, head.y - s.position.y);
+                            if (d < minDist) { minDist = d; nearest = s; }
+                        }
+                    }
+                    if (nearest) this.targetAngle = Math.atan2(nearest.position.y - head.y, nearest.position.x - head.x);
+                } else {
+                    if (Math.random() < 0.05) this.targetAngle += (Math.random() - 0.5) * Math.PI / 2;
+                }
+
+                // Smooth Rotation Math
+                let diff = this.targetAngle - this.moveAngle;
+                diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                let turnSpeed = this.state === 'ATTACK' ? 0.06 : 0.03; // Turns sharper when attacking
+                this.moveAngle += Math.min(Math.max(diff, -turnSpeed), turnSpeed);
+
+                head.x += Math.cos(this.moveAngle) * this.speed;
+                head.y += Math.sin(this.moveAngle) * this.speed;
+                
+                // Edge Bouncing
+                if (head.x < 0 || head.x > canvas.width || head.y < 0 || head.y > canvas.height) {
+                    this.targetAngle += Math.PI; // Hard flip if it hits a wall
+                    head.x = Math.max(0, Math.min(canvas.width, head.x));
+                    head.y = Math.max(0, Math.min(canvas.height, head.y));
+                }
+                
+                // Inverse Kinematics Body Following
+                for (let i = 1; i < this.segments.length; i++) {
+                    let prev = this.segments[i-1];
+                    let curr = this.segments[i];
+                    let dx = prev.x - curr.x;
+                    let dy = prev.y - curr.y;
+                    let dist = Math.hypot(dx, dy);
+                    
+                    if (dist > this.spacing) {
+                        let angle = Math.atan2(dy, dx);
+                        curr.x = prev.x - Math.cos(angle) * this.spacing;
+                        curr.y = prev.y - Math.sin(angle) * this.spacing;
+                    }
+                }
+                
+                // Ramming Damage
+                for (let j = ships.length - 1; j >= 0; j--) {
+                    let s = ships[j];
+                    if (s.hp > 0 && !s.toRemove && !(s.isStealth && s.cloakTimer > 0)) {
+                        for (let seg of this.segments) {
+                            if (Math.hypot(seg.x - s.position.x, seg.y - s.position.y) < this.segmentRadius + s.size) {
+                                hitShip(j, null, 2); 
+                                for(let p=0; p<15; p++) particles.push(new Particle(seg.x, seg.y, '#00ffaa', 2));
+                                break; 
+                            }
+                        }
+                    }
+                }
+            }
+            
+            draw() {
+                if (this.segments.length === 0) return;
+                
+                // Draw Energy Tether
+                ctx.beginPath();
+                ctx.moveTo(this.segments[0].x, this.segments[0].y);
+                for (let i = 1; i < this.segments.length; i++) ctx.lineTo(this.segments[i].x, this.segments[i].y);
+                ctx.strokeStyle = '#00ffaa';
+                ctx.lineWidth = this.segmentRadius * 0.3;
+                ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.stroke();
+                
+                // Draw Cached Body
+                let bodyCache = globalCache['wormBody'];
+                for (let i = this.segments.length - 1; i >= 1; i--) {
+                    let seg = this.segments[i];
+                    ctx.drawImage(bodyCache, seg.x - bodyCache.width/2, seg.y - bodyCache.height/2);
+                    
+                    // Damage Indicator Core
+                    ctx.fillStyle = `rgba(255, 0, 0, ${1 - (seg.hp / seg.maxHp)})`;
+                    ctx.beginPath(); ctx.arc(seg.x, seg.y, this.segmentRadius * 0.35, 0, Math.PI * 2); ctx.fill();
+                }
+                
+                // Draw Cached Head
+                let head = this.segments[0];
+                let headCache = globalCache['wormHead'];
+                ctx.save();
+                ctx.translate(head.x, head.y);
+                ctx.rotate(this.moveAngle);
+                ctx.drawImage(headCache, -headCache.width/2, -headCache.height/2);
+                ctx.restore();
+            }
+        } // <--- END OF WORMBOSS CLASS
+
+        // Helper functions sit safely OUTSIDE the class
+        function createWormBodyCache(radius) {
+            const c = document.createElement('canvas');
+            c.width = radius * 3; c.height = radius * 3;
+            const ctx = c.getContext('2d');
+            ctx.translate(radius * 1.5, radius * 1.5);
+            ctx.fillStyle = '#0a192f';
+            ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#112240'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(0, 0, radius - 2, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = '#00ffaa'; ctx.shadowBlur = 15; ctx.shadowColor = '#00ffaa';
+            ctx.beginPath(); ctx.arc(0, 0, radius * 0.35, 0, Math.PI * 2); ctx.fill();
+            return c;
+        }
+
+        function createWormHeadCache(radius) {
+            const c = document.createElement('canvas');
+            c.width = radius * 4; c.height = radius * 4;
+            const ctx = c.getContext('2d');
+            ctx.translate(radius * 2, radius * 2);
+            ctx.fillStyle = '#0a192f';
+            ctx.beginPath(); ctx.moveTo(radius * 1.5, 0); ctx.lineTo(-radius * 0.5, radius * 1.2); ctx.lineTo(-radius * 0.5, -radius * 1.2); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#112240';
+            ctx.beginPath(); ctx.moveTo(radius * 1.8, radius * 0.4); ctx.lineTo(radius * 0.5, radius * 1.2); ctx.lineTo(radius * 0.2, radius * 0.4); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(radius * 1.8, -radius * 0.4); ctx.lineTo(radius * 0.5, -radius * 1.2); ctx.lineTo(radius * 0.2, -radius * 0.4); ctx.fill();
+            ctx.fillStyle = '#00ffaa'; ctx.shadowBlur = 15; ctx.shadowColor = '#00ffaa';
+            ctx.beginPath(); ctx.arc(radius * 0.5, radius * 0.5, radius * 0.15, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(radius * 0.5, -radius * 0.5, radius * 0.15, 0, Math.PI * 2); ctx.fill();
+            return c;
+        }
+        
         class Ship {
             constructor(x, y, faction) {
                 this.position = { x: x, y: y };
@@ -3457,6 +3758,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 this.kills = 0;
                 this.isVeteran = false;
+                this.isAce = false; // NEW: Ace Pilot status
                 this.size = 8; 
                 
                 this.shield = 0; 
@@ -3519,6 +3821,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let align = { x: 0, y: 0 }, cohere = { x: 0, y: 0 }, separ = { x: 0, y: 0 };
                 let totalAlly = 0, totalSepar = 0;
                 
+                // Nebula Blindness: Drastically reduced vision inside gas clouds
+                this.inNebula = false;
+                for (let neb of nebulas) {
+                    if (Math.hypot(this.position.x - neb.x, this.position.y - neb.y) < neb.radius * 0.7) {
+                        this.inNebula = true;
+                        break;
+                    }
+                }
+                this.perceptionRadius = this.inNebula ? 35 : 70;
+                
                 for (let other of ships) {
                     let d = Math.hypot(this.position.x - other.position.x, this.position.y - other.position.y);
                     
@@ -3547,6 +3859,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     }
                 }
                 
+                // Worm Avoidance (Panic Steering!)
+                for (let w of worms) {
+                    for (let seg of w.segments) {
+                        let d = Math.hypot(this.position.x - seg.x, this.position.y - seg.y);
+                        // If they see it coming, they break formation and run!
+                        if (d < this.perceptionRadius * 2.5) { 
+                            let diff = { x: this.position.x - seg.x, y: this.position.y - seg.y };
+                            if (d > 0) { diff.x /= d; diff.y /= d; }
+                            separ.x += diff.x * 20; // EXTREME evasion force
+                            separ.y += diff.y * 20;
+                            totalSepar++;
+                        }
+                    }
+                }
+
                 // Wall Avoidance (steering force — unchanged)
                 let closestWallDist = Infinity;
                 let closestWallNormal = null;
@@ -3648,22 +3975,41 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let nearestVisibleEnemy = null;
                 let minVisDist = Infinity;
                 
+                // 1. Target Ships
                 for (let other of ships) {
                     if (other.faction !== this.faction && other.hp > 0 && !other.toRemove) {
                         let d = Math.hypot(this.position.x - other.position.x, this.position.y - other.position.y);
-                        
-                        // 1. Global GPS: Track the absolute closest enemy anywhere on the map
-                        if (d < minDist) {
-                            minDist = d;
-                            nearestEnemy = other;
-                        }
-                        
-                        // 2. Tactical Vision: Track the closest enemy we can ACTUALLY see
-                        // (We limit the raycast range to 450px to save CPU processing power)
+                        if (d < minDist) { minDist = d; nearestEnemy = other; }
                         if (walls.length > 0 && d < 450 && d < minVisDist) {
                             if (hasLineOfSight(this.position.x, this.position.y, other.position.x, other.position.y)) {
-                                minVisDist = d;
-                                nearestVisibleEnemy = other;
+                                minVisDist = d; nearestVisibleEnemy = other;
+                            }
+                        }
+                    }
+                }
+
+                // 2. Target Bosses
+                for (let b of bosses) {
+                    if (b.hp > 0) {
+                        let d = Math.hypot(this.position.x - b.x, this.position.y - b.y);
+                        let bossAdapter = { get position() { return b; }, get hp() { return b.hp; }, set hp(val) { b.hp = val; }, size: b.size, isBoss: true };
+                        if (d < minDist) { minDist = d; nearestEnemy = bossAdapter; }
+                        if (walls.length > 0 && d < 450 && d < minVisDist && hasLineOfSight(this.position.x, this.position.y, b.x, b.y)) {
+                            minVisDist = d; nearestVisibleEnemy = bossAdapter;
+                        }
+                    }
+                }
+
+                // 3. Target Worms (Check every 2nd segment to save CPU)
+                for (let w of worms) {
+                    for (let s = 0; s < w.segments.length; s += 2) {
+                        let seg = w.segments[s];
+                        if (seg.hp > 0) {
+                            let d = Math.hypot(this.position.x - seg.x, this.position.y - seg.y);
+                            let wormAdapter = { get position() { return seg; }, get hp() { return seg.hp; }, set hp(val) { seg.hp = val; }, size: w.segmentRadius, isWorm: true, wormRef: w, segIndex: s };
+                            if (d < minDist) { minDist = d; nearestEnemy = wormAdapter; }
+                            if (walls.length > 0 && d < 450 && d < minVisDist && hasLineOfSight(this.position.x, this.position.y, seg.x, seg.y)) {
+                                minVisDist = d; nearestVisibleEnemy = wormAdapter;
                             }
                         }
                     }
@@ -3728,6 +4074,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         if (minDist < this.size + nearestEnemy.size + 4) {
                             let enemyIndex = ships.indexOf(nearestEnemy);
                             if (enemyIndex !== -1) hitShip(enemyIndex, this); 
+                            else if (nearestEnemy.isBoss || nearestEnemy.isWorm) {
+                                // Direct ramming damage to massive entities!
+                                nearestEnemy.hp -= 3;
+                                if (nearestEnemy.isWorm && nearestEnemy.hp <= 0) nearestEnemy.wormRef.splitAt(nearestEnemy.segIndex);
+                            }
+                            
                             for(let p=0; p<20; p++) particles.push(new Particle(this.position.x, this.position.y, '#ff6600', 1.5));
                             playSound('explosion');
                             this.toRemove = true;
@@ -3747,6 +4099,14 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     // Capital Escort Drone Speed Buff
                     if (this.isDrone && flagshipAlive[this.faction] && perksEnabled && factionPerks[this.faction].capitalEscort > 0) {
                         baseSpeed *= 1.15;
+                    }
+                    
+                    // Ace Pilot Speed Buff
+                    if (this.isAce) baseSpeed *= 1.15;
+                    
+                    // Nebula Slowdown: Gas friction cuts speed in half!
+                    if (this.inNebula) {
+                        baseSpeed *= 0.5;
                     }
                     
                     // While actively threading a corridor, let pathfinding win out over
@@ -3805,6 +4165,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 cdReduc += 0.15;
                             }
                             
+                            // Ace Pilot Fire Rate Buff
+                            if (this.isAce) cdReduc += 0.15;
+                            
                             // Bloodlust Perk: +10% faster fire rate for every kill the ship has!
                             if (perksEnabled && this.faction >= 0 && this.faction < 4 && factionPerks[this.faction].veteranFireRate > 0) {
                                 cdReduc += (this.kills * 0.10);
@@ -3822,12 +4185,19 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                         
                         if (this.isVeteran && minDist < this.missileRange && this.missileCooldown <= 0) {
+                            let extraM = 0;
+                            if (perksEnabled && factionPerks[this.faction].veteranMissile > 0) extraM++;
+                            if (this.isAce) extraM++; // Ace adds an extra missile!
+                            
                             missiles.push(new Missile(this.position.x, this.position.y, nearestEnemy, this.faction, this));
-                            // VETERAN UPGRADE: Fire double payload!
-                            if (perksEnabled && factionPerks[this.faction].veteranMissile > 0) {
-                                // Add slight geometry offset so they perfectly flank each other
+                            
+                            if (extraM === 1) {
                                 missiles.push(new Missile(this.position.x + 8, this.position.y + 8, nearestEnemy, this.faction, this));
+                            } else if (extraM >= 2) {
+                                missiles.push(new Missile(this.position.x + 8, this.position.y + 8, nearestEnemy, this.faction, this));
+                                missiles.push(new Missile(this.position.x - 8, this.position.y - 8, nearestEnemy, this.faction, this));
                             }
+                            
                             playSound('missile');
                             this.missileCooldown = 120; 
                         }
@@ -4082,6 +4452,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 ctx.restore();
                 
+                // Ace Golden Targeting Aura
+                if (this.isAce) {
+                    ctx.strokeStyle = '#ffcc00';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.arc(this.position.x, this.position.y, s * 2.2, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]); // Reset dash for other draws
+                }
+
                 // Phase Armor & Shields (Drawn in absolute world space)
                 if (this.hasPhaseArmor) {
                     ctx.strokeStyle = '#cccccc';
@@ -4218,8 +4599,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         shooter.isVeteran = true;
                         shooter.maxHp = 4;
                         shooter.hp = 4; 
-                        shooter.size = 15; // INCREASED: Veterans now visibly bulk up into mini-bosses!
+                        shooter.size = 15; 
                         for(let p=0; p<15; p++) particles.push(new Particle(shooter.position.x, shooter.position.y, '#00ff00'));
+                    }
+                    
+                    // ACE UPGRADE PROTOCOL
+                    if (shooter.kills >= 7 && !shooter.isAce && perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].acePilot > 0) {
+                        shooter.isAce = true;
+                        shooter.maxHp += 2; // Extra health
+                        shooter.hp += 2; 
+                        shooter.size = 18; // Massive hull size
+                        for(let p=0; p<25; p++) particles.push(new Particle(shooter.position.x, shooter.position.y, '#ffcc00', 2.0));
                     }
                 }
                 fastRemove(ships, shipIndex);
@@ -4265,6 +4655,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             particles = [];
             explosions = [];
             respawnQueue = []; // Clear respawns on new round
+            nebulas = []; // Clear nebulas
             flagshipAlive = [false, false, false, false];
             flagshipCount = [0, 0, 0, 0, 0, 0]; 
             
@@ -4294,6 +4685,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 if (!isBossRound && Math.random() < 0.10) {
                     generateMaze();
+                }
+                
+                if (Math.random() < 0.10) { // Dropped to 10% for balanced gameplay
+                    let numNebs = Math.floor(Math.random() * 3) + 1; // 1 to 3 nebulas
+                    for (let i = 0; i < numNebs; i++) nebulas.push(new Nebula());
                 }
                 
                 arenaMines = [];
@@ -5182,15 +5578,19 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         document.getElementById('adminClearDummies').addEventListener('click', () => {
             ships = ships.filter(s => s.faction !== 4 && s.faction !== 5);
             bosses = [];
+            worms = []; // Clear worms
             comets = [];
             asteroids = [];
             wormholes = [];
             explosions = [];
             walls = [];
-            arenaMines = []; // <--- Added Arena Mines clear
+            arenaMines = []; 
+            nebulas = []; 
         });
         document.getElementById('adminSpawnBoss').addEventListener('click', () => bosses.push(new Boss(canvas.width / 2, canvas.height / 2)));
         document.getElementById('adminClearBoss').addEventListener('click', () => bosses = []);
+        document.getElementById('adminSpawnSpaceWorm').addEventListener('click', () => worms.push(new WormBoss(-100, canvas.height / 2)));
+        document.getElementById('adminClearSpaceWorm').addEventListener('click', () => worms = []);
         document.getElementById('adminSpawnComet').addEventListener('click', () => comets.push(new Comet()));
         document.getElementById('adminClearComets').addEventListener('click', () => comets = []);
         document.getElementById('adminSpawnAst').addEventListener('click', () => { for(let i=0; i<5; i++) asteroids.push(new Asteroid()); });
@@ -5204,6 +5604,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             for(let i=0; i<5; i++) arenaMines.push(new ArenaMine()); 
         });
         document.getElementById('adminClearMines').addEventListener('click', () => arenaMines = []);
+        
+        // Nebula Spawner
+        document.getElementById('adminSpawnNebula').addEventListener('click', () => nebulas.push(new Nebula()));
+        document.getElementById('adminClearNebula').addEventListener('click', () => nebulas = []);
 
         // --- CELESTIAL ADMIN OVERRIDES ---
         function forceCelestialSpawn(type) {
@@ -5740,6 +6144,23 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         break;
                     }
                 }
+                // Laser Worm Collision
+                if (!hit) {
+                    for (let w = worms.length - 1; w >= 0 && !hit; w--) {
+                        let worm = worms[w];
+                        for (let s = 0; s < worm.segments.length; s++) {
+                            let seg = worm.segments[s];
+                            if (Math.hypot(l.x - seg.x, l.y - seg.y) < worm.segmentRadius) {
+                                hit = true;
+                                particles.push(new Particle(l.x, l.y, '#aa44ff', 1.0));
+                                seg.hp -= 1; 
+                                if (seg.hp <= 0) worm.splitAt(s); // Sever the spine!
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 // Laser Arena Mine Collision
                 if (!hit) {
                     for (let am of arenaMines) {
@@ -5765,6 +6186,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             
                             if (perksEnabled) {
                                 let ricochetChance = factionPerks[l.faction].ricochet * 0.05;
+                                if (l.shooter && l.shooter.isAce) ricochetChance += 0.25; // Ace Flat 25% Bonus
+                                
                                 if (Math.random() < ricochetChance) {
                                     for (let t of ships) {
                                         if (t.faction !== l.faction && t.hp > 0 && t !== s && !t.toRemove) {
@@ -5810,6 +6233,24 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         break;
                     }
                 }
+                // Missile Worm Collision
+                if (!hit) {
+                    for (let w = worms.length - 1; w >= 0 && !hit; w--) {
+                        let worm = worms[w];
+                        for (let s = 0; s < worm.segments.length; s++) {
+                            let seg = worm.segments[s];
+                            if (Math.hypot(m.x - seg.x, m.y - seg.y) < worm.segmentRadius + 8) {
+                                hit = true;
+                                playSound('explosion');
+                                for(let p=0; p<10; p++) particles.push(new Particle(m.x, m.y, '#ffaa00'));
+                                seg.hp -= 2; 
+                                if (seg.hp <= 0) worm.splitAt(s); // Sever the spine!
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 // Missile Arena Mine Collision
                 if (!hit) {
                     for (let am of arenaMines) {
@@ -5974,6 +6415,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (c.x > canvas.width + c.size || c.x < -c.size * 2) fastRemove(comets, i);
             }
             
+            // Update Worms
+            for (let i = worms.length - 1; i >= 0; i--) {
+                worms[i].update(ships);
+                worms[i].draw();
+            }
+
             // Update Bosses
             for (let i = bosses.length - 1; i >= 0; i--) {
                 let b = bosses[i];
@@ -6028,6 +6475,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     am.explode();
                     fastRemove(arenaMines, i);
                 }
+            }
+            
+            // Render Nebulas (drawn over ships to create the fog illusion)
+            for (let n of nebulas) {
+                n.update();
+                n.draw();
             }
             
             // Process Quantum Link Respawns!
