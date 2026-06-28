@@ -3443,7 +3443,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 this.kills = 0;
                 this.isVeteran = false;
-                this.size = 6; 
+                this.size = 8; // INCREASED: Base ship size up from 6
                 
                 this.shield = 0; 
                 this.isCrashing = false;
@@ -4042,7 +4042,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         shooter.isVeteran = true;
                         shooter.maxHp = 4;
                         shooter.hp = 4; 
-                        shooter.size = 10; 
+                        shooter.size = 13; // INCREASED: Veterans now visibly bulk up! (was 10)
                         for(let p=0; p<15; p++) particles.push(new Particle(shooter.position.x, shooter.position.y, '#00ff00'));
                     }
                 }
@@ -4249,7 +4249,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             s.isSniper = true;
                             s.attackRange *= 1.6; 
                             s.maxSpeed *= 1.3;    
-                            s.size = 8;           
+                            s.size = 10.5; // INCREASED: Was 8      
                             snipersMade++;
                         }
                     }
@@ -4268,7 +4268,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             s.maxHp = 4;
                             s.hp = 4;
                             s.shield += 2;
-                            s.size = 9; 
+                            s.size = 12; // INCREASED: Was 9
                             sentinelUnits.push(s);
                             sentinelsMade++;
                         }
@@ -4310,7 +4310,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             s.maxHp = 2;
                             s.hp = 2;
                             s.cloakTimer = 180; // 3 seconds calculated at 60 fps execution loops
-                            s.size = 7.5; // Slightly larger than standard fighters (baseline 6)
+                            s.size = 9.5; // INCREASED: Was 7.5
                             stealthMade++;
                         }
                     }
