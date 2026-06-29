@@ -557,8 +557,9 @@
                     </div>
                     
                     <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <button class="btn-secondary admin-btn" id="adminSpawnBoss">Manifest Boss</button>
-                        <button class="btn-secondary admin-btn" id="adminClearBoss" style="background: #3a2222; border-color: #555;">Clear Bosses</button>
+                        <button class="btn-secondary admin-btn" id="adminSpawnPhantom" style="font-size: 0.9rem;">Spawn Phantom (R10)</button>
+                        <button class="btn-secondary admin-btn" id="adminSpawnPrism" style="font-size: 0.9rem; color: #00ffff; border-color: #00ffff;">Spawn Prism (R20)</button>
+                        <button class="btn-secondary admin-btn" id="adminClearBoss" style="background: #3a2222; border-color: #555; font-size: 0.9rem;">Clear Bosses</button>
                     </div>
                     
                     <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -745,6 +746,7 @@
         let stars = [];
         
         let factionColors = ['#ff4444', '#44aaff', '#ffcc00', '#ffffff', '#ff00ff', '#ff00ff'];
+        factionColors["-1"] = '#ff0044'; // NEW: Ensures the Hive's parasite drones render as Crimson Red!
         const factionNames = ['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Still Dummy', 'Active Dummy']; 
         
         // Match Variables
@@ -2857,7 +2859,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 // Snipers get +20% projectile speed, (+40% total if upgraded)
                 if (shooter && shooter.isSniper) {
-                    speedMult *= (perksEnabled && factionPerks[faction].sniperUpgrade > 0) ? 1.4 : 1.2; 
+                    // FIX: Safely guard against Faction -1 (Bosses) so it doesn't crash!
+                    speedMult *= (perksEnabled && faction >= 0 && faction < 4 && factionPerks[faction].sniperUpgrade > 0) ? 1.4 : 1.2; 
                 }
                 
                 this.vx = Math.cos(angle) * 10 * speedMult; 
@@ -2878,7 +2881,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.life--;
             }
             draw() {
-                ctx.strokeStyle = factionColors[this.faction];
+                // FIX: Bosses (Faction -1) need a hardcoded laser color!
+                ctx.strokeStyle = (this.faction === -1) ? '#ff0044' : factionColors[this.faction];
                 ctx.lineWidth = this.isPiercing ? 3 : 2; // Snipers shoot thicker beams
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y);
@@ -2901,7 +2905,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.speed = 5 * speedMult;
                 this.turnRate = 0.08;
                 
-                let initialAngle = Math.atan2(target.position.y - this.y, target.position.x - this.x);
+                // FIX: Safely handle null targets for the Sandbox so it dumb-fires forward!
+                let initialAngle = target ? Math.atan2(target.position.y - this.y, target.position.x - this.x) : Math.PI / 2;
                 this.vx = Math.cos(initialAngle) * this.speed;
                 this.vy = Math.sin(initialAngle) * this.speed;
                 this.life = 300;
@@ -3416,144 +3421,6 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             return finalBuffer;
         }
         
-        class Boss {
-            constructor(x, y) {
-                this.x = x;
-                this.y = -100; 
-                this.targetY = y; 
-                this.hp = 50; // Increased as requested! (Hint: Crank this to 250+ for 4-player matches!)
-                this.maxHp = 50;
-                this.size = 50;
-                this.faction = -1; 
-                this.attackTimer = 0;
-                this.pattern = 0;
-                this.moveAngle = 0; // Added for side-to-side strafing!
-            }
-            update() {
-                if (isCountingDown) return; 
-                
-                // 1. Cinematic Drop-in
-                if (this.y < this.targetY) {
-                    this.y += 2;
-                    return; 
-                }
-                
-                // 2. Boss Movement (Strafe side to side instead of just sitting there)
-                this.moveAngle += 0.02;
-                this.x += Math.cos(this.moveAngle) * 2;
-                
-                // Keep inside screen bounds
-                if (this.x < this.size) this.x = this.size;
-                if (this.x > canvas.width - this.size) this.x = canvas.width - this.size;
-                
-                // 3. Attack Pattern Controller
-                this.attackTimer++;
-                
-                // Switch patterns every 3 seconds (180 frames)
-                if (this.attackTimer > 180) {
-                    this.pattern = (this.pattern + 1) % 4; // Now cycles through 4 distinct phases!
-                    this.attackTimer = 0;
-                }
-                
-                // PHASE 0: Death Blossom (Rotating Laser Spiral)
-                if (this.pattern === 0 && this.attackTimer % 20 === 0) {
-                    let offset = (this.attackTimer * 0.1); 
-                    for (let i = 0; i < Math.PI * 2; i += Math.PI / 3) {
-                        lasers.push(new Laser(this.x, this.y, i + offset, this.faction, this));
-                    }
-                    playSound('laser');
-                }
-                
-                // PHASE 1: Tracker Swarm (Homing Missiles)
-                if (this.pattern === 1 && this.attackTimer % 45 === 0) {
-                    // SYNC FIX: Added X-position tie-breaker to prevent browser sorting algorithm differences!
-                    let targets = ships.sort((a,b) => {
-                        let d1 = Math.hypot(a.position.x-this.x, a.position.y-this.y);
-                        let d2 = Math.hypot(b.position.x-this.x, b.position.y-this.y);
-                        return (d1 - d2) || (a.position.x - b.position.x);
-                    }).slice(0, 4);
-                    targets.forEach(t => {
-                        missiles.push(new Missile(this.x, this.y, t, this.faction, this));
-                    });
-                    if (targets.length > 0) playSound('missile');
-                }
-                
-                // PHASE 2: Minefield Carpet Drop
-                if (this.pattern === 2 && this.attackTimer % 15 === 0) {
-                    mines.push(new Mine(this.x + (Math.random() - 0.5) * 80, this.y + 30, this.faction, this));
-                }
-                
-                // PHASE 3: Rapid Fire Machine Gun
-                if (this.pattern === 3 && this.attackTimer % 8 === 0) {
-                    // SYNC FIX: Added X-position tie-breaker!
-                    let targets = ships.sort((a,b) => {
-                        let d1 = Math.hypot(a.position.x-this.x, a.position.y-this.y);
-                        let d2 = Math.hypot(b.position.x-this.x, b.position.y-this.y);
-                        return (d1 - d2) || (a.position.x - b.position.x);
-                    });
-                    if (targets.length > 0) {
-                        let t = targets[0];
-                        let angle = Math.atan2(t.position.y - this.y, t.position.x - this.x);
-                        // Add slight scatter/inaccuracy so it's a spray
-                        angle += (Math.random() - 0.5) * 0.3;
-                        lasers.push(new Laser(this.x, this.y, angle, this.faction, this));
-                        if (this.attackTimer % 16 === 0) playSound('laser');
-                    }
-                }
-            }
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(Math.PI / 2);
-                
-                let s = this.size;
-                let coreColor = this.pattern === 0 ? '#ff0044' : (this.pattern === 1 ? '#ffcc00' : (this.pattern === 2 ? '#44aaff' : '#ffffff'));
-                let cacheKey = `boss_hull_${this.pattern}`;
-                
-                if (!globalCache[cacheKey]) {
-                    const c = document.createElement('canvas');
-                    const pad = s * 3; // Ensure shadowBlur fits
-                    c.width = pad * 2; c.height = pad * 2;
-                    const cctx = c.getContext('2d');
-                    cctx.translate(pad, pad);
-                    
-                    cctx.shadowBlur = 20; cctx.shadowColor = coreColor;
-                    cctx.fillStyle = '#0a0d14'; cctx.strokeStyle = '#30343f'; cctx.lineWidth = 3;
-                    cctx.beginPath();
-                    cctx.moveTo(s * 1.5, 0); cctx.lineTo(s * 0.5, s * 0.8); cctx.lineTo(-s * 0.3, s * 1.4); 
-                    cctx.lineTo(-s * 1.2, s * 1.0); cctx.lineTo(-s * 0.8, s * 0.4); cctx.lineTo(-s * 1.0, 0); 
-                    cctx.lineTo(-s * 0.8, -s * 0.4); cctx.lineTo(-s * 1.2, -s * 1.0); cctx.lineTo(-s * 0.3, -s * 1.4); 
-                    cctx.lineTo(s * 0.5, -s * 0.8); cctx.closePath(); cctx.fill(); cctx.stroke();
-                    cctx.shadowBlur = 0; 
-                    
-                    cctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; cctx.lineWidth = 2;
-                    cctx.beginPath(); cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, 0); 
-                    cctx.moveTo(s * 0.5, s * 0.8); cctx.lineTo(0, 0); cctx.moveTo(s * 0.5, -s * 0.8); cctx.lineTo(0, 0); cctx.stroke();
-                    
-                    cctx.fillStyle = '#1a1d22';
-                    cctx.fillRect(-s * 0.1, s * 0.8, s * 0.8, s * 0.3); cctx.fillRect(-s * 0.1, -s * 1.1, s * 0.8, s * 0.3);
-                    
-                    cctx.fillStyle = '#ff3300'; cctx.shadowBlur = 10; cctx.shadowColor = '#ff3300';
-                    cctx.beginPath(); cctx.arc(-s * 0.9, s * 0.6, s * 0.25, 0, Math.PI * 2); cctx.arc(-s * 0.9, -s * 0.6, s * 0.25, 0, Math.PI * 2); cctx.fill();
-                    
-                    cctx.fillStyle = coreColor; cctx.shadowBlur = 25; cctx.shadowColor = coreColor;
-                    cctx.beginPath(); cctx.arc(0, 0, s * 0.4, 0, Math.PI * 2); cctx.fill();
-                    cctx.fillStyle = '#ffffff'; cctx.shadowBlur = 0;
-                    cctx.beginPath(); cctx.arc(0, 0, s * 0.15, 0, Math.PI * 2); cctx.fill();
-                    
-                    globalCache[cacheKey] = c;
-                }
-                
-                const cache = globalCache[cacheKey];
-                ctx.drawImage(cache, -cache.width/2, -cache.height/2);
-                ctx.restore();
-                
-                ctx.fillStyle = '#ff0044';
-                ctx.fillRect(this.x - 75, this.y - this.size - 40, 150 * (Math.max(0, this.hp) / this.maxHp), 12);
-                ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
-                ctx.strokeRect(this.x - 75, this.y - this.size - 40, 150, 12);
-            }
-        }
         
         class WormBoss {
             // Default upgraded to 60 segments!
@@ -3707,6 +3574,386 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.restore();
             }
         } // <--- END OF WORMBOSS CLASS
+        class PhantomBoss {
+            constructor() {
+                this.size = 90; 
+                this.x = canvas.width / 2; 
+                this.y = -this.size * 2; // TOP-DOWN ENTRY
+                this.targetY = canvas.height * 0.25; 
+                
+                this.maxHp = 180; 
+                this.hp = 180;
+                this.faction = -1; 
+                
+                this.warpTimer = 180; // Warps every 3 seconds (60fps * 3)
+                this.spawnTimer = 0;
+                this.laserCooldown = 90; 
+                this.angle = 0; 
+                
+                this.introPhase = true;
+                
+                if (!globalCache['phantomBoss']) {
+                    globalCache['phantomBoss'] = createPhantomCache(this.size);
+                }
+            }
+            
+            update(ships) {
+                if (isCountingDown) return;
+                
+                this.angle += 0.01; 
+                
+                if (this.introPhase) {
+                    this.y += 2.5; 
+                    if (Math.random() < 0.4) particles.push(new Particle(this.x + (Math.random() * 80 - 40), this.y - 50, '#ffaa00', 2.0));
+                    
+                    if (this.y >= this.targetY) {
+                        this.introPhase = false;
+                        this.warpTimer = 60; 
+                    }
+                    return; 
+                }
+                
+                this.spawnTimer--;
+                if (this.spawnTimer <= 0) {
+                    let activeWasps = ships.filter(s => s.faction === this.faction && s.isVoidWasp && !s.toRemove).length;
+                    if (activeWasps < 10) {
+                        let wasp = new Ship(this.x + (Math.random() - 0.5) * 80, this.y + (Math.random() - 0.5) * 80, this.faction);
+                        wasp.hp = 2; wasp.maxHp = 2; wasp.size = 6; wasp.maxSpeed = 4.5; wasp.isVoidWasp = true;
+                        ships.push(wasp);
+                        for(let i=0; i<5; i++) particles.push(new Particle(wasp.position.x, wasp.position.y, '#ff0044', 1.0));
+                    }
+                    this.spawnTimer = 45; 
+                }
+
+                this.laserCooldown--;
+                if (this.laserCooldown <= 0) {
+                    let target = null;
+                    let minDist = Infinity;
+                    for (let s of ships) {
+                        if (s.hp > 0 && !s.toRemove && !(s.isStealth && s.cloakTimer > 0) && s.faction !== this.faction) {
+                            let d = Math.hypot(this.x - s.position.x, this.y - s.position.y);
+                            if (d < minDist) { minDist = d; target = s; }
+                        }
+                    }
+
+                    if (target) {
+                        let aimAngle = Math.atan2(target.position.y - this.y, target.position.x - this.x);
+                        let mockShooter = { isSniper: true, isAce: false, faction: this.faction }; 
+                        let pX = Math.cos(aimAngle + Math.PI/2) * 20;
+                        let pY = Math.sin(aimAngle + Math.PI/2) * 20;
+                        
+                        lasers.push(new Laser(this.x + pX, this.y + pY, aimAngle, this.faction, mockShooter));
+                        lasers.push(new Laser(this.x - pX, this.y - pY, aimAngle, this.faction, mockShooter));
+                        playSound('laser');
+                    }
+                    this.laserCooldown = 90; 
+                }
+                
+                this.warpTimer--;
+                if (this.warpTimer <= 0) {
+                    playSound('explosion');
+                    for(let i=0; i<25; i++) particles.push(new Particle(this.x, this.y, '#ff0044', 4.0));
+                    let pad = this.size + 100;
+                    this.x = pad + Math.random() * (canvas.width - pad * 2);
+                    this.y = pad + Math.random() * (canvas.height - pad * 2);
+                    for(let i=0; i<25; i++) particles.push(new Particle(this.x, this.y, '#ffaa00', 4.0));
+                    this.warpTimer = 180; 
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                let cache = globalCache['phantomBoss'];
+                if(cache) ctx.drawImage(cache, -cache.width/2, -cache.height/2);
+                ctx.restore();
+            }
+        }
+
+        class PrismBoss {
+            constructor() {
+                this.size = 75; 
+                this.x = canvas.width / 2; 
+                this.y = -this.size * 2; // TOP-DOWN ENTRY
+                this.targetY = canvas.height * 0.3; 
+                
+                this.maxHp = 500; 
+                this.hp = 500;
+                this.faction = -1; 
+                this.isPrism = true; 
+                
+                this.state = 'ABSORB'; 
+                this.stateTimer = 120; // 2 seconds
+                this.beamAngle = Math.PI / 2;
+                
+                this.beamDamageTimer = 0;
+                this.beamCount = 2;
+                this.beamLengths = [];
+                this.beamAngles = [];
+                this.introPhase = true; 
+                
+                if (!globalCache['prismBoss']) {
+                    globalCache['prismBoss'] = createPrismCache(this.size);
+                }
+            }
+            
+            getNearestTarget(ships) {
+                let target = null;
+                let minDist = Infinity;
+                for (let s of ships) {
+                    if (s.hp > 0 && !s.toRemove && !(s.isStealth && s.cloakTimer > 0) && s.faction !== this.faction) {
+                        let d = Math.hypot(this.x - s.position.x, this.y - s.position.y);
+                        if (d < minDist) { minDist = d; target = s; }
+                    }
+                }
+                return target;
+            }
+            
+            update(ships) {
+                if (isCountingDown) return;
+                
+                if (this.introPhase) {
+                    this.y += 2.0; 
+                    if (Math.random() < 0.3) particles.push(new Particle(this.x, this.y - 40, '#00ffff', 1.5));
+                    if (this.y >= this.targetY) this.introPhase = false;
+                    return; 
+                }
+
+                // COLLISION: Faction ships cannot pass through the Boss!
+                for (let s of ships) {
+                    if (s.hp > 0 && !s.toRemove) {
+                        let dx = s.position.x - this.x;
+                        let dy = s.position.y - this.y;
+                        let dist = Math.hypot(dx, dy);
+                        let minDist = this.size + s.size;
+                        
+                        if (dist < minDist && dist > 0) {
+                            let overlap = minDist - dist;
+                            s.position.x += (dx / dist) * overlap;
+                            s.position.y += (dy / dist) * overlap;
+                            
+                            let vDot = s.velocity.x * (dx/dist) + s.velocity.y * (dy/dist);
+                            if (vDot < 0) {
+                                s.velocity.x -= vDot * (dx/dist);
+                                s.velocity.y -= vDot * (dy/dist);
+                            }
+                        }
+                    }
+                }
+
+                this.x += (canvas.width/2 - this.x) * 0.002;
+                this.y += (canvas.height/2 - this.y) * 0.002;
+
+                this.stateTimer--;
+
+                if (this.state === 'ABSORB') {
+                    let target = this.getNearestTarget(ships);
+                    if (target) {
+                        let targetAngle = Math.atan2(target.position.y - this.y, target.position.x - this.x);
+                        let diff = targetAngle - this.beamAngle;
+                        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                        this.beamAngle += Math.min(Math.max(diff, -0.03), 0.03); 
+                    }
+
+                    if (this.stateTimer <= 0) {
+                        this.state = 'BEAM';
+                        this.stateTimer = 120; // 2 seconds
+                        playSound('laser');
+                        
+                        // Scale beams dynamically!
+                        let enemyCount = ships.filter(s => s.faction !== this.faction && s.hp > 0 && !s.toRemove).length;
+                        if (enemyCount > 110) this.beamCount = 8;
+                        else if (enemyCount > 60) this.beamCount = 6;
+                        else if (enemyCount > 30) this.beamCount = 4;
+                        else this.beamCount = 2;
+                    }
+                } 
+                else if (this.state === 'BEAM') {
+                    let target = this.getNearestTarget(ships);
+                    if (target) {
+                        let targetAngle = Math.atan2(target.position.y - this.y, target.position.x - this.x);
+                        let diff = targetAngle - this.beamAngle;
+                        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                        this.beamAngle += Math.min(Math.max(diff, -0.015), 0.015); 
+                    }
+
+                    this.beamDamageTimer--;
+                    let doDamage = (this.beamDamageTimer <= 0);
+                    if (doDamage) this.beamDamageTimer = 15; // Exactly 1 damage every 15 frames (0.25s)
+
+                    let spread = 0.25; 
+                    let startingOffset = -((this.beamCount - 1) * spread) / 2;
+
+                    this.beamLengths = [];
+                    this.beamAngles = [];
+
+                    for (let b = 0; b < this.beamCount; b++) {
+                        let bAngle = this.beamAngle + startingOffset + (b * spread);
+                        let dx = Math.cos(bAngle);
+                        let dy = Math.sin(bAngle);
+                        let beamLen = 2500;
+                        let hitIndex = -1;
+                        let hitShipObj = null;
+
+                        for (let i = 0; i < ships.length; i++) {
+                            let s = ships[i];
+                            if (s.faction === this.faction || s.toRemove || s.hp <= 0 || (s.isStealth && s.cloakTimer > 0)) continue;
+                            
+                            let sx = s.position.x - this.x;
+                            let sy = s.position.y - this.y;
+                            let dot = sx * dx + sy * dy; 
+                            
+                            if (dot > 0 && dot < beamLen) {
+                                let projX = dot * dx;
+                                let projY = dot * dy;
+                                let distToBeam = Math.hypot(sx - projX, sy - projY);
+                                
+                                if (distToBeam < s.size + 15) { 
+                                    beamLen = dot;
+                                    hitIndex = i;
+                                    hitShipObj = s;
+                                }
+                            }
+                        }
+
+                        this.beamLengths.push(beamLen);
+                        this.beamAngles.push(bAngle);
+                        
+                        if (doDamage && hitIndex !== -1 && hitShipObj) {
+                            hitShip(hitIndex, this, 1);
+                            for(let p=0; p<10; p++) particles.push(new Particle(this.x + dx * beamLen, this.y + dy * beamLen, '#00ffff', 3.0));
+                        }
+                    }
+
+                    if (this.stateTimer <= 0) {
+                        this.state = 'ABSORB';
+                        this.stateTimer = 120; // 2 seconds
+                    }
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                let cache = globalCache['prismBoss'];
+                if(cache) {
+                    ctx.rotate(Date.now() * 0.0005);
+                    ctx.drawImage(cache, -cache.width/2, -cache.height/2);
+                    ctx.rotate(-Date.now() * 0.0005); 
+                }
+                
+                // 360-Degree Shield Bubble during ABSORB
+                if (this.state === 'ABSORB' && !this.introPhase) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#00ffff';
+                    ctx.fillStyle = `rgba(0, 255, 255, ${0.15 + Math.random() * 0.1})`; 
+                    ctx.strokeStyle = `rgba(0, 255, 255, ${0.5 + Math.random() * 0.5})`; 
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size + 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                ctx.restore();
+
+                if (this.state === 'BEAM' && !this.introPhase) {
+                    ctx.save();
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#00ffff';
+                    ctx.lineCap = 'round';
+                    
+                    for (let i = 0; i < this.beamCount; i++) {
+                        let bAngle = this.beamAngles[i];
+                        let bLen = this.beamLengths[i];
+                        
+                        ctx.strokeStyle = `rgba(0, 255, 255, ${0.7 + Math.random() * 0.3})`;
+                        ctx.lineWidth = 15 + Math.random() * 5; 
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(this.x + Math.cos(bAngle) * this.size, this.y + Math.sin(bAngle) * this.size);
+                        ctx.lineTo(this.x + Math.cos(bAngle) * bLen, this.y + Math.sin(bAngle) * bLen);
+                        ctx.stroke();
+                        
+                        ctx.shadowBlur = 0;
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 6;
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
+        }
+
+        function createPhantomCache(size) {
+            const buffer = document.createElement('canvas');
+            const safeDim = Math.ceil(size * 3);
+            buffer.width = safeDim; buffer.height = safeDim;
+            const bctx = buffer.getContext('2d');
+            bctx.translate(safeDim / 2, safeDim / 2);
+
+            bctx.fillStyle = '#050508';
+            bctx.beginPath();
+            bctx.moveTo(size * 1.2, 0); 
+            bctx.lineTo(size * 0.2, size * 0.3);
+            bctx.lineTo(-size * 0.8, size * 0.2);
+            bctx.lineTo(-size * 1.0, 0); 
+            bctx.lineTo(-size * 0.8, -size * 0.2);
+            bctx.lineTo(size * 0.2, -size * 0.3);
+            bctx.closePath();
+            bctx.fill();
+            bctx.strokeStyle = '#330011';
+            bctx.lineWidth = 3;
+            bctx.stroke();
+
+            bctx.fillStyle = '#0a0a0c';
+            bctx.strokeStyle = '#ff0044';
+            bctx.lineWidth = 2;
+            bctx.beginPath(); bctx.moveTo(size * 0.5, size * 0.45); bctx.lineTo(-size * 0.5, size * 1.1); bctx.lineTo(-size * 0.9, size * 1.1); bctx.lineTo(-size * 0.3, size * 0.45); bctx.closePath(); bctx.fill(); bctx.stroke();
+            bctx.beginPath(); bctx.moveTo(size * 0.5, -size * 0.45); bctx.lineTo(-size * 0.5, -size * 1.1); bctx.lineTo(-size * 0.9, -size * 1.1); bctx.lineTo(-size * 0.3, -size * 0.45); bctx.closePath(); bctx.fill(); bctx.stroke();
+
+            bctx.strokeStyle = 'rgba(255, 0, 68, 0.5)';
+            bctx.lineWidth = 2; bctx.setLineDash([4, 4]); bctx.beginPath();
+            bctx.moveTo(0, size * 0.25); bctx.lineTo(0, size * 0.6);
+            bctx.moveTo(0, -size * 0.25); bctx.lineTo(0, -size * 0.6);
+            bctx.stroke(); bctx.setLineDash([]); 
+
+            bctx.shadowBlur = 25; bctx.shadowColor = '#ff0044'; bctx.fillStyle = '#440000';
+            bctx.beginPath(); bctx.ellipse(-size * 0.2, 0, size * 0.4, size * 0.15, 0, 0, Math.PI * 2); bctx.fill();
+            bctx.fillStyle = '#ff0044'; bctx.beginPath(); bctx.ellipse(-size * 0.2, 0, size * 0.2, size * 0.08, 0, 0, Math.PI * 2); bctx.fill();
+            bctx.fillStyle = '#ffffff'; bctx.shadowBlur = 15; bctx.shadowColor = '#ffffff';
+            bctx.beginPath(); bctx.arc(-size * 0.2, 0, size * 0.05, 0, Math.PI * 2); bctx.fill();
+            bctx.shadowBlur = 0; 
+            return buffer;
+        }
+
+        function createPrismCache(size) {
+            const buffer = document.createElement('canvas');
+            const safeDim = Math.ceil(size * 3);
+            buffer.width = safeDim; buffer.height = safeDim;
+            const bctx = buffer.getContext('2d');
+            bctx.translate(safeDim / 2, safeDim / 2);
+
+            bctx.shadowBlur = 20; bctx.shadowColor = '#00ffff';
+            bctx.fillStyle = '#05111a'; bctx.strokeStyle = '#00ffff'; bctx.lineWidth = 4;
+            bctx.beginPath();
+            for(let i=0; i<6; i++) {
+                let a = (Math.PI / 3) * i; let px = Math.cos(a) * size; let py = Math.sin(a) * size;
+                if(i===0) bctx.moveTo(px, py); else bctx.lineTo(px, py);
+            }
+            bctx.closePath(); bctx.fill(); bctx.stroke();
+
+            bctx.shadowBlur = 0; bctx.lineWidth = 2; bctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+            for(let i=0; i<6; i++) {
+                let a = (Math.PI / 3) * i;
+                bctx.beginPath(); bctx.moveTo(0, 0); bctx.lineTo(Math.cos(a) * size, Math.sin(a) * size); bctx.stroke();
+            }
+
+            bctx.shadowBlur = 15; bctx.shadowColor = '#ffffff'; bctx.fillStyle = '#ffffff';
+            bctx.beginPath(); bctx.arc(0, 0, size * 0.2, 0, Math.PI * 2); bctx.fill();
+            return buffer;
+        }
 
         // Helper functions sit safely OUTSIDE the class
         function createWormBodyCache(radius) {
@@ -3881,6 +4128,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.isDrone = false; 
                 this.isCarrier = false;
                 this.isTethered = false; 
+                this.isVoidWasp = false; // NEW: The Boss's exclusive fighter class 
                 this.droneSpawnTimer = 60; 
                 this.sentinelPulseTimer = 180; 
                 
@@ -4089,7 +4337,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
 
                 // 2. Target Bosses
                 for (let b of bosses) {
-                    if (b.hp > 0) {
+                    // FIX: Ensure the ship does not attack its own creator!
+                    if (b.hp > 0 && b.faction !== this.faction) { 
                         let d = Math.hypot(this.position.x - b.x, this.position.y - b.y);
                         let bossAdapter = { get position() { return b; }, get hp() { return b.hp; }, set hp(val) { b.hp = val; }, size: b.size, isBoss: true };
                         if (d < minDist) { minDist = d; nearestEnemy = bossAdapter; }
@@ -4101,6 +4350,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
 
                 // 3. Target Worms (Check every 2nd segment to save CPU)
                 for (let w of worms) {
+                    // FIX: Ensure the ship does not attack a friendly leviathan!
+                    if (w.faction === this.faction) continue; 
+                    
                     for (let s = 0; s < w.segments.length; s += 2) {
                         let seg = w.segments[s];
                         if (seg.hp > 0) {
@@ -4384,7 +4636,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 else if (this.isSniper) typeKey = 'snip';
                 else if (this.isSentinel) typeKey = 'sent';
                 else if (this.isStealth) typeKey = 'stl';
-                else if (this.isDrone) { s = 4.5; typeKey = 'drn'; } // CRUSHED: Counteracts the wide rotor arms so it matches basic ships!
+                else if (this.isVoidWasp) { s = 6; typeKey = 'wasp'; } // NEW: Distinct sizing for Void Wasps
+                else if (this.isDrone) { s = 4.5; typeKey = 'drn'; }
                 
                 let cacheKey = `ship_${this.faction}_${typeKey}`;
                 
@@ -4438,21 +4691,6 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.fillStyle = factionColors[this.faction]; cctx.beginPath(); cctx.arc(0, 0, s * 0.4, 0, Math.PI*2); cctx.fill();
                     } else if (this.isCarrier) {
                         cctx.shadowBlur = 20; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
-                        // Super Carrier: Wide, blocky flight deck
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.5, s * 0.8); cctx.lineTo(s * 1.5, -s * 0.8); cctx.lineTo(s * 0.5, -s * 1.2);
-                        cctx.lineTo(-s * 1.5, -s * 1.2); cctx.lineTo(-s * 1.5, s * 1.2); cctx.lineTo(s * 0.5, s * 1.2);
-                        cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
-                        
-                        cctx.fillStyle = '#111';
-                        cctx.fillRect(-s * 1.0, -s * 0.8, s * 2.0, s * 1.6); // Runway / Launch Deck
-                        cctx.fillStyle = '#ffaa00';
-                        cctx.fillRect(-s * 0.8, -s * 0.05, s * 1.6, s * 0.1); // Deck lights
-                        
-                        cctx.fillStyle = 'rgba(200, 240, 255, 0.9)'; cctx.beginPath();
-                        cctx.arc(s * 0.8, 0, s * 0.3, 0, Math.PI*2); cctx.fill(); // Forward Bridge
-                    } else if (this.isCarrier) {
-                        cctx.shadowBlur = 20; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
                         cctx.beginPath();
                         cctx.moveTo(s * 1.5, s * 0.8); cctx.lineTo(s * 1.5, -s * 0.8); cctx.lineTo(s * 0.5, -s * 1.2);
                         cctx.lineTo(-s * 1.5, -s * 1.2); cctx.lineTo(-s * 1.5, s * 1.2); cctx.lineTo(s * 0.5, s * 1.2);
@@ -4462,35 +4700,23 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.fillStyle = 'rgba(200, 240, 255, 0.9)'; cctx.beginPath(); cctx.arc(s * 0.8, 0, s * 0.3, 0, Math.PI*2); cctx.fill();
                     } else if (this.isDrone) {
                         cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; 
-                        
-                        // 1. Structural Arms (Heavy X shape)
                         cctx.strokeStyle = '#333'; cctx.lineWidth = s * 0.4;
                         cctx.beginPath(); cctx.moveTo(-s*1.5, -s*1.5); cctx.lineTo(s*1.5, s*1.5); cctx.stroke();
                         cctx.beginPath(); cctx.moveTo(s*1.5, -s*1.5); cctx.lineTo(-s*1.5, s*1.5); cctx.stroke();
-
-                        // 2. Four distinct Rotor Guards
                         cctx.strokeStyle = factionColors[this.faction]; cctx.lineWidth = 1.5;
                         cctx.fillStyle = '#111';
                         let rotors = [ {x: -s*1.5, y: -s*1.5}, {x: s*1.5, y: -s*1.5}, {x: -s*1.5, y: s*1.5}, {x: s*1.5, y: s*1.5} ];
                         rotors.forEach(r => {
-                            // Outer casing
                             cctx.beginPath(); cctx.arc(r.x, r.y, s*0.8, 0, Math.PI*2); cctx.fill(); cctx.stroke();
-                            // Inner spinning blur illusion
                             cctx.fillStyle = 'rgba(200, 240, 255, 0.6)';
                             cctx.beginPath(); cctx.arc(r.x, r.y, s*0.5, 0, Math.PI*2); cctx.fill();
-                            cctx.fillStyle = '#111'; // reset
+                            cctx.fillStyle = '#111'; 
                         });
-
-                        // 3. Central Mechanical Chassis
                         cctx.fillStyle = '#1a1d22';
                         cctx.beginPath(); cctx.ellipse(0, 0, s*1.1, s*0.9, 0, 0, Math.PI*2); cctx.fill();
                         cctx.stroke();
-
-                        // 4. Forward-facing sensor array (Cyan glowing eye)
                         cctx.fillStyle = '#00ffff'; cctx.shadowBlur = 5; cctx.shadowColor = '#00ffff';
                         cctx.beginPath(); cctx.arc(s*0.7, 0, s*0.3, 0, Math.PI*2); cctx.fill();
-                        
-                        // Reset main shadow
                         cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction];
                     } else if (this.isStealth) {
                         cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = '#111';
@@ -4505,7 +4731,35 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.moveTo(s * 0.8, 0); cctx.lineTo(s * 0.2, s * 0.15); cctx.lineTo(-s * 0.2, 0); cctx.lineTo(s * 0.2, -s * 0.15); cctx.fill();
                         cctx.fillStyle = factionColors[this.faction];
                         cctx.fillRect(-s * 0.9, s * 0.3, s * 0.4, s * 0.1); cctx.fillRect(-s * 0.9, -s * 0.4, s * 0.4, s * 0.1);
+                    } else if (this.isVoidWasp) {
+                        // THE VOID WASP: High-Tech Energy Dart
+                        cctx.shadowBlur = 12; cctx.shadowColor = '#ff0044'; 
+                        
+                        // Main hull (Black metallic arrowhead)
+                        cctx.fillStyle = '#080808';
+                        cctx.beginPath();
+                        cctx.moveTo(s * 2.5, 0); // Extended sharp nose
+                        cctx.lineTo(-s * 1.2, s * 1.2); 
+                        cctx.lineTo(-s * 0.6, 0); // Deep cut in the back
+                        cctx.lineTo(-s * 1.2, -s * 1.2); 
+                        cctx.closePath(); cctx.fill();
+                        
+                        // Crimson Energy Blades along the wings
+                        cctx.strokeStyle = '#ff0044'; cctx.lineWidth = 2;
+                        cctx.beginPath();
+                        cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, s * 1.0);
+                        cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, -s * 1.0);
+                        cctx.stroke();
+
+                        // Blazing white-hot core
+                        cctx.fillStyle = '#ffffff';
+                        cctx.beginPath();
+                        cctx.ellipse(s * 0.5, 0, s * 0.6, s * 0.2, 0, 0, Math.PI * 2);
+                        cctx.fill();
+                        
+                        cctx.shadowBlur = 0; // Reset
                     } else {
+                        // Standard Ship
                         cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
                         cctx.beginPath();
                         cctx.moveTo(s * 1.8, 0); cctx.lineTo(-s * 0.5, s * 0.6); cctx.lineTo(-s * 1.2, s * 0.9); cctx.lineTo(-s * 0.8, s * 0.4);
@@ -4530,10 +4784,20 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 // --- DYNAMIC ELEMENTS (Drawn every frame) ---
                 
                 // Engine Thruster Flame
-                ctx.fillStyle = this.isCrashing ? '#ff3300' : '#00ffff'; 
-                ctx.beginPath();
-                ctx.arc(-s * 0.6, 0, s * (this.isCrashing ? 0.4 : 0.25), 0, Math.PI * 2);
-                ctx.fill();
+                if (this.isVoidWasp) {
+                    ctx.fillStyle = '#ff0044';
+                    ctx.beginPath();
+                    ctx.arc(-s * 0.8, 0, s * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Leave a trailing void shadow
+                    if (Math.random() < 0.4) particles.push(new Particle(this.position.x - Math.cos(angle)*s, this.position.y - Math.sin(angle)*s, '#ff0044', 0.5));
+                } else {
+                    ctx.fillStyle = this.isCrashing ? '#ff3300' : '#00ffff'; 
+                    ctx.beginPath();
+                    ctx.arc(-s * 0.6, 0, s * (this.isCrashing ? 0.4 : 0.25), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
                 if (this.isFlagship) {
                     ctx.fillRect(-s * 1.5, s * 0.4, s * 0.3, s * 0.3);
                     ctx.fillRect(-s * 1.5, -s * 0.7, s * 0.3, s * 0.3);
@@ -4725,6 +4989,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 gameWinner = null;
                 matchTicks = 0; 
                 worms = []; // HARD RESET: Wipe the apocalypse worm if the match restarts
+                bosses = []; // HARD RESET: Wipe the Phantom Mothership on match restart
                 if (!isMultiplayer) setDeterministicSeed(Math.floor(Math.random() * 100000), true);
             } else {
                 // Step the seed deterministically for the next round so all clients stay in lockstep.
@@ -4762,13 +5027,18 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             if (!adminModeEnabled) {
                 asteroids = [];
                 comets = [];
-                bosses = [];
+                // 'bosses = [];' REMOVED SO THE BOSS PERSISTS BETWEEN ROUNDS!
                 wormholes = [];
                 walls = [];
                 
-                isBossRound = (round % 10 === 0);
-                if (isBossRound) {
-                    bosses.push(new Boss(canvas.width / 2, canvas.height / 2));
+                // Round 10: Phantom Mothership
+                if (round === 10 && bosses.filter(b => b instanceof PhantomBoss).length === 0) {
+                    bosses.push(new PhantomBoss());
+                }
+                
+                // Round 20: Prism Matrix
+                if (round === 20 && bosses.filter(b => b instanceof PrismBoss).length === 0) {
+                    bosses.push(new PrismBoss());
                 }
                 
                 // THE APOCALYPSE EVENT: Spawns exactly at Round 30 and persists
@@ -5693,7 +5963,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             arenaMines = []; 
             nebulas = []; 
         });
-        document.getElementById('adminSpawnBoss').addEventListener('click', () => bosses.push(new Boss(canvas.width / 2, canvas.height / 2)));
+        document.getElementById('adminSpawnPhantom').addEventListener('click', () => bosses.push(new PhantomBoss()));
+        document.getElementById('adminSpawnPrism').addEventListener('click', () => bosses.push(new PrismBoss()));
         document.getElementById('adminClearBoss').addEventListener('click', () => bosses = []);
         document.getElementById('adminSpawnSpaceWorm').addEventListener('click', () => worms.push(new WormBoss(-100, canvas.height / 2)));
         document.getElementById('adminClearSpaceWorm').addEventListener('click', () => worms = []);
@@ -6290,7 +6561,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             hitShip(j, l.shooter);
                             l.hitShips.add(s); // Mark this ship as pierced so it doesn't get hit again next frame
                             
-                            if (perksEnabled) {
+                            // FIX: Ensure Faction is a valid player so Boss lasers don't crash the perk check!
+                            if (perksEnabled && l.faction >= 0 && l.faction < 6) {
                                 let ricochetChance = factionPerks[l.faction].ricochet * 0.05;
                                 if (l.shooter && l.shooter.isAce) ricochetChance += 0.25; // Ace Flat 25% Bonus
                                 
@@ -6530,29 +6802,73 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             // Update Bosses
             for (let i = bosses.length - 1; i >= 0; i--) {
                 let b = bosses[i];
-                b.update();
+                b.update(ships); 
                 b.draw();
                 
+                // Laser vs Boss Collision & Shield Absorption
                 for (let j = lasers.length - 1; j >= 0; j--) {
-                    if (Math.hypot(lasers[j].x - b.x, lasers[j].y - b.y) < b.size) {
-                        b.hp--;
-                        playSound('hit');
-                        fastRemove(lasers, j);
-                        particles.push(new Particle(b.x, b.y, '#ff0044'));
-                    }
-                }
-                for (let j = missiles.length - 1; j >= 0; j--) {
-                    if (Math.hypot(missiles[j].x - b.x, missiles[j].y - b.y) < b.size + 8) {
-                        b.hp -= 2;
-                        playSound('explosion'); 
-                        fastRemove(missiles, j);
-                        for(let p=0; p<10; p++) particles.push(new Particle(b.x, b.y, '#ffaa00'));
+                    let l = lasers[j];
+                    if (l.faction === b.faction) continue; // Boss ignores its own scattered lasers
+
+                    if (Math.hypot(l.x - b.x, l.y - b.y) < b.size) {
+                        let hitShield = false;
+                        
+                        // Check if hitting the front of the active Prism Shield
+                        if (b.isPrism && (b.state === 'ABSORB' || b.state === 'BEAM') && !b.introPhase) {
+                            let incomingAngle = Math.atan2(l.y - b.y, l.x - b.x);
+                            let diff = incomingAngle - b.shieldAngle;
+                            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                            
+                            // If laser hits the 120-degree arc of the shield
+                            if (Math.abs(diff) < Math.PI / 2.5) {
+                                hitShield = true;
+                                b.absorbedEnergy += 2; // Feed the battery!
+                                playSound('hit');
+                                for(let p=0; p<6; p++) particles.push(new Particle(l.x, l.y, '#00ffff', 1.5));
+                            }
+                        }
+                        
+                        // If it bypassed the shield, deal damage!
+                        if (!hitShield && !b.introPhase) {
+                            b.hp--;
+                            playSound('hit');
+                            particles.push(new Particle(b.x, b.y, '#ff0044'));
+                        }
+                        fastRemove(lasers, j); // Delete the laser regardless
                     }
                 }
                 
-                if (b.hp <= 0) {
+                // Missile vs Boss Collision
+                for (let j = missiles.length - 1; j >= 0; j--) {
+                    let m = missiles[j];
+                    if (m.faction === b.faction) continue;
+
+                    if (Math.hypot(m.x - b.x, m.y - b.y) < b.size + 8) {
+                        let hitShield = false;
+                        if (b.isPrism && (b.state === 'ABSORB' || b.state === 'BEAM') && !b.introPhase) {
+                            let incomingAngle = Math.atan2(m.y - b.y, m.x - b.x);
+                            let diff = incomingAngle - b.shieldAngle;
+                            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                            if (Math.abs(diff) < Math.PI / 2.5) {
+                                hitShield = true;
+                                b.absorbedEnergy += 5; // Missiles feed it tons of energy!
+                                playSound('explosion');
+                                for(let p=0; p<15; p++) particles.push(new Particle(m.x, m.y, '#00ffff', 2.0));
+                            }
+                        }
+
+                        if (!hitShield && !b.introPhase) {
+                            b.hp -= 2;
+                            playSound('explosion'); 
+                            for(let p=0; p<10; p++) particles.push(new Particle(b.x, b.y, '#ffaa00'));
+                        }
+                        fastRemove(missiles, j);
+                    }
+                }
+                
+                if (b.hp <= 0 && !b.introPhase) {
                     playSound('explosion');
-                    for(let p=0; p<50; p++) particles.push(new Particle(b.x, b.y, '#ff0044', 3));
+                    for(let p=0; p<80; p++) particles.push(new Particle(b.x, b.y, '#00ffff', 5));
                     fastRemove(bosses, i);
                 }
             }
@@ -6676,8 +6992,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             if (matchActive && roundActive && !isCountingDown) {
                 matchTicks++; // TICK THE DETERMINISTIC CLOCK!
                 
-                // If in Admin mode, filter out factions 4 and 5 (Dummies) so they don't count towards the win logic
-                let checkShips = adminModeEnabled ? ships.filter(s => s.faction < 4) : ships;
+                // Filter out Dummies (in Admin) AND Boss Minions (Faction -1) so they don't count as surviving players!
+                let checkShips = adminModeEnabled ? ships.filter(s => s.faction >= 0 && s.faction < 4) : ships.filter(s => s.faction >= 0);
                 let aliveFactions = [...new Set(checkShips.map(s => s.faction))];
                 
                 // BOSS LOCK: The round NEVER ends as long as a Boss OR Worm is alive!
