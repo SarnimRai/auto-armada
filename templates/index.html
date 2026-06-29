@@ -3556,15 +3556,15 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         }
         
         class WormBoss {
-            constructor(x, y, segmentCount = 30, splitCount = 0, initialSegments = null) {
+            // Default upgraded to 60 segments!
+            constructor(x, y, segmentCount = 60, splitCount = 0, initialSegments = null) {
                 this.splitCount = splitCount;
-                // Slower base speed (4.0), scales up 10% per split, max 4 times
                 this.speed = 4.0 * Math.pow(1.1, Math.min(this.splitCount, 4));
-                this.segmentRadius = 26; // Massive segments
-                this.spacing = 20; 
-                this.faction = -1; // Hostile
+                this.segmentRadius = 45; // MASSIVE Leviathan sizing
+                this.spacing = 35; 
+                this.faction = -1; 
                 
-                this.state = 'WANDER'; // WANDER or ATTACK
+                this.state = 'WANDER'; 
                 this.stateTimer = 60;
                 this.moveAngle = Math.random() * Math.PI * 2;
                 this.targetAngle = this.moveAngle;
@@ -3578,16 +3578,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     }
                 }
                 
-                // Init High-Res Texture Cache
-                if (!globalCache['wormBody']) {
-                    globalCache['wormBody'] = createWormBodyCache(this.segmentRadius);
-                    globalCache['wormHead'] = createWormHeadCache(this.segmentRadius);
+                // Update Cache keys so it bakes the new colossal textures
+                if (!globalCache['wormBodyV2']) {
+                    globalCache['wormBodyV2'] = createWormBodyCache(this.segmentRadius);
+                    globalCache['wormHeadV2'] = createWormHeadCache(this.segmentRadius);
                 }
             }
             
             splitAt(index) {
                 playSound('explosion');
-                explosions.push({x: this.segments[index].x, y: this.segments[index].y, radius: 0, maxRadius: 90, faction: -1, damage: 2});
+                explosions.push({x: this.segments[index].x, y: this.segments[index].y, radius: 0, maxRadius: 100, faction: -1, damage: 2});
                 
                 let headHalf = this.segments.slice(0, index);
                 let tailHalf = this.segments.slice(index + 1);
@@ -3602,15 +3602,14 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 let head = this.segments[0];
                 
-                // STATE MACHINE LOGIC
                 this.stateTimer--;
                 if (this.stateTimer <= 0) {
                     if (this.state === 'WANDER') {
                         this.state = 'ATTACK';
-                        this.stateTimer = 120 + Math.random() * 120; // 2 to 4 seconds of aggressive charging
+                        this.stateTimer = 120 + Math.random() * 120; 
                     } else {
                         this.state = 'WANDER';
-                        this.stateTimer = 180 + Math.random() * 120; // 3 to 5 seconds of slithering around
+                        this.stateTimer = 180 + Math.random() * 120; 
                         this.targetAngle = this.moveAngle + (Math.random() - 0.5) * Math.PI * 1.5; 
                     }
                 }
@@ -3625,24 +3624,25 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     }
                     if (nearest) this.targetAngle = Math.atan2(nearest.position.y - head.y, nearest.position.x - head.x);
                 } else {
-                    if (Math.random() < 0.05) this.targetAngle += (Math.random() - 0.5) * Math.PI / 2;
+                    if (Math.random() < 0.05) this.targetAngle += (Math.random() - 0.5) * 0.5;
                 }
 
-                // Smooth Rotation Math
+                // EDGE FIX: Smooth, aggressive steering back to the center of the map. No more vibrating stops!
+                let margin = 150;
+                if (head.x < margin || head.x > canvas.width - margin || head.y < margin || head.y > canvas.height - margin) {
+                    let angleToCenter = Math.atan2(canvas.height/2 - head.y, canvas.width/2 - head.x);
+                    this.targetAngle = angleToCenter;
+                    this.state = 'WANDER'; // Cancel attack to prioritize turning
+                }
+
                 let diff = this.targetAngle - this.moveAngle;
                 diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-                let turnSpeed = this.state === 'ATTACK' ? 0.06 : 0.03; // Turns sharper when attacking
+                let turnSpeed = this.state === 'ATTACK' ? 0.06 : 0.04; 
                 this.moveAngle += Math.min(Math.max(diff, -turnSpeed), turnSpeed);
 
+                // ALWAYS DRIVE FORWARD CONSTANTLY
                 head.x += Math.cos(this.moveAngle) * this.speed;
                 head.y += Math.sin(this.moveAngle) * this.speed;
-                
-                // Edge Bouncing
-                if (head.x < 0 || head.x > canvas.width || head.y < 0 || head.y > canvas.height) {
-                    this.targetAngle += Math.PI; // Hard flip if it hits a wall
-                    head.x = Math.max(0, Math.min(canvas.width, head.x));
-                    head.y = Math.max(0, Math.min(canvas.height, head.y));
-                }
                 
                 // Inverse Kinematics Body Following
                 for (let i = 1; i < this.segments.length; i++) {
@@ -3666,7 +3666,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         for (let seg of this.segments) {
                             if (Math.hypot(seg.x - s.position.x, seg.y - s.position.y) < this.segmentRadius + s.size) {
                                 hitShip(j, null, 2); 
-                                for(let p=0; p<15; p++) particles.push(new Particle(seg.x, seg.y, '#00ffaa', 2));
+                                for(let p=0; p<15; p++) particles.push(new Particle(seg.x, seg.y, '#ff2200', 2)); // CRIMSON PARTICLES
                                 break; 
                             }
                         }
@@ -3677,17 +3677,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             draw() {
                 if (this.segments.length === 0) return;
                 
-                // Draw Energy Tether
+                // Draw Crimson Energy Spine
                 ctx.beginPath();
                 ctx.moveTo(this.segments[0].x, this.segments[0].y);
                 for (let i = 1; i < this.segments.length; i++) ctx.lineTo(this.segments[i].x, this.segments[i].y);
-                ctx.strokeStyle = '#00ffaa';
-                ctx.lineWidth = this.segmentRadius * 0.3;
+                ctx.strokeStyle = '#ff2200'; // CRIMSON SPINE
+                ctx.lineWidth = this.segmentRadius * 0.4;
                 ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                 ctx.stroke();
                 
                 // Draw Cached Body
-                let bodyCache = globalCache['wormBody'];
+                let bodyCache = globalCache['wormBodyV2'];
                 for (let i = this.segments.length - 1; i >= 1; i--) {
                     let seg = this.segments[i];
                     ctx.drawImage(bodyCache, seg.x - bodyCache.width/2, seg.y - bodyCache.height/2);
@@ -3699,7 +3699,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 // Draw Cached Head
                 let head = this.segments[0];
-                let headCache = globalCache['wormHead'];
+                let headCache = globalCache['wormHeadV2'];
                 ctx.save();
                 ctx.translate(head.x, head.y);
                 ctx.rotate(this.moveAngle);
@@ -3714,12 +3714,58 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             c.width = radius * 3; c.height = radius * 3;
             const ctx = c.getContext('2d');
             ctx.translate(radius * 1.5, radius * 1.5);
-            ctx.fillStyle = '#0a192f';
+
+            // Base black bio-mechanical tissue
+            ctx.fillStyle = '#050505';
             ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#112240'; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.arc(0, 0, radius - 2, 0, Math.PI * 2); ctx.stroke();
-            ctx.fillStyle = '#00ffaa'; ctx.shadowBlur = 15; ctx.shadowColor = '#00ffaa';
+
+            // Dark red outer armor ring (carapace)
+            ctx.strokeStyle = '#3a0000';
+            ctx.lineWidth = radius * 0.2;
+            ctx.beginPath(); ctx.arc(0, 0, radius * 0.9, 0, Math.PI * 2); ctx.stroke();
+
+            // Inner metallic ring
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = radius * 0.1;
+            ctx.beginPath(); ctx.arc(0, 0, radius * 0.6, 0, Math.PI * 2); ctx.stroke();
+
+            // Threatening dark red spikes/ridges projecting outwards
+            ctx.fillStyle = '#660000';
+            for(let i=0; i<8; i++) {
+                ctx.save();
+                ctx.rotate((Math.PI / 4) * i);
+                ctx.beginPath();
+                ctx.moveTo(radius * 0.8, -radius * 0.15);
+                ctx.lineTo(radius * 1.15, 0); // Spike tip
+                ctx.lineTo(radius * 0.8, radius * 0.15);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Deep red venting channels
+            ctx.strokeStyle = '#ff1111';
+            ctx.lineWidth = 2;
+            for(let i=0; i<4; i++) {
+                ctx.save();
+                ctx.rotate((Math.PI / 2) * i + Math.PI/4);
+                ctx.beginPath();
+                ctx.moveTo(radius * 0.4, 0);
+                ctx.lineTo(radius * 0.85, 0);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Glowing magma core
+            ctx.fillStyle = '#ff2200';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff2200';
             ctx.beginPath(); ctx.arc(0, 0, radius * 0.35, 0, Math.PI * 2); ctx.fill();
+            
+            // Pure white hot center
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.arc(0, 0, radius * 0.15, 0, Math.PI * 2); ctx.fill();
+
             return c;
         }
 
@@ -3728,14 +3774,67 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             c.width = radius * 4; c.height = radius * 4;
             const ctx = c.getContext('2d');
             ctx.translate(radius * 2, radius * 2);
-            ctx.fillStyle = '#0a192f';
-            ctx.beginPath(); ctx.moveTo(radius * 1.5, 0); ctx.lineTo(-radius * 0.5, radius * 1.2); ctx.lineTo(-radius * 0.5, -radius * 1.2); ctx.closePath(); ctx.fill();
-            ctx.fillStyle = '#112240';
-            ctx.beginPath(); ctx.moveTo(radius * 1.8, radius * 0.4); ctx.lineTo(radius * 0.5, radius * 1.2); ctx.lineTo(radius * 0.2, radius * 0.4); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(radius * 1.8, -radius * 0.4); ctx.lineTo(radius * 0.5, -radius * 1.2); ctx.lineTo(radius * 0.2, -radius * 0.4); ctx.fill();
-            ctx.fillStyle = '#00ffaa'; ctx.shadowBlur = 15; ctx.shadowColor = '#00ffaa';
-            ctx.beginPath(); ctx.arc(radius * 0.5, radius * 0.5, radius * 0.15, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.arc(radius * 0.5, -radius * 0.5, radius * 0.15, 0, Math.PI * 2); ctx.fill();
+
+            // Base heavy black skull plate
+            ctx.fillStyle = '#050505';
+            ctx.beginPath();
+            ctx.moveTo(radius * 1.6, 0); // Snout
+            ctx.lineTo(-radius * 0.6, radius * 1.3); // Back left
+            ctx.lineTo(-radius * 0.8, 0); // Back center indent
+            ctx.lineTo(-radius * 0.6, -radius * 1.3); // Back right
+            ctx.closePath(); ctx.fill();
+
+            // Dark red armor plating
+            ctx.fillStyle = '#4a0000';
+            ctx.beginPath();
+            ctx.moveTo(radius * 1.2, 0);
+            ctx.lineTo(-radius * 0.2, radius * 0.9);
+            ctx.lineTo(-radius * 0.5, 0);
+            ctx.lineTo(-radius * 0.2, -radius * 0.9);
+            ctx.closePath(); ctx.fill();
+
+            // Bright red tribal/circuit lines
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(radius * 0.8, 0); ctx.lineTo(-radius * 0.3, radius * 0.6);
+            ctx.moveTo(radius * 0.8, 0); ctx.lineTo(-radius * 0.3, -radius * 0.6);
+            ctx.stroke();
+
+            // Massive Serrated Mandibles (Jaws)
+            ctx.fillStyle = '#111';
+            ctx.strokeStyle = '#aa0000';
+            ctx.lineWidth = 2;
+            
+            // Right Jaw
+            ctx.beginPath();
+            ctx.moveTo(radius * 0.5, radius * 0.8);
+            ctx.lineTo(radius * 1.8, radius * 0.6); // Tip
+            ctx.lineTo(radius * 1.2, radius * 1.0); // Outer curve
+            ctx.lineTo(radius * 0.2, radius * 1.2); // Base
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            
+            // Left Jaw
+            ctx.beginPath();
+            ctx.moveTo(radius * 0.5, -radius * 0.8);
+            ctx.lineTo(radius * 1.8, -radius * 0.6); // Tip
+            ctx.lineTo(radius * 1.2, -radius * 1.0); // Outer curve
+            ctx.lineTo(radius * 0.2, -radius * 1.2); // Base
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+
+            // Multi-eyed demonic cluster (Glowing)
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff2200';
+            ctx.fillStyle = '#ffcc00'; // Fiery yellow/orange eyes
+
+            // Primary Eyes
+            ctx.beginPath(); ctx.arc(radius * 0.6, radius * 0.35, radius * 0.15, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(radius * 0.6, -radius * 0.35, radius * 0.15, 0, Math.PI * 2); ctx.fill();
+            
+            // Secondary smaller eyes
+            ctx.beginPath(); ctx.arc(radius * 0.25, radius * 0.55, radius * 0.08, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(radius * 0.25, -radius * 0.55, radius * 0.08, 0, Math.PI * 2); ctx.fill();
+
             return c;
         }
         
@@ -4624,7 +4723,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 scores = [0, 0, 0, 0];
                 matchActive = true;
                 gameWinner = null;
-                matchTicks = 0; // NEW: Reset the simulation clock!
+                matchTicks = 0; 
+                worms = []; // HARD RESET: Wipe the apocalypse worm if the match restarts
                 if (!isMultiplayer) setDeterministicSeed(Math.floor(Math.random() * 100000), true);
             } else {
                 // Step the seed deterministically for the next round so all clients stay in lockstep.
@@ -4670,6 +4770,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (isBossRound) {
                     bosses.push(new Boss(canvas.width / 2, canvas.height / 2));
                 }
+                
+                // THE APOCALYPSE EVENT: Spawns exactly at Round 30 and persists
+                if (round === 30 && worms.length === 0) {
+                    worms.push(new WormBoss(-100, canvas.height / 2, 50)); // 50 Segments!
+                }
+                
                 if (!isBossRound && Math.random() < 0.10) {
                     comets.push(new Comet());
                 }
@@ -6574,11 +6680,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let checkShips = adminModeEnabled ? ships.filter(s => s.faction < 4) : ships;
                 let aliveFactions = [...new Set(checkShips.map(s => s.faction))];
                 
-                if (aliveFactions.length === 0 && bosses.length > 0) {
+                // BOSS LOCK: The round NEVER ends as long as a Boss OR Worm is alive!
+                if (aliveFactions.length === 0 && (bosses.length > 0 || worms.length > 0)) {
                     roundActive = false;
                     roundWinner = -2; 
                     transitionTimer = 180;
-                } else if (aliveFactions.length <= 1 && bosses.length === 0) {
+                } else if (aliveFactions.length <= 1 && bosses.length === 0 && worms.length === 0) {
                     roundActive = false;
                     
                     if (aliveFactions.length === 1 && ships.length > 0) {
