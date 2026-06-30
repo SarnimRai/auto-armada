@@ -2549,6 +2549,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'carrierSplit', name: "Drone Bays", desc: "Requires Carrier. The Carrier releases 3 final drones when destroyed.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'capitalEscort', name: "Capital Escort", desc: "Requires Flagship & Carrier. Capitals fly together. Drones gain +15% Speed and Fire Rate.", maxLevel: 1, requires: ['flagship', 'carrierFleet'], rarity: 'standard' },
         { id: 'acePilot', name: "Ace Pilot", desc: "Requires Veteran. At 7 kills, Veterans become Aces. Gains piercing lasers, +25% ricochet, +15% speed/fire rate, and +1 missile.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
+        { id: 'pointDefense', name: "Point Defense", desc: "Requires Super Carrier. The Carrier mounts 2 automated turrets that track and shoot down incoming projectiles.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
+        { id: 'eliteDrones', name: "Advanced Robotics", desc: "Requires Super Carrier. Max drones +2. Two of your drones are upgraded to Elites (+1 HP, +15% Fire Rate).", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
+        { id: 'stormOrbs', name: "Voltaic Halo", desc: "Requires Storm Callers. 3 electro-orbs revolve around the ship. Deals 1 damage on contact and chains to nearby enemies.", maxLevel: 1, requires: 'lightningFleet', rarity: 'standard' },
+        { id: 'infernoOrbs', name: "Scorched Earth", desc: "Requires Pyromancers. 3 inferno-orbs revolve around the ship. Deals 1 damage on contact and inflicts a 3-second burn.", maxLevel: 1, requires: 'flameFleet', rarity: 'standard' },
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
@@ -2582,6 +2586,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
                 sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0, acePilot: 0, lightningFleet: 0, flameFleet: 0, missileCruiser: 0, expandedLink: 0,
+                pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, // <--- ADDED HERE
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -4240,6 +4245,14 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.burnTimer = 0;
                 this.droneSpawnTimer = 60;
                 this.sentinelPulseTimer = 180; 
+
+                // --- NEW TRACKERS ---
+                this.isEliteDrone = false;
+                this.turrets = [{ angle: 0, cooldown: 0 }, { angle: 0, cooldown: 0 }];
+
+                // ORB TRACKERS
+                this.orbAngle = Math.random() * Math.PI * 2;
+                this.orbCooldowns = [0, 0, 0];
                 
                 // Pathfinding State
                 this.navPath = [];
@@ -4408,20 +4421,199 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             combat(ships) {
                 if (isCountingDown) return;
                 
-                // Carriers are massive fabricators, they do not fire weapons.
+                // --- REVOLVING ORBS LOGIC ---
+                if (perksEnabled && this.faction >= 0 && this.faction < 4) {
+                    let hasStormOrbs = this.isLightning && factionPerks[this.faction].stormOrbs > 0;
+                    let hasInfernoOrbs = this.isFlame && factionPerks[this.faction].infernoOrbs > 0;
+
+                    if (hasStormOrbs || hasInfernoOrbs) {
+                        let orbitRadius = this.size + 16; 
+                        this.orbAngle += 0.05; // Spin speed
+                        
+                        for (let o = 0; o < 3; o++) {
+                            if (this.orbCooldowns[o] > 0) {
+                                this.orbCooldowns[o]--;
+                                continue;
+                            }
+                            
+                            let oAngle = this.orbAngle + (o * ((Math.PI * 2) / 3));
+                            let ox = this.position.x + Math.cos(oAngle) * orbitRadius;
+                            let oy = this.position.y + Math.sin(oAngle) * orbitRadius;
+                            let orbHitRadius = 5;
+                            let hitSomething = false;
+                            
+                            // 1. Check Collision with Enemy Ships
+                            for (let j = ships.length - 1; j >= 0; j--) {
+                                let enemy = ships[j];
+                                if (enemy.faction !== this.faction && !enemy.toRemove && enemy.hp > 0 && !(enemy.isStealth && enemy.cloakTimer > 0)) {
+                                    if (Math.hypot(ox - enemy.position.x, oy - enemy.position.y) < enemy.size + orbHitRadius) {
+                                        hitShip(j, this, 1);
+                                        hitSomething = true;
+                                        
+                                        if (hasStormOrbs) {
+                                            playSound('hit');
+                                            for(let p=0; p<6; p++) particles.push(new Particle(ox, oy, factionColors[this.faction], 1.5));
+                                            
+                                            // Trigger Chain Reaction (Find 2 closest enemies)
+                                            let chained = 0;
+                                            for (let k = ships.length - 1; k >= 0; k--) {
+                                                if (chained >= 2) break;
+                                                let chainTarget = ships[k];
+                                                if (chainTarget.faction !== this.faction && chainTarget !== enemy && chainTarget.hp > 0 && !chainTarget.toRemove) {
+                                                    if (Math.hypot(chainTarget.position.x - enemy.position.x, chainTarget.position.y - enemy.position.y) < 150) {
+                                                        hitShip(k, this, 1);
+                                                        // Draw Instantaneous Arc
+                                                        ctx.save();
+                                                        ctx.strokeStyle = factionColors[this.faction]; 
+                                                        ctx.lineWidth = 2;
+                                                        ctx.beginPath(); 
+                                                        ctx.moveTo(enemy.position.x, enemy.position.y);
+                                                        let midX = (enemy.position.x + chainTarget.position.x)/2 + (Math.random()*30-15);
+                                                        let midY = (enemy.position.y + chainTarget.position.y)/2 + (Math.random()*30-15);
+                                                        ctx.lineTo(midX, midY);
+                                                        ctx.lineTo(chainTarget.position.x, chainTarget.position.y);
+                                                        ctx.stroke();
+                                                        ctx.restore();
+                                                        
+                                                        chained++;
+                                                    }
+                                                }
+                                            }
+                                        } else if (hasInfernoOrbs) {
+                                            playSound('hit');
+                                            for(let p=0; p<6; p++) particles.push(new Particle(ox, oy, '#ff4400', 1.5));
+                                            if (!enemy.toRemove) {
+                                                enemy.burnTicks = 3; 
+                                                enemy.burnTimer = 60; // Ignites the enemy!
+                                            }
+                                        }
+                                        break; // Orb can only hit 1 thing per tick
+                                    }
+                                }
+                            }
+                            
+                            // 2. Check Collision with Bosses if it didn't hit a ship
+                            if (!hitSomething) {
+                                for (let b of bosses) {
+                                    if (b.faction !== this.faction && !b.introPhase) {
+                                        let hitRadius = b.size + (b.isPrism && b.state === 'ABSORB' ? 20 : 0);
+                                        if (Math.hypot(ox - b.x, oy - b.y) < hitRadius) {
+                                            hitSomething = true;
+                                            if (b.isPrism && b.state === 'ABSORB') {
+                                                b.absorbedEnergy += 1;
+                                            } else {
+                                                b.hp -= 1;
+                                                if (hasInfernoOrbs) {
+                                                    b.burnTicks = 3;
+                                                    b.burnTimer = 60;
+                                                }
+                                            }
+                                            playSound('hit');
+                                            let pColor = hasStormOrbs ? factionColors[this.faction] : '#ff4400';
+                                            for(let p=0; p<6; p++) particles.push(new Particle(ox, oy, pColor, 1.5));
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (hitSomething) {
+                                this.orbCooldowns[o] = 30; // 0.5 second cooldown before this specific orb can hit again
+                            }
+                        }
+                    }
+                }
+                
+                // --- CARRIER LOGIC (Fabrication & Turrets) ---
                 if (this.isCarrier) {
+                    // 1. DRONE FABRICATION
                     this.droneSpawnTimer--;
                     if (this.droneSpawnTimer <= 0) {
                         let maxDrones = (perksEnabled && factionPerks[this.faction].droneFormation > 0) ? 8 : 6;
-                        let currentDrones = ships.filter(s => s.faction === this.faction && s.isDrone && !s.toRemove).length;
+                        if (perksEnabled && factionPerks[this.faction].eliteDrones > 0) maxDrones += 2; 
+
+                        let currentDrones = ships.filter(s => s.faction === this.faction && s.isDrone && !s.toRemove);
                         
-                        if (currentDrones < maxDrones) {
+                        if (currentDrones.length < maxDrones) {
                             let drone = new Ship(this.position.x, this.position.y, this.faction);
-                            drone.maxHp = 1; drone.hp = 1; drone.shield = 0; drone.size = 5; // DECREASED: Tighter physical collision
                             drone.isDrone = true; 
+                            drone.maxHp = 1; drone.hp = 1; drone.shield = 0; drone.size = 4.5;
+                            
+                            // Advanced Robotics: Upgrade to Elite
+                            if (perksEnabled && factionPerks[this.faction].eliteDrones > 0) {
+                                let eliteCount = currentDrones.filter(d => d.isEliteDrone).length;
+                                if (eliteCount < 2) {
+                                    drone.isEliteDrone = true;
+                                    drone.maxHp = 2; drone.hp = 2; 
+                                }
+                            }
                             ships.push(drone);
                         }
                         this.droneSpawnTimer = 60; // 1 Second loop
+                    }
+
+                    // 2. POINT DEFENSE TURRETS
+                    if (perksEnabled && factionPerks[this.faction].pointDefense > 0) {
+                        let pdRange = 250;
+                        let enemyProjectiles = [];
+                        
+                        // Gather hostile projectiles
+                        lasers.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
+                        missiles.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
+                        fireballs.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
+
+                        this.turrets.forEach(turret => {
+                            if (turret.cooldown > 0) turret.cooldown--;
+                            
+                            let closestProj = null;
+                            let minDist = pdRange;
+                            
+                            // Find the closest valid projectile
+                            enemyProjectiles.forEach(ep => {
+                                let d = Math.hypot(this.position.x - ep.x, this.position.y - ep.y);
+                                if (d < minDist && !ep.targetedByPD) { 
+                                    minDist = d; closestProj = ep; 
+                                }
+                            });
+
+                            if (closestProj) {
+                                closestProj.targetedByPD = true; // Prevent both turrets from shooting the same target
+                                let targetAngle = Math.atan2(closestProj.y - this.position.y, closestProj.x - this.position.x);
+                                
+                                // Smoothly track the target
+                                let diff = targetAngle - turret.angle;
+                                diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                                turret.angle += Math.min(Math.max(diff, -0.15), 0.15); // Fast rotation
+
+                                // Fire hitscan laser if aiming closely
+                                if (Math.abs(diff) < 0.2 && turret.cooldown <= 0) {
+                                    closestProj.toRemove = true; 
+                                    closestProj.life = 0; 
+                                    
+                                    // Visual Impact
+                                    playSound('hit');
+                                    for(let i=0; i<6; i++) particles.push(new Particle(closestProj.x, closestProj.y, '#00ffff', 1.0));
+                                    
+                                    // Draw instantaneous interception beam
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.moveTo(this.position.x, this.position.y);
+                                    ctx.lineTo(closestProj.x, closestProj.y);
+                                    ctx.strokeStyle = '#00ffff';
+                                    ctx.lineWidth = 1;
+                                    ctx.stroke();
+                                    ctx.restore();
+
+                                    turret.cooldown = 20; 
+                                }
+                            } else {
+                                // Relax turrets to face forward
+                                let restingAngle = Math.atan2(this.velocity.y, this.velocity.x);
+                                let diff = restingAngle - turret.angle;
+                                diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                                turret.angle += Math.min(Math.max(diff, -0.05), 0.05);
+                            }
+                        });
                     }
                     return; 
                 }
@@ -4652,6 +4844,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             if (flagshipCount[this.faction] > 0) cdReduc += (0.15 * flagshipCount[this.faction]); 
                             if (this.isDrone && flagshipAlive[this.faction] && perksEnabled && factionPerks[this.faction].capitalEscort > 0) cdReduc += 0.15;
                             if (this.isAce) cdReduc += 0.15;
+                            if (this.isEliteDrone) cdReduc += 0.15; // <--- ADDED HERE
                             if (perksEnabled && this.faction >= 0 && this.faction < 4 && factionPerks[this.faction].veteranFireRate > 0) cdReduc += (this.kills * 0.10);
                             
                             let finalCooldown = 60 * (1 - Math.min(0.85, cdReduc));
@@ -4774,6 +4967,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 else if (this.isLightning) typeKey = 'ltn'; 
                 else if (this.isFlame) typeKey = 'flm'; // NEW: Pyromancer cache key
                 else if (this.isVoidWasp) { s = 6; typeKey = 'wasp'; }
+                else if (this.isEliteDrone) { s = 5.5; typeKey = 'elitedrn'; } 
                 else if (this.isDrone) { s = 4.5; typeKey = 'drn'; }
                 
                 let cacheKey = `ship_${this.faction}_${typeKey}`;
@@ -4965,26 +5159,32 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.fillStyle = '#ffaa00';
                         cctx.fillRect(-s * 1.8, s * 0.8, s * 0.2, s * 0.5);
                         cctx.fillRect(-s * 1.8, -s * 1.3, s * 0.2, s * 0.5);
-                    } else if (this.isDrone) {
+                    } else if (this.isDrone || this.isEliteDrone) {
                         cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; 
                         cctx.strokeStyle = '#333'; cctx.lineWidth = s * 0.4;
                         cctx.beginPath(); cctx.moveTo(-s*1.5, -s*1.5); cctx.lineTo(s*1.5, s*1.5); cctx.stroke();
                         cctx.beginPath(); cctx.moveTo(s*1.5, -s*1.5); cctx.lineTo(-s*1.5, s*1.5); cctx.stroke();
-                        cctx.strokeStyle = factionColors[this.faction]; cctx.lineWidth = 1.5;
+                        
+                        cctx.strokeStyle = factionColors[this.faction]; 
+                        cctx.lineWidth = 1.5;
+                        if (this.isEliteDrone) cctx.strokeStyle = '#ffcc00'; // Gold plating
+                        
                         cctx.fillStyle = '#111';
                         let rotors = [ {x: -s*1.5, y: -s*1.5}, {x: s*1.5, y: -s*1.5}, {x: -s*1.5, y: s*1.5}, {x: s*1.5, y: s*1.5} ];
                         rotors.forEach(r => {
                             cctx.beginPath(); cctx.arc(r.x, r.y, s*0.8, 0, Math.PI*2); cctx.fill(); cctx.stroke();
-                            cctx.fillStyle = 'rgba(200, 240, 255, 0.6)';
+                            cctx.fillStyle = this.isEliteDrone ? 'rgba(255, 204, 0, 0.6)' : 'rgba(200, 240, 255, 0.6)';
                             cctx.beginPath(); cctx.arc(r.x, r.y, s*0.5, 0, Math.PI*2); cctx.fill();
                             cctx.fillStyle = '#111'; 
                         });
                         cctx.fillStyle = '#1a1d22';
                         cctx.beginPath(); cctx.ellipse(0, 0, s*1.1, s*0.9, 0, 0, Math.PI*2); cctx.fill();
                         cctx.stroke();
-                        cctx.fillStyle = '#00ffff'; cctx.shadowBlur = 5; cctx.shadowColor = '#00ffff';
+                        
+                        cctx.fillStyle = this.isEliteDrone ? '#ffcc00' : '#00ffff'; 
+                        cctx.shadowBlur = 5; cctx.shadowColor = this.isEliteDrone ? '#ffcc00' : '#00ffff';
                         cctx.beginPath(); cctx.arc(s*0.7, 0, s*0.3, 0, Math.PI*2); cctx.fill();
-                        cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction];
+                        cctx.shadowBlur = 0;
                     } else if (this.isStealth) {
                         // --- GHOST SPECTRE (Large High-Tech Stealth Bomber) ---
                         let scale = 1.3; // Visually scales up the ship without breaking collision logic
@@ -5211,6 +5411,73 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     ctx.fillRect(-s * 1.5, -s * 0.7, s * 0.3, s * 0.3);
                 }
                 
+                // --- RENDER CARRIER POINT DEFENSE TURRETS ---
+                if (this.isCarrier && perksEnabled && factionPerks[this.faction].pointDefense > 0) {
+                    let offX = s * 0.4;
+                    let offY = s * 0.8;
+                    let tOffsets = [{ x: -offX, y: offY }, { x: -offX, y: -offY }];
+
+                    this.turrets.forEach((turret, index) => {
+                        ctx.save();
+                        ctx.translate(tOffsets[index].x, tOffsets[index].y);
+                        
+                        // The hull is currently rotated to the ship's facing angle. 
+                        // The turret needs to track absolute world angle, so we cancel out the hull rotation.
+                        ctx.rotate(turret.angle - angle);
+                        
+                        // Base
+                        ctx.fillStyle = '#1c202b';
+                        ctx.beginPath(); ctx.arc(0, 0, s * 0.25, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = '#00ffff';
+                        ctx.lineWidth = 1; ctx.stroke();
+
+                        // Barrels
+                        ctx.fillStyle = '#666';
+                        ctx.fillRect(0, -s * 0.1, s * 0.4, s * 0.06);
+                        ctx.fillRect(0, s * 0.04, s * 0.4, s * 0.06);
+                        ctx.restore();
+                    });
+                }
+
+                // --- RENDER REVOLVING ORBS ---
+                if (perksEnabled && factionPerks[this.faction]) {
+                    let hasStormOrbs = this.isLightning && factionPerks[this.faction].stormOrbs > 0;
+                    let hasInfernoOrbs = this.isFlame && factionPerks[this.faction].infernoOrbs > 0;
+
+                    if (hasStormOrbs || hasInfernoOrbs) {
+                        let orbitRadius = s * 2.0 + 8; 
+                        let orbColor = hasStormOrbs ? factionColors[this.faction] : '#ff4400';
+                        
+                        ctx.save();
+                        // Cancel out the ship's facing angle so the orbs rotate smoothly in world space
+                        ctx.rotate(this.orbAngle - angle); 
+
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = orbColor;
+                        ctx.fillStyle = orbColor;
+
+                        for (let o = 0; o < 3; o++) {
+                            let a = o * ((Math.PI * 2) / 3);
+                            let ox = Math.cos(a) * orbitRadius;
+                            let oy = Math.sin(a) * orbitRadius;
+
+                            // Blink out to 20% opacity if the orb recently hit something and is on cooldown
+                            ctx.globalAlpha = this.orbCooldowns[o] > 0 ? 0.2 : 1.0;
+
+                            ctx.beginPath();
+                            ctx.arc(ox, oy, 3.5, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            // Draw the white-hot core if active
+                            if (this.orbCooldowns[o] <= 0) {
+                                ctx.fillStyle = '#ffffff';
+                                ctx.beginPath(); ctx.arc(ox, oy, 1.5, 0, Math.PI*2); ctx.fill();
+                                ctx.fillStyle = orbColor; // Restore for next orb
+                            }
+                        }
+                        ctx.restore();
+                    }
+                }
                 // HP Pips
                 if (this.maxHp <= 20) {
                     ctx.fillStyle = '#fff';
