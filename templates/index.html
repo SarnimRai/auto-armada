@@ -2553,6 +2553,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'eliteDrones', name: "Advanced Robotics", desc: "Requires Super Carrier. Max drones +2. Two of your drones are upgraded to Elites (+1 HP, +15% Fire Rate).", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'stormOrbs', name: "Voltaic Halo", desc: "Requires Storm Callers. 3 electro-orbs revolve around the ship. Deals 1 damage on contact and chains to nearby enemies.", maxLevel: 1, requires: 'lightningFleet', rarity: 'standard' },
         { id: 'infernoOrbs', name: "Scorched Earth", desc: "Requires Pyromancers. 3 inferno-orbs revolve around the ship. Deals 1 damage on contact and inflicts a 3-second burn.", maxLevel: 1, requires: 'flameFleet', rarity: 'standard' },
+        { id: 'stormShield', name: "Thunderguard", desc: "Requires Storm Callers. Grants a 1 HP shield that releases a massive EMP stun wave when destroyed.", maxLevel: 1, requires: 'lightningFleet', rarity: 'standard' },
+        { id: 'scorchAura', name: "Thermal Expulsion", desc: "Requires Pyromancers. Projects a fiery aura that deals 1 damage per second to nearby enemies.", maxLevel: 1, requires: 'flameFleet', rarity: 'standard' },
+        { id: 'staticWeb', name: "Static Web", desc: "Requires Storm Callers & Quantum Link. Tethers become electrified, shocking enemies who cross them and chaining to 1 nearby target.", maxLevel: 1, requires: ['lightningFleet', 'quantumLink'], rarity: 'standard' },
+        { id: 'phantomStrike', name: "Phantom Strike", desc: "Requires Ghost Spectre. Cloak lasts 1s longer. While cloaked, Spectres prioritize targeting specialized enemy ships over basic fighters.", maxLevel: 1, requires: 'stealthFleet', rarity: 'standard' },
+        { id: 'gaussCannon', name: "Gauss Cannon", desc: "Requires Sniper Squadron. Snipers charge for 2s to fire a devastating shot dealing 4 damage. +25% Projectile Speed, +40% Range.", maxLevel: 1, requires: 'sniperFleet', rarity: 'standard' },
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
@@ -2586,7 +2591,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
                 sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0, acePilot: 0, lightningFleet: 0, flameFleet: 0, missileCruiser: 0, expandedLink: 0,
-                pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, // <--- ADDED HERE
+                pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, stormShield: 0, scorchAura: 0, staticWeb: 0, phantomStrike: 0, gaussCannon: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -2889,16 +2894,18 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         }
         // ---------------------------------------        
         class Laser {
-            constructor(x, y, angle, faction, shooter) {
+            constructor(x, y, angle, faction, shooter, damage = 1, extraSpeedBuff = 1) {
                 this.x = x;
                 this.y = y;
+                this.damage = damage;
                 let speedMult = (perksEnabled && faction >= 0 && faction < 4) ? 1 + (factionPerks[faction].projSpeed * 0.10) : 1;
                 
                 // Snipers get +20% projectile speed, (+40% total if upgraded)
                 if (shooter && shooter.isSniper) {
-                    // FIX: Safely guard against Faction -1 (Bosses) so it doesn't crash!
                     speedMult *= (perksEnabled && faction >= 0 && faction < 4 && factionPerks[faction].sniperUpgrade > 0) ? 1.4 : 1.2; 
                 }
+                
+                speedMult *= extraSpeedBuff; // Inject the Gauss Cannon charge speed buff
                 
                 this.vx = Math.cos(angle) * 10 * speedMult; 
                 this.vy = Math.sin(angle) * 10 * speedMult;
@@ -2910,7 +2917,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let isTempRailgun = (perksEnabled && faction >= 0 && faction < 4 && factionPerks[faction].temp_railgun > 0);
                 let isAcePiercing = (shooter && shooter.isAce);
                 this.isPiercing = (shooter && shooter.isSniper) || isTempRailgun || isAcePiercing;
-                this.hitShips = new Set(); // Remembers ships it already passed through
+                this.hitShips = new Set(); 
             }
             update() {
                 this.x += this.vx;
@@ -2918,15 +2925,23 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.life--;
             }
             draw() {
-                // FIX: Bosses (Faction -1) need a hardcoded laser color!
                 ctx.strokeStyle = (this.faction === -1) ? '#ff0044' : factionColors[this.faction];
-                ctx.lineWidth = this.isPiercing ? 3 : 2; // Snipers shoot thicker beams
+                ctx.lineWidth = this.isPiercing ? 3 : 2; 
+                
+                // Give the heavy 4-damage Gauss shots a thicker, glowing beam
+                if (this.damage >= 4) {
+                    ctx.lineWidth = 5;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = ctx.strokeStyle;
+                }
+                
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y);
-                // Draw piercing lasers slightly longer
                 let tailMult = this.isPiercing ? 1.5 : 1;
+                if (this.damage >= 4) tailMult = 2.5; // Gauss bolts have long trails
                 ctx.lineTo(this.x - (this.vx * tailMult), this.y - (this.vy * tailMult));
                 ctx.stroke();
+                ctx.shadowBlur = 0;
             }
         }
         class LightningBolt {
@@ -4234,6 +4249,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.cloakTimer = 0;
                 this.teleportCooldown = 0;
                 this.tempMissileReady = false;
+                this.isCharging = false;
+                this.chargeTimer = 0;
                 
                 this.isDrone = false; 
                 this.isCarrier = false;
@@ -4253,6 +4270,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 // ORB TRACKERS
                 this.orbAngle = Math.random() * Math.PI * 2;
                 this.orbCooldowns = [0, 0, 0];
+                
+                this.auraCooldown = 0;
+                this.tetherShockCooldown = 0; // Prevents taking 60 damage a second from sitting on a wire
                 
                 // Pathfinding State
                 this.navPath = [];
@@ -4442,6 +4462,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             let orbHitRadius = 5;
                             let hitSomething = false;
                             
+                            // Spawn visual trails as the orbs spin!
+                            if (hasInfernoOrbs && Math.random() < 0.4) particles.push(new Particle(ox, oy, '#ff4400', 0.5));
+                            if (hasStormOrbs && Math.random() < 0.2) particles.push(new Particle(ox, oy, '#00ffff', 0.8));
+                            
                             // 1. Check Collision with Enemy Ships
                             for (let j = ships.length - 1; j >= 0; j--) {
                                 let enemy = ships[j];
@@ -4452,12 +4476,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                         
                                         if (hasStormOrbs) {
                                             playSound('hit');
-                                            for(let p=0; p<6; p++) particles.push(new Particle(ox, oy, factionColors[this.faction], 1.5));
+                                            // FORCED BLUE PARTICLES
+                                            for(let p=0; p<6; p++) particles.push(new Particle(ox, oy, '#00ffff', 1.5));
                                             
                                             // Trigger Chain Reaction (Find 2 closest enemies)
                                             let chained = 0;
                                             for (let k = ships.length - 1; k >= 0; k--) {
-                                                if (chained >= 2) break;
+                                                if (chained >= 1) break; // Nerfed to 1 chain max
                                                 let chainTarget = ships[k];
                                                 if (chainTarget.faction !== this.faction && chainTarget !== enemy && chainTarget.hp > 0 && !chainTarget.toRemove) {
                                                     if (Math.hypot(chainTarget.position.x - enemy.position.x, chainTarget.position.y - enemy.position.y) < 150) {
@@ -4509,7 +4534,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                                 }
                                             }
                                             playSound('hit');
-                                            let pColor = hasStormOrbs ? factionColors[this.faction] : '#ff4400';
+                                            // FORCED BLUE PARTICLES FOR BOSS HITS
+                                            let pColor = hasStormOrbs ? '#00ffff' : '#ff4400';
                                             for(let p=0; p<6; p++) particles.push(new Particle(ox, oy, pColor, 1.5));
                                             break;
                                         }
@@ -4520,6 +4546,43 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             if (hitSomething) {
                                 this.orbCooldowns[o] = 30; // 0.5 second cooldown before this specific orb can hit again
                             }
+                        }
+                    }
+                    
+                    // --- SCORCH AURA LOGIC ---
+                    if (this.isFlame && factionPerks[this.faction].scorchAura > 0) {
+                        if (this.auraCooldown > 0) {
+                            this.auraCooldown--;
+                        } else {
+                            let auraRadius = this.size * 6.0;
+                            let scorchedAnyone = false;
+                            
+                            // Check ships
+                            for (let j = ships.length - 1; j >= 0; j--) {
+                                let enemy = ships[j];
+                                if (enemy.faction !== this.faction && !enemy.toRemove && enemy.hp > 0 && !(enemy.isStealth && enemy.cloakTimer > 0)) {
+                                    if (Math.hypot(this.position.x - enemy.position.x, this.position.y - enemy.position.y) < auraRadius + enemy.size) {
+                                        hitShip(j, this, 1);
+                                        scorchedAnyone = true;
+                                        for(let p=0; p<3; p++) particles.push(new Particle(enemy.position.x, enemy.position.y, '#ff4400', 1.0));
+                                    }
+                                }
+                            }
+                            // Check bosses
+                            for (let b of bosses) {
+                                if (b.faction !== this.faction && !b.introPhase) {
+                                    let hitRadius = b.size + (b.isPrism && b.state === 'ABSORB' ? 20 : 0);
+                                    if (Math.hypot(this.position.x - b.x, this.position.y - b.y) < auraRadius + hitRadius) {
+                                        scorchedAnyone = true;
+                                        if (b.isPrism && b.state === 'ABSORB') b.absorbedEnergy += 1;
+                                        else b.hp -= 1;
+                                        for(let p=0; p<3; p++) particles.push(new Particle(b.x, b.y, '#ff4400', 1.0));
+                                    }
+                                }
+                            }
+                            
+                            if (scorchedAnyone) playSound('hit');
+                            this.auraCooldown = 60; // 1 damage per second
                         }
                     }
                 }
@@ -4623,35 +4686,48 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let nearestVisibleEnemy = null;
                 let minVisDist = Infinity;
                 
+                let specialTarget = null;
+                let specialMinDist = Infinity;
+                let specialVisibleTarget = null;
+                let specialMinVisDist = Infinity;
+                
                 // 1. Target Ships
                 for (let other of ships) {
-                    if (other.faction !== this.faction && other.hp > 0 && !other.toRemove) {
+                    // Do not target cloaked stealth ships
+                    if (other.faction !== this.faction && other.hp > 0 && !other.toRemove && !(other.isStealth && other.cloakTimer > 0)) {
                         let d = Math.hypot(this.position.x - other.position.x, this.position.y - other.position.y);
+                        let isSpecial = other.isFlagship || other.isCarrier || other.isSniper || other.isSentinel || other.isLightning || other.isFlame || other.isMissileCruiser;
+                        
                         if (d < minDist) { minDist = d; nearestEnemy = other; }
-                        if (walls.length > 0 && d < 450 && d < minVisDist) {
+                        if (isSpecial && d < specialMinDist) { specialMinDist = d; specialTarget = other; }
+                        
+                        if (walls.length > 0 && d < 450) {
                             if (hasLineOfSight(this.position.x, this.position.y, other.position.x, other.position.y)) {
-                                minVisDist = d; nearestVisibleEnemy = other;
+                                if (d < minVisDist) { minVisDist = d; nearestVisibleEnemy = other; }
+                                if (isSpecial && d < specialMinVisDist) { specialMinVisDist = d; specialVisibleTarget = other; }
                             }
                         }
                     }
                 }
-
+                
                 // 2. Target Bosses
                 for (let b of bosses) {
-                    // FIX: Ensure the ship does not attack its own creator!
-                    if (b.hp > 0 && b.faction !== this.faction) { 
+                    if (b.hp > 0 && b.faction !== this.faction && !b.introPhase) { 
                         let d = Math.hypot(this.position.x - b.x, this.position.y - b.y);
                         let bossAdapter = { get position() { return b; }, get hp() { return b.hp; }, set hp(val) { b.hp = val; }, size: b.size, isBoss: true };
+                        
                         if (d < minDist) { minDist = d; nearestEnemy = bossAdapter; }
-                        if (walls.length > 0 && d < 450 && d < minVisDist && hasLineOfSight(this.position.x, this.position.y, b.x, b.y)) {
-                            minVisDist = d; nearestVisibleEnemy = bossAdapter;
+                        if (d < specialMinDist) { specialMinDist = d; specialTarget = bossAdapter; } // Bosses count as special
+                        
+                        if (walls.length > 0 && d < 450 && hasLineOfSight(this.position.x, this.position.y, b.x, b.y)) {
+                            if (d < minVisDist) { minVisDist = d; nearestVisibleEnemy = bossAdapter; }
+                            if (d < specialMinVisDist) { specialMinVisDist = d; specialVisibleTarget = bossAdapter; }
                         }
                     }
                 }
 
                 // 3. Target Worms (Check every 2nd segment to save CPU)
                 for (let w of worms) {
-                    // FIX: Ensure the ship does not attack a friendly leviathan!
                     if (w.faction === this.faction) continue; 
                     
                     for (let s = 0; s < w.segments.length; s += 2) {
@@ -4659,18 +4735,37 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         if (seg.hp > 0) {
                             let d = Math.hypot(this.position.x - seg.x, this.position.y - seg.y);
                             let wormAdapter = { get position() { return seg; }, get hp() { return seg.hp; }, set hp(val) { seg.hp = val; }, size: w.segmentRadius, isWorm: true, wormRef: w, segIndex: s };
+                            
                             if (d < minDist) { minDist = d; nearestEnemy = wormAdapter; }
-                            if (walls.length > 0 && d < 450 && d < minVisDist && hasLineOfSight(this.position.x, this.position.y, seg.x, seg.y)) {
-                                minVisDist = d; nearestVisibleEnemy = wormAdapter;
+                            if (d < specialMinDist) { specialMinDist = d; specialTarget = wormAdapter; } // Worms count as special
+                            
+                            if (walls.length > 0 && d < 450 && hasLineOfSight(this.position.x, this.position.y, seg.x, seg.y)) {
+                                if (d < minVisDist) { minVisDist = d; nearestVisibleEnemy = wormAdapter; }
+                                if (d < specialMinVisDist) { specialMinVisDist = d; specialVisibleTarget = wormAdapter; }
                             }
                         }
                     }
                 }
                 
-                // If there is an enemy in the same room/corridor, aggressively prioritize them!
-                if (nearestVisibleEnemy) {
-                    nearestEnemy = nearestVisibleEnemy;
-                    minDist = minVisDist;
+                // Apply Base Visibility Override first
+                if (walls.length > 0) {
+                    if (nearestVisibleEnemy) {
+                        nearestEnemy = nearestVisibleEnemy;
+                        minDist = minVisDist;
+                    }
+                }
+                
+                // Phantom Strike Stealth Targeting Override (Prioritizes Elites/Specialists)
+                // Runs LAST so it overrides visibility of basic ships, but still respects walls if applicable!
+                if (this.isStealth && this.cloakTimer > 0 && perksEnabled && factionPerks[this.faction].phantomStrike > 0) {
+                    // Try to pick a visible special target first, fallback to any special, fallback to standard target
+                    if (walls.length > 0 && specialVisibleTarget) {
+                        nearestEnemy = specialVisibleTarget;
+                        minDist = specialMinVisDist;
+                    } else if (walls.length === 0 && specialTarget) {
+                        nearestEnemy = specialTarget;
+                        minDist = specialMinDist;
+                    }
                 }
                 
                 if (nearestEnemy) {
@@ -4822,9 +4917,24 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 this.missileCooldown = 60; // Exactly 1 second
                             }
                         } else if (minDist < this.attackRange && this.laserCooldown <= 0 && this.burstsLeft <= 0) {
-                            let angle = Math.atan2(nearestEnemy.position.y - this.position.y, nearestEnemy.position.x - this.position.x);
+                            let isGauss = this.isSniper && perksEnabled && factionPerks[this.faction].gaussCannon > 0;
                             
+                            // Gauss Cannon 2-Second Charging Phase
+                            if (isGauss && !this.isCharging) {
+                                this.isCharging = true;
+                                this.chargeTimer = 120; // 2 Seconds
+                            }
+                            if (this.isCharging) {
+                                this.chargeTimer--;
+                                if (this.chargeTimer > 0) return; // Keep aiming, don't fire yet!
+                                this.isCharging = false;
+                            }
+                            
+                            let angle = Math.atan2(nearestEnemy.position.y - this.position.y, nearestEnemy.position.x - this.position.x);
                             if (this.hasBurstShot) { this.burstsLeft = 2; this.burstDelay = 6; }
+                            
+                            let dmg = isGauss ? 4 : 1;
+                            let projSpd = isGauss ? 1.25 : 1;
                             
                             if (this.isLightning) {
                                 lightnings.push(new LightningBolt(this.position.x, this.position.y, angle, this.faction, this));
@@ -4833,10 +4943,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 playSound('laser');
                             } else if (this.hasDualShot) {
                                 let pX = Math.cos(angle + Math.PI/2) * 5; let pY = Math.sin(angle + Math.PI/2) * 5;
-                                lasers.push(new Laser(this.position.x + pX, this.position.y + pY, angle, this.faction, this));
-                                lasers.push(new Laser(this.position.x - pX, this.position.y - pY, angle, this.faction, this));
+                                lasers.push(new Laser(this.position.x + pX, this.position.y + pY, angle, this.faction, this, dmg, projSpd));
+                                lasers.push(new Laser(this.position.x - pX, this.position.y - pY, angle, this.faction, this, dmg, projSpd));
                             } else {
-                                lasers.push(new Laser(this.position.x, this.position.y, angle, this.faction, this));
+                                lasers.push(new Laser(this.position.x, this.position.y, angle, this.faction, this, dmg, projSpd));
                             }
                             playSound('laser');
                             
@@ -4893,6 +5003,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
             
             update() {
+                if (this.tetherShockCooldown > 0) this.tetherShockCooldown--;
+
                 // Apply Burn DoT Effect
                 if (this.burnTicks > 0 && !this.isCrashing) {
                     this.burnTimer--;
@@ -4958,17 +5070,19 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 let s = this.size;
                 let typeKey = 'std';
-                if (this.isMissileCruiser) { s *= 1.5; typeKey = 'mcruz'; } // Separate cache for the cruiser
+                if (this.isMissileCruiser) { s *= 1.5; typeKey = 'mcruz'; }
                 else if (this.isFlagship) { s *= 1.5; typeKey = 'flag'; }
                 else if (this.isCarrier) { s *= 1.8; typeKey = 'carr'; }
                 else if (this.isSniper) typeKey = 'snip';
                 else if (this.isSentinel) typeKey = 'sent';
                 else if (this.isStealth) typeKey = 'stl';
                 else if (this.isLightning) typeKey = 'ltn'; 
-                else if (this.isFlame) typeKey = 'flm'; // NEW: Pyromancer cache key
+                else if (this.isFlame) typeKey = 'flm'; 
                 else if (this.isVoidWasp) { s = 6; typeKey = 'wasp'; }
                 else if (this.isEliteDrone) { s = 5.5; typeKey = 'elitedrn'; } 
                 else if (this.isDrone) { s = 4.5; typeKey = 'drn'; }
+                // Create a distinct cache for basic ships that achieved Ace status!
+                else if (this.isAce) { s *= 1.4; typeKey = 'ace'; }
                 
                 let cacheKey = `ship_${this.faction}_${typeKey}`;
                 
@@ -5356,6 +5470,29 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.fill();
                         
                         cctx.shadowBlur = 0; // Reset
+                    } else if (typeKey === 'ace') {
+                        // --- ELITE ACE FIGHTER ---
+                        cctx.shadowBlur = 12; cctx.shadowColor = factionColors[this.faction];
+                        cctx.fillStyle = factionColors[this.faction];
+                        cctx.beginPath();
+                        cctx.moveTo(s * 2.2, 0); // Sharp dart nose
+                        cctx.lineTo(s * 0.2, s * 0.8); // Swept forward shoulders
+                        cctx.lineTo(-s * 0.6, s * 1.5); // Extended wings
+                        cctx.lineTo(-s * 1.2, s * 0.4); // Forward swept inner wing
+                        cctx.lineTo(-s * 0.8, 0); 
+                        cctx.lineTo(-s * 1.2, -s * 0.4);
+                        cctx.lineTo(-s * 0.6, -s * 1.5);
+                        cctx.lineTo(s * 0.2, -s * 0.8);
+                        cctx.closePath(); cctx.fill();
+                        cctx.shadowBlur = 0;
+                        
+                        cctx.strokeStyle = '#fff'; cctx.lineWidth = 1; cctx.stroke();
+                        
+                        // Golden Ace Accents
+                        cctx.fillStyle = '#ffcc00';
+                        cctx.beginPath(); cctx.moveTo(s * 0.6, 0); cctx.lineTo(-s * 0.2, s * 0.3); cctx.lineTo(-s * 0.2, -s * 0.3); cctx.fill();
+                        cctx.fillStyle = '#111';
+                        cctx.fillRect(-s * 0.4, -s * 0.2, s * 0.4, s * 0.4); // Cockpit
                     } else {
                         // Standard Ship
                         cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
@@ -5378,6 +5515,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.globalAlpha = (this.isStealth && this.cloakTimer > 0) ? 0.25 : 1.0;
                 ctx.drawImage(cache, -cache.width/2, -cache.height/2);
                 ctx.globalAlpha = 1.0;
+                
+                // Gauss Cannon Charging Visual
+                if (this.isCharging) {
+                    let chargeRatio = 1 - (this.chargeTimer / 120);
+                    ctx.fillStyle = `rgba(0, 255, 255, ${chargeRatio})`;
+                    ctx.shadowBlur = 15; ctx.shadowColor = '#00ffff';
+                    ctx.beginPath();
+                    ctx.arc(s * 1.8, 0, 3 + (chargeRatio * 5), 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
                 
                 // --- DYNAMIC ELEMENTS (Drawn every frame) ---
                 
@@ -5446,38 +5594,102 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
 
                     if (hasStormOrbs || hasInfernoOrbs) {
                         let orbitRadius = s * 2.0 + 8; 
-                        let orbColor = hasStormOrbs ? factionColors[this.faction] : '#ff4400';
                         
                         ctx.save();
                         // Cancel out the ship's facing angle so the orbs rotate smoothly in world space
                         ctx.rotate(this.orbAngle - angle); 
-
-                        ctx.shadowBlur = 10;
-                        ctx.shadowColor = orbColor;
-                        ctx.fillStyle = orbColor;
 
                         for (let o = 0; o < 3; o++) {
                             let a = o * ((Math.PI * 2) / 3);
                             let ox = Math.cos(a) * orbitRadius;
                             let oy = Math.sin(a) * orbitRadius;
 
-                            // Blink out to 20% opacity if the orb recently hit something and is on cooldown
-                            ctx.globalAlpha = this.orbCooldowns[o] > 0 ? 0.2 : 1.0;
+                            let onCooldown = this.orbCooldowns[o] > 0;
+                            ctx.globalAlpha = onCooldown ? 0.2 : 1.0;
 
-                            ctx.beginPath();
-                            ctx.arc(ox, oy, 3.5, 0, Math.PI * 2);
-                            ctx.fill();
+                            if (hasStormOrbs) {
+                                // --- ELECTRIC ORB (High-voltage cyan plasma sphere) ---
+                                let sColor = '#00ffff'; // Force standard lightning blue!
+                                ctx.shadowBlur = onCooldown ? 0 : 20;
+                                ctx.shadowColor = sColor;
+                                
+                                // Soft outer corona
+                                ctx.fillStyle = `rgba(0, 255, 255, ${onCooldown ? 0.2 : 0.6})`;
+                                ctx.beginPath(); ctx.arc(ox, oy, 5, 0, Math.PI * 2); ctx.fill();
 
-                            // Draw the white-hot core if active
-                            if (this.orbCooldowns[o] <= 0) {
+                                // Bright inner core
                                 ctx.fillStyle = '#ffffff';
-                                ctx.beginPath(); ctx.arc(ox, oy, 1.5, 0, Math.PI*2); ctx.fill();
-                                ctx.fillStyle = orbColor; // Restore for next orb
+                                ctx.beginPath(); ctx.arc(ox, oy, 2.5, 0, Math.PI * 2); ctx.fill();
+                                
+                                // Erratic, aggressive high-voltage arcs
+                                if (!onCooldown) {
+                                    ctx.strokeStyle = sColor;
+                                    ctx.lineWidth = 1.5;
+                                    
+                                    // Draw 5-7 erratic lightning spikes per frame
+                                    let spikeCount = 5 + Math.floor(Math.random() * 3);
+                                    ctx.beginPath();
+                                    for(let e=0; e < spikeCount; e++) {
+                                        let ea = Math.random() * Math.PI * 2;
+                                        let er = 4 + Math.random() * 8; // Longer, wilder arcs
+                                        
+                                        // Jagged 2-part lightning path
+                                        let midX = ox + Math.cos(ea) * (er * 0.5) + (Math.random() * 4 - 2);
+                                        let midY = oy + Math.sin(ea) * (er * 0.5) + (Math.random() * 4 - 2);
+                                        let endX = ox + Math.cos(ea) * er;
+                                        let endY = oy + Math.sin(ea) * er;
+                                        
+                                        ctx.moveTo(ox, oy);
+                                        ctx.lineTo(midX, midY);
+                                        ctx.lineTo(endX, endY);
+                                    }
+                                    ctx.stroke();
+                                }
+                            } else if (hasInfernoOrbs) {
+                                // INFERNO ORB
+                                ctx.shadowBlur = onCooldown ? 0 : 15;
+                                ctx.shadowColor = '#ff2200';
+                                
+                                let pulse = !onCooldown ? Math.random() * 2 : 0;
+                                
+                                // Outer flame
+                                ctx.fillStyle = '#ff4400';
+                                ctx.beginPath(); ctx.arc(ox, oy, 4.5 + pulse, 0, Math.PI * 2); ctx.fill();
+                                
+                                // Inner hot core
+                                if (!onCooldown) {
+                                    ctx.fillStyle = '#ffcc00';
+                                    ctx.beginPath(); ctx.arc(ox, oy, 2.5, 0, Math.PI * 2); ctx.fill();
+                                    ctx.fillStyle = '#ffffff';
+                                    ctx.beginPath(); ctx.arc(ox, oy, 1.0, 0, Math.PI * 2); ctx.fill();
+                                }
                             }
                         }
                         ctx.restore();
                     }
                 }
+                
+                // --- RENDER SCORCH AURA ---
+                if (perksEnabled && this.isFlame && factionPerks[this.faction] && factionPerks[this.faction].scorchAura > 0) {
+                    let auraRadius = s * 6.0;
+                    ctx.save();
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#ff4400';
+                    
+                    // Pulse effect based on the cooldown timer
+                    let pulse = 0.15 + (Math.sin(Date.now() * 0.005) * 0.05);
+                    ctx.fillStyle = `rgba(255, 68, 0, ${pulse})`;
+                    ctx.beginPath();
+                    // FIXED: Context is already translated to the ship, so draw at 0,0!
+                    ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = `rgba(255, 170, 0, ${pulse + 0.2})`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
                 // HP Pips
                 if (this.maxHp <= 20) {
                     ctx.fillStyle = '#fff';
@@ -5570,8 +5782,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 playSound('hit');
                 for(let p=0; p<8; p++) particles.push(new Particle(s.position.x, s.position.y, factionColors[s.faction], 0.5));
                 
-                // NEW: Lightning Shield Surge! Stuns all nearby enemies for 1 second
-                if (s.isLightning && s.shield === 0) {
+                // NEW: Lightning Shield Surge! Stuns all nearby enemies for 1 second (Requires Thunderguard perk)
+                if (s.isLightning && s.shield === 0 && perksEnabled && factionPerks[s.faction].stormShield > 0) {
                     playSound('explosion');
                     
                     let surgeRadius = 180;
@@ -5695,7 +5907,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     
                     if (perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].vampiric > 0 && shooter.isVeteran) {
                         if (shooter.hp < shooter.maxHp) shooter.hp++;
-                        else shooter.shield++; 
+                        else if (shooter.shield < 3) shooter.shield++; // Hard capped at 3 shields to prevent immortal ships!
                     }
                     
                     if (shooter.kills >= 3 && !shooter.isVeteran && perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].veteran > 0) {
@@ -5936,6 +6148,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 if (perksEnabled && factionPerks[f].sniperFleet > 0) {
                     let hasSnipUp = factionPerks[f].sniperUpgrade > 0;
+                    let hasGauss = factionPerks[f].gaussCannon > 0;
                     let snipersToMake = Math.min(4, actualNumShips);
                     let snipersMade = 0;
                     for (let i = actualNumShips - 1; i >= 0 && snipersMade < snipersToMake; i--) {
@@ -5943,6 +6156,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         if (!s.isFlagship && !s.isSniper) {
                             s.isSniper = true;
                             s.attackRange *= hasSnipUp ? 2.0 : 1.6; 
+                            if (hasGauss) s.attackRange *= 1.4; // Gauss Cannon extends range by 40%
                             s.maxSpeed *= 1.3;    
                             s.size = 10.5;    
                             snipersMade++;
@@ -6008,26 +6222,29 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (perksEnabled && factionPerks[f].lightningFleet > 0) {
                     let lightningToMake = Math.min(2, actualNumShips);
                     let lightningMade = 0;
+                    let hasStormShield = factionPerks[f].stormShield > 0;
                     for (let i = actualNumShips - 1; i >= 0 && lightningMade < lightningToMake; i--) {
                         let s = ships[factionSpawnStartIndex + i];
-                        if (!s.isFlagship && !s.isSniper && !s.isSentinel && !s.isStealth && !s.isVoidWasp && !s.isLightning) {
+                        // FIXED: Added !s.isFlame so Storm Callers don't delete Pyromancers!
+                        if (!s.isFlagship && !s.isSniper && !s.isSentinel && !s.isStealth && !s.isVoidWasp && !s.isLightning && !s.isFlame) {
                             s.isLightning = true;
-                            s.maxHp = 4; s.hp = 4; s.size = 9; // Buffed to 4 HP
-                            s.shield += 1; // Grants the 1 HP Lightning Shield
+                            s.maxHp = 4; s.hp = 4; s.size = 9; 
+                            if (hasStormShield) s.shield += 1; 
                             lightningMade++;
                         }
                     }
                 }
                 // Turn 4 basic ships into high-intensity Stealth operational units
                 if (perksEnabled && factionPerks[f].stealthFleet > 0) {
+                    let hasPhantom = factionPerks[f].phantomStrike > 0;
                     let stealthToMake = Math.min(4, actualNumShips);
                     let stealthMade = 0;
                     for (let i = actualNumShips - 1; i >= 0 && stealthMade < stealthToMake; i--) {
                         let s = ships[factionSpawnStartIndex + i];
-                        // Added safe-guards to ensure Stealth units don't overwrite Flame, Lightning, or Carrier ships!
                         if (!s.isFlagship && !s.isSniper && !s.isSentinel && !s.isStealth && !s.isFlame && !s.isLightning && !s.isCarrier) {
                             s.isStealth = true;
-                            s.maxHp = 2; s.hp = 2; s.cloakTimer = 180; s.size = 9.5; 
+                            s.maxHp = 2; s.hp = 2; s.size = 9.5; 
+                            s.cloakTimer = hasPhantom ? 240 : 180; // Phantom Strike adds 1s (60 ticks)
                             stealthMade++;
                         }
                     }
@@ -7246,21 +7463,50 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
 
             walls.forEach(w => w.draw()); // Draw the maze
             
-            // Draw Quantum Link Tethers (Closed Polygon Method)
+            // Draw Quantum Link Tethers (Closed Polygon Method with Static Web)
             ctx.lineWidth = 1.5;
             for (let i = 0; i < activeFactionCount; i++) {
                 let tShips = ships.filter(sh => sh.faction === i && sh.isTethered && !sh.toRemove);
                 
                 if (tShips.length > 1) {
-                    let hex = factionColors[i];
-                    let r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
-                    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.4)`; 
+                    let isStaticWeb = perksEnabled && factionPerks[i].staticWeb > 0;
+                    let hex = isStaticWeb ? '#00ffff' : factionColors[i]; // Cyan for static web
+                    let r = parseInt(hex.slice(1,3), 16) || 0, g = parseInt(hex.slice(3,5), 16) || 255, b = parseInt(hex.slice(5,7), 16) || 255;
+                    ctx.strokeStyle = isStaticWeb ? `rgba(${r}, ${g}, ${b}, 0.8)` : `rgba(${r}, ${g}, ${b}, 0.4)`; 
+                    
+                    if (isStaticWeb) {
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = hex;
+                    }
+
                     ctx.beginPath();
+                    let segments = [];
+                    
+                    // Helper to draw a static electricity line between two points
+                    const drawJaggedLine = (x1, y1, x2, y2) => {
+                        let dist = Math.hypot(x2 - x1, y2 - y1);
+                        let steps = Math.max(1, Math.floor(dist / 20));
+                        ctx.moveTo(x1, y1);
+                        for (let k = 1; k < steps; k++) {
+                            let t = k / steps;
+                            let jx = x1 + (x2 - x1) * t + (Math.random() * 10 - 5);
+                            let jy = y1 + (y2 - y1) * t + (Math.random() * 10 - 5);
+                            ctx.lineTo(jx, jy);
+                        }
+                        ctx.lineTo(x2, y2);
+                    };
                     
                     if (tShips.length === 2) {
-                        // If only 2 ships remain, just draw a straight line
-                        ctx.moveTo(tShips[0].position.x, tShips[0].position.y);
-                        ctx.lineTo(tShips[1].position.x, tShips[1].position.y);
+                        let x1 = tShips[0].position.x, y1 = tShips[0].position.y;
+                        let x2 = tShips[1].position.x, y2 = tShips[1].position.y;
+                        segments.push({x1, y1, x2, y2});
+                        
+                        if (isStaticWeb) {
+                            drawJaggedLine(x1, y1, x2, y2);
+                        } else {
+                            ctx.moveTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                        }
                     } else {
                         // 1. Find the center point (centroid) of the tethered group
                         let cx = 0, cy = 0;
@@ -7272,7 +7518,6 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cy /= tShips.length;
                         
                         // 2. Sort the ships by their angle relative to the center
-                        // This prevents the lines from crossing over each other, guaranteeing a clean outer shape
                         tShips.sort((a, b) => {
                             let angleA = Math.atan2(a.position.y - cy, a.position.x - cx);
                             let angleB = Math.atan2(b.position.y - cy, b.position.x - cx);
@@ -7280,15 +7525,77 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         });
                         
                         // 3. Connect the dots in order
-                        ctx.moveTo(tShips[0].position.x, tShips[0].position.y);
-                        for (let j = 1; j < tShips.length; j++) {
-                            ctx.lineTo(tShips[j].position.x, tShips[j].position.y);
+                        if (!isStaticWeb) ctx.moveTo(tShips[0].position.x, tShips[0].position.y);
+                        for (let j = 0; j < tShips.length; j++) {
+                            let nextIdx = (j + 1) % tShips.length;
+                            let x1 = tShips[j].position.x, y1 = tShips[j].position.y;
+                            let x2 = tShips[nextIdx].position.x, y2 = tShips[nextIdx].position.y;
+                            segments.push({x1, y1, x2, y2});
+                            
+                            if (isStaticWeb) {
+                                drawJaggedLine(x1, y1, x2, y2);
+                            } else {
+                                ctx.lineTo(x2, y2);
+                            }
                         }
-                        
-                        // 4. Connect the last ship back to the first ship to close the shape!
-                        ctx.closePath(); 
                     }
                     ctx.stroke();
+                    ctx.shadowBlur = 0; // Reset
+                    
+                    // --- COLLISION LOGIC FOR STATIC WEB ---
+                    if (isStaticWeb) {
+                        for (let seg of segments) {
+                            let l2 = Math.pow(seg.x2 - seg.x1, 2) + Math.pow(seg.y2 - seg.y1, 2);
+                            if (l2 === 0) continue;
+                            
+                            // Check Ships
+                            for (let k = ships.length - 1; k >= 0; k--) {
+                                let enemy = ships[k];
+                                if (enemy.faction !== i && !enemy.toRemove && enemy.hp > 0 && enemy.tetherShockCooldown <= 0 && !(enemy.isStealth && enemy.cloakTimer > 0)) {
+                                    // Math to find nearest point on the line segment
+                                    let t = Math.max(0, Math.min(1, ((enemy.position.x - seg.x1) * (seg.x2 - seg.x1) + (enemy.position.y - seg.y1) * (seg.y2 - seg.y1)) / l2));
+                                    let projX = seg.x1 + t * (seg.x2 - seg.x1);
+                                    let projY = seg.y1 + t * (seg.y2 - seg.y1);
+                                    
+                                    if (Math.hypot(enemy.position.x - projX, enemy.position.y - projY) < enemy.size + 4) {
+                                        // Shocked by the Web!
+                                        enemy.tetherShockCooldown = 60; // 1 second immunity
+                                        hitShip(k, null, 1);
+                                        playSound('laser');
+                                        for(let p=0; p<6; p++) particles.push(new Particle(enemy.position.x, enemy.position.y, '#00ffff', 1.5));
+                                        
+                                        // Chain Lightning Effect
+                                        let chained = 0;
+                                        for (let m = ships.length - 1; m >= 0; m--) {
+                                            if (chained >= 1) break; // Only chains to 1 target
+                                            let chainTarget = ships[m];
+                                            if (chainTarget.faction !== i && chainTarget !== enemy && chainTarget.hp > 0 && !chainTarget.toRemove) {
+                                                if (Math.hypot(chainTarget.position.x - enemy.position.x, chainTarget.position.y - enemy.position.y) < 180) {
+                                                    hitShip(m, null, 1);
+                                                    chainTarget.tetherShockCooldown = 60;
+                                                    
+                                                    // Draw the Arc Visual
+                                                    ctx.save();
+                                                    ctx.strokeStyle = '#00ffff'; 
+                                                    ctx.lineWidth = 2;
+                                                    ctx.beginPath(); 
+                                                    ctx.moveTo(enemy.position.x, enemy.position.y);
+                                                    let midX = (enemy.position.x + chainTarget.position.x)/2 + (Math.random()*30-15);
+                                                    let midY = (enemy.position.y + chainTarget.position.y)/2 + (Math.random()*30-15);
+                                                    ctx.lineTo(midX, midY);
+                                                    ctx.lineTo(chainTarget.position.x, chainTarget.position.y);
+                                                    ctx.stroke();
+                                                    ctx.restore();
+                                                    
+                                                    chained++;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             
@@ -7466,7 +7773,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         if (l.faction !== s.faction && !s.toRemove && !(s.isStealth && s.cloakTimer > 0)) {
                             if (Math.hypot(l.x - s.position.x, l.y - s.position.y) < s.size + 6) { 
                                 hit = true; hitTarget = s; hitX = s.position.x; hitY = s.position.y;
-                                hitShip(j, l.shooter, 1);
+                                hitShip(j, l.shooter, l.damage); // Pass the heavy laser damage!
                                 break;
                             }
                         }
@@ -7497,9 +7804,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         potentialTargets.sort((a,b) => a.dist - b.dist);
                         let chainedCount = 0;
                         
-                        // Arc to the 2 closest targets!
+                        // Arc to the 1 closest target!
                         for(let pt of potentialTargets) {
-                            if (chainedCount >= 2) break;
+                            if (chainedCount >= 1) break; // Nerfed to 1 chain max
                             
                             let tx = pt.ship.x || pt.ship.position.x;
                             let ty = pt.ship.y || pt.ship.position.y;
@@ -7742,6 +8049,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         for (let j = ships.length - 1; j >= 0; j--) {
                             if (ships[j].faction !== ex.faction && Math.hypot(ships[j].position.x - ex.x, ships[j].position.y - ex.y) < ex.maxRadius) {
                                 hitShip(j, null, ex.damage || 1); 
+                                
+                                // NEW: Actually apply the Burn DoT if this was a Pyromancer explosion!
+                                if (ex.inflictsBurn && ships[j] && !ships[j].toRemove) {
+                                    ships[j].burnTicks = 3;
+                                    ships[j].burnTimer = 60;
+                                }
                             }
                         }
                         for (let j = mines.length - 1; j >= 0; j--) {
