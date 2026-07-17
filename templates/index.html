@@ -3412,10 +3412,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.x += this.vx;
                 this.y += this.vy;
                 
-                for(let i=0; i<3; i++) {
-                    let p = new Particle(this.x + (Math.random() - 0.5) * this.size, this.y + (Math.random() - 0.5) * this.size, '#00ffff', 0.5);
-                    p.vx = -this.vx * 0.2 + (Math.random() - 0.5);
-                    p.vy = -this.vy * 0.2 + (Math.random() - 0.5);
+                // Enhanced particle wake (mix of cyan and white icy debris)
+                for(let i=0; i<4; i++) {
+                    let color = Math.random() > 0.5 ? '#ffffff' : '#00ffff';
+                    let p = new Particle(this.x + (Math.random() - 0.5) * this.size, this.y + (Math.random() - 0.5) * this.size, color, 0.7);
+                    p.vx = -this.vx * 0.25 + (Math.random() - 0.5);
+                    p.vy = -this.vy * 0.25 + (Math.random() - 0.5);
                     particles.push(p);
                 }
             }
@@ -3425,9 +3427,23 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let angle = Math.atan2(this.vy, this.vx);
                 ctx.rotate(angle);
                 
+                // 1. Soft Outer Glow (Expands the silhouette)
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00ffff';
+                let gradOuter = ctx.createLinearGradient(0, 0, -this.size * 3.5, 0);
+                gradOuter.addColorStop(0, 'rgba(0, 255, 255, 0.4)');
+                gradOuter.addColorStop(1, 'rgba(0, 100, 255, 0)');
+                
+                ctx.fillStyle = gradOuter;
+                ctx.beginPath();
+                ctx.ellipse(-this.size * 1.2, 0, this.size * 2.5, this.size * 1.2, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 2. Base Tail (Your original ellipse shape, but with a richer gradient)
+                ctx.shadowBlur = 0;
                 let grad = ctx.createLinearGradient(0, 0, -this.size * 3, 0);
-                grad.addColorStop(0, 'rgba(204, 255, 255, 1)');
-                grad.addColorStop(0.2, 'rgba(0, 255, 255, 0.8)');
+                grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                grad.addColorStop(0.2, 'rgba(0, 255, 255, 0.9)');
                 grad.addColorStop(1, 'rgba(0, 100, 255, 0)');
                 
                 ctx.fillStyle = grad;
@@ -3435,10 +3451,26 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.ellipse(-this.size, 0, this.size * 2, this.size * 0.8, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
+                // 3. Hot Inner Streak (Makes the tail look energetic)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.beginPath();
+                ctx.ellipse(-this.size * 0.6, 0, this.size * 1.2, this.size * 0.3, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 4. Original Core Base
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ffffff';
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(0, 0, this.size * 0.5, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // 5. Icy Surface Details (Gives the white dot some texture)
+                ctx.fillStyle = 'rgba(200, 240, 255, 0.9)';
+                ctx.beginPath(); ctx.arc(-this.size * 0.1, -this.size * 0.15, this.size * 0.15, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(this.size * 0.15, this.size * 0.1, this.size * 0.2, 0, Math.PI*2); ctx.fill();
+
                 ctx.restore();
             }
         }
