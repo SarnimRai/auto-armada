@@ -602,6 +602,11 @@
                         <button class="btn-secondary admin-btn" id="adminClearNebula" style="background: #3a2222; border-color: #555;">Clear Nebulas</button>
                     </div>
                     
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <button class="btn-secondary admin-btn" id="adminTriggerBounty" style="color: #ffcc00; border-color: #ffaa00;">Trigger Apex Bounty</button>
+                        <button class="btn-secondary admin-btn" id="adminTriggerCollapse" style="color: #ff4444; border-color: #ff4444;">Force Arena Collapse</button>
+                    </div>
+                    
                 </div>
             </div>
 
@@ -743,6 +748,7 @@
         let lasers = [];
         let lightnings = []; 
         let fireballs = []; // NEW: Array for Pyromancer projectiles
+        let plasmaWakes = []; // NEW: Array for lingering plasma trails
         let missiles = [];
         let particles = [];
         let stars = [];
@@ -778,6 +784,9 @@
         let isPerkPhase = false; 
         let isBossRound = false;
         let spawnAsteroidsThisRound = false;
+        let bountyEventActive = false;
+        let arenaCollapseActive = false;
+        let arenaBounds = { x: 0, y: 0, w: 1920, h: 1080 };
         
         let mines = []; 
         let arenaMines = []; // NEW
@@ -2558,6 +2567,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'staticWeb', name: "Static Web", desc: "Requires Storm Callers & Quantum Link. Tethers become electrified, shocking enemies who cross them and chaining to 1 nearby target.", maxLevel: 1, requires: ['lightningFleet', 'quantumLink'], rarity: 'standard' },
         { id: 'phantomStrike', name: "Phantom Strike", desc: "Requires Ghost Spectre. Cloak lasts 1s longer. While cloaked, Spectres prioritize targeting specialized enemy ships over basic fighters.", maxLevel: 1, requires: 'stealthFleet', rarity: 'standard' },
         { id: 'gaussCannon', name: "Gauss Cannon", desc: "Requires Sniper Squadron. Snipers charge for 2s to fire a devastating shot dealing 4 damage. +25% Projectile Speed, +40% Range.", maxLevel: 1, requires: 'sniperFleet', rarity: 'standard' },
+        { id: 'mobileBastion', name: "Mobile Bastions", desc: "Requires Sentinel + Carrier. Carrier drones spawn with a 1 HP Sentinel shield already equipped.", maxLevel: 1, requires: ['sentinelFleet', 'carrierFleet'], rarity: 'standard' },
+        { id: 'vampiricSwarm', name: "Vampiric Swarm", desc: "Requires Drone Formation + Veteran. Drones inherit Vampiric. When a drone gets a kill, the Carrier is healed by 1 HP instead.", maxLevel: 1, requires: ['droneFormation', 'veteran'], rarity: 'standard' },
+        { id: 'plasmaWake', name: "Plasma Wake", desc: "Requires Pyromancers. Flame ships leave a lingering trail of heated plasma. Enemies crossing it take 1 damage.", maxLevel: 1, requires: 'flameFleet', rarity: 'standard' },
+        { id: 'empPayload', name: "EMP Payloads", desc: "Requires Missile Cruiser. 1 missile per volley is an EMP. Deals no hull damage, but completely strips all shields off the target.", maxLevel: 1, requires: 'missileCruiser', rarity: 'standard' },
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
@@ -2591,7 +2604,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 necrovirus: 0, explosiveDeath: 0, flagship: 0, sniperFleet: 0,
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
                 sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0, acePilot: 0, lightningFleet: 0, flameFleet: 0, missileCruiser: 0, expandedLink: 0,
-                pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, stormShield: 0, scorchAura: 0, staticWeb: 0, phantomStrike: 0, gaussCannon: 0,
+                pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, stormShield: 0, scorchAura: 0, staticWeb: 0, phantomStrike: 0, gaussCannon: 0, mobileBastion: 0, vampiricSwarm: 0, plasmaWake: 0, empPayload: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -2892,6 +2905,31 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.shadowBlur = 0;
             }
         }
+        class PlasmaNode {
+            constructor(x, y, faction) {
+                this.x = x; 
+                this.y = y; 
+                this.faction = faction;
+                this.life = 180; // Lingers for 3 seconds
+                this.size = 6;
+            }
+            update() { this.life--; }
+            draw() {
+                // Initialize cache if it doesn't exist yet
+                if (!globalCache['plasmaNode']) globalCache['plasmaNode'] = createPlasmaCache();
+                
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.globalAlpha = this.life / 180; // Fades out smoothly without re-rendering gradients
+                ctx.globalCompositeOperation = 'screen'; // Makes overlapping trails burn intensely bright
+                
+                // Draw the 40x40 cache centered at (0,0) scaled to the trail size
+                let drawSize = this.size * 5; 
+                ctx.drawImage(globalCache['plasmaNode'], -drawSize/2, -drawSize/2, drawSize, drawSize);
+                
+                ctx.restore();
+            }
+        }
         // ---------------------------------------        
         class Laser {
             constructor(x, y, angle, faction, shooter, damage = 1, extraSpeedBuff = 1) {
@@ -2976,12 +3014,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
         }
         class Missile {
-            constructor(x, y, target, faction, shooter) {
+            constructor(x, y, target, faction, shooter, isEMP = false) {
                 this.x = x;
                 this.y = y;
                 this.target = target;
                 this.faction = faction;
                 this.shooter = shooter;
+                this.isEMP = isEMP; // Flag for shield-stripping payload
                 
                 let speedMult = (perksEnabled && faction >= 0) ? 1 + (factionPerks[faction].projSpeed * 0.10) : 1;
                 this.speed = 5 * speedMult;
@@ -3020,12 +3059,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.translate(this.x, this.y);
                 ctx.rotate(angle);
 
-                // Add a subtle glow matching the faction
+                // Add a subtle glow matching the faction (or EMP Cyan)
                 ctx.shadowBlur = 8;
-                ctx.shadowColor = factionColors[this.faction] || '#ff0044';
+                let mColor = this.isEMP ? '#00ffff' : (factionColors[this.faction] || '#ff0044');
+                ctx.shadowColor = mColor;
 
                 // Main aerodynamic hull
-                ctx.fillStyle = '#dddddd';
+                ctx.fillStyle = this.isEMP ? '#bbffff' : '#dddddd';
                 ctx.beginPath();
                 ctx.moveTo(8, 0);    // Sharp nose
                 ctx.lineTo(2, 2.5);  // Right shoulder
@@ -3036,7 +3076,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.fill();
 
                 // Faction-colored energy core/stripe
-                ctx.fillStyle = factionColors[this.faction] || '#ff0044';
+                ctx.fillStyle = mColor;
                 ctx.fillRect(-2, -1, 5, 2);
 
                 // Rear stabilizer fins
@@ -4137,6 +4177,49 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             return buffer;
         }
+        
+        function createPlasmaCache() {
+            const buffer = document.createElement('canvas');
+            buffer.width = 40; 
+            buffer.height = 40;
+            const bctx = buffer.getContext('2d');
+            
+            // Render a smooth, glowing fireball gradient ONCE
+            let grad = bctx.createRadialGradient(20, 20, 0, 20, 20, 20);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            grad.addColorStop(0.2, 'rgba(255, 200, 0, 0.9)');
+            grad.addColorStop(0.5, 'rgba(255, 68, 0, 0.6)');
+            grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            
+            bctx.fillStyle = grad;
+            bctx.beginPath(); 
+            bctx.arc(20, 20, 20, 0, Math.PI*2); 
+            bctx.fill();
+            return buffer;
+        }
+
+        function createArenaWallCache() {
+            const buffer = document.createElement('canvas');
+            buffer.width = 200; // Base texture width
+            buffer.height = 40; // Enough padding for the blur and jagged edge
+            const bctx = buffer.getContext('2d');
+            
+            bctx.shadowBlur = 12;
+            bctx.shadowColor = '#ff0000';
+            bctx.strokeStyle = '#ff4444';
+            bctx.lineWidth = 3;
+            
+            bctx.beginPath();
+            bctx.moveTo(0, 20);
+            // Draw a volatile, jagged red plasma line
+            for(let i = 10; i <= 200; i += 10) {
+                bctx.lineTo(i, 20 + (Math.random() * 8 - 4));
+            }
+            bctx.stroke();
+            bctx.shadowBlur = 0;
+            
+            return buffer;
+        }
         // Helper functions sit safely OUTSIDE the class
         function createWormBodyCache(radius) {
             const c = document.createElement('canvas');
@@ -4323,6 +4406,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 // --- NEW TRACKERS ---
                 this.isEliteDrone = false;
                 this.turrets = [{ angle: 0, cooldown: 0 }, { angle: 0, cooldown: 0 }];
+                this.isBounty = false;
 
                 // ORB TRACKERS
                 this.orbAngle = Math.random() * Math.PI * 2;
@@ -4351,15 +4435,35 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         if (this.faction === 3) { maxX = canvas.width / 2; minY = canvas.height / 2; }
                     }
                     
+                    // Respect Arena Boundaries even during countdown
+                    if (arenaCollapseActive) {
+                        minX = Math.max(minX, arenaBounds.x);
+                        maxX = Math.min(maxX, arenaBounds.x + arenaBounds.w);
+                        minY = Math.max(minY, arenaBounds.y);
+                        maxY = Math.min(maxY, arenaBounds.y + arenaBounds.h);
+                    }
+                    
                     if (this.position.x > maxX) { this.position.x = maxX; this.velocity.x *= -1; }
                     else if (this.position.x < minX) { this.position.x = minX; this.velocity.x *= -1; }
                     if (this.position.y > maxY) { this.position.y = maxY; this.velocity.y *= -1; }
                     else if (this.position.y < minY) { this.position.y = minY; this.velocity.y *= -1; }
                 } else {
-                    if (this.position.x > canvas.width) this.position.x = 0;
-                    else if (this.position.x < 0) this.position.x = canvas.width;
-                    if (this.position.y > canvas.height) this.position.y = 0;
-                    else if (this.position.y < 0) this.position.y = canvas.height;
+                    if (arenaCollapseActive) {
+                        minX = arenaBounds.x; maxX = arenaBounds.x + arenaBounds.w;
+                        minY = arenaBounds.y; maxY = arenaBounds.y + arenaBounds.h;
+                        
+                        // Hard physical bounce off the shrinking red zone walls
+                        if (this.position.x > maxX) { this.position.x = maxX; this.velocity.x *= -1; }
+                        else if (this.position.x < minX) { this.position.x = minX; this.velocity.x *= -1; }
+                        if (this.position.y > maxY) { this.position.y = maxY; this.velocity.y *= -1; }
+                        else if (this.position.y < minY) { this.position.y = minY; this.velocity.y *= -1; }
+                    } else {
+                        // Standard screen wrap
+                        if (this.position.x > canvas.width) this.position.x = 0;
+                        else if (this.position.x < 0) this.position.x = canvas.width;
+                        if (this.position.y > canvas.height) this.position.y = 0;
+                        else if (this.position.y < 0) this.position.y = canvas.height;
+                    }
                 }
             }
             
@@ -4667,6 +4771,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                     drone.maxHp = 2; drone.hp = 2; 
                                 }
                             }
+                            // Mobile Bastions: Drones inherit Sentinel shield!
+                            if (perksEnabled && factionPerks[this.faction].mobileBastion > 0) {
+                                drone.shield += 1;
+                            }
                             ships.push(drone);
                         }
                         this.droneSpawnTimer = 60; // 1 Second loop
@@ -4964,8 +5072,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 let rightX = this.position.x + (localX * cosA - localYRight * sinA);
                                 let rightY = this.position.y + (localX * sinA + localYRight * cosA);
 
-                                // Spawn 2 missiles from each pod (slightly staggered backward to simulate rapid fire)
-                                missiles.push(new Missile(leftX, leftY, nearestEnemy, this.faction, this));
+                                // Spawn 2 missiles from each pod
+                                let hasEMP = perksEnabled && factionPerks[this.faction].empPayload > 0;
+                                missiles.push(new Missile(leftX, leftY, nearestEnemy, this.faction, this, hasEMP)); // First one is EMP if unlocked!
                                 missiles.push(new Missile(leftX - cosA*8, leftY - sinA*8, nearestEnemy, this.faction, this)); 
                                 missiles.push(new Missile(rightX, rightY, nearestEnemy, this.faction, this));
                                 missiles.push(new Missile(rightX - cosA*8, rightY - sinA*8, nearestEnemy, this.faction, this));
@@ -5094,6 +5203,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 // Tick down the cloak window ONLY after the initial 3-second round countdown ends
                 if (!isCountingDown && this.cloakTimer > 0) this.cloakTimer--;
+
+                // Plasma Wake Trail Generation
+                if (!isCountingDown && this.isFlame && perksEnabled && factionPerks[this.faction].plasmaWake > 0) {
+                    if (matchTicks % 5 === 0) { // Drop a burning plasma node every 5 ticks
+                        plasmaWakes.push(new PlasmaNode(this.position.x, this.position.y, this.faction));
+                    }
+                }
                 
                 // Active Sentinel Pulse Shielding
                 if (!isCountingDown && this.isSentinel && perksEnabled && factionPerks[this.faction].sentinelUpgrade > 0) {
@@ -5120,6 +5236,20 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
             
             draw() {
+                // RENDER APEX BOUNTY GLOW (Drawn underneath the ship)
+                if (this.isBounty) {
+                    ctx.save();
+                    ctx.translate(this.position.x, this.position.y);
+                    let pulse = 20 + Math.sin(Date.now() * 0.005) * 10;
+                    ctx.shadowBlur = pulse;
+                    ctx.shadowColor = '#ffcc00';
+                    ctx.fillStyle = `rgba(255, 204, 0, 0.2)`;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
                 let angle = Math.atan2(this.velocity.y, this.velocity.x);
                 ctx.save();
                 ctx.translate(this.position.x, this.position.y);
@@ -5356,6 +5486,19 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.shadowBlur = 5; cctx.shadowColor = this.isEliteDrone ? '#ffcc00' : '#00ffff';
                         cctx.beginPath(); cctx.arc(s*0.7, 0, s*0.3, 0, Math.PI*2); cctx.fill();
                         cctx.shadowBlur = 0;
+
+                        // RENDER MOBILE BASTION SHIELD ON DRONES
+                        // Drones don't use the global shield drawing block, so we bake it into their cache!
+                        if (this.shield > 0) {
+                            cctx.strokeStyle = factionColors[this.faction];
+                            cctx.lineWidth = 1.5;
+                            for (let k = 0; k < this.shield; k++) {
+                                cctx.beginPath();
+                                // Widened the base radius to 3.5 and the layer spacing to 4 to clear the drone's rotor tips
+                                cctx.arc(0, 0, s * 3.5 + (k * 4), 0, Math.PI * 2); 
+                                cctx.stroke();
+                            }
+                        }
                     } else if (this.isStealth) {
                         // --- GHOST SPECTRE (Large High-Tech Stealth Bomber) ---
                         let scale = 1.3; // Visually scales up the ship without breaking collision logic
@@ -5815,11 +5958,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
         }
         
-        function hitShip(shipIndex, shooter, damage = 1) {
+        function hitShip(shipIndex, shooter, damage = 1, isEMP = false) {
             let s = ships[shipIndex];
             
             // Bypass damage entirely if unit is inside its initial 3-second cloaking window
             if (s.isStealth && s.cloakTimer > 0) return false;
+            
+            // EMP payload completely strips shields instantly and deals no hull damage
+            if (isEMP) {
+                if (s.shield > 0) {
+                    s.shield = 0;
+                    playSound('explosion');
+                    for(let p=0; p<15; p++) particles.push(new Particle(s.position.x, s.position.y, '#00ffff', 2.0));
+                }
+                return false; 
+            }
             
             // Amplify payload damage if shooter is an active cloaked unit ambushing targets
             if (shooter && shooter.isStealth && shooter.cloakTimer > 0) {
@@ -5899,6 +6052,18 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     // Deals 1 initial impact damage, and inflicts the 3-second Burn status!
                     explosions.push({x: s.position.x, y: s.position.y, radius: 0, maxRadius: 130, faction: s.faction, damage: 1, inflictsBurn: true});
                 }
+                
+                // BOUNTY CLAIMED!
+                if (s.isBounty && shooter && shooter.faction >= 0 && shooter.faction < 4) {
+                    playSound('explosion');
+                    for (let ally of ships) {
+                        if (ally.faction === shooter.faction) {
+                            ally.maxHp += 1;
+                            ally.hp += 1;
+                            for(let p=0; p<8; p++) particles.push(new Particle(ally.position.x, ally.position.y, '#ffcc00', 1.5));
+                        }
+                    }
+                }
 
                 // 2. Quantum Link Respawn Logic
                 if (s.isTethered) {
@@ -5962,9 +6127,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (shooter && ships.includes(shooter)) {
                     shooter.kills++;
                     
-                    if (perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].vampiric > 0 && shooter.isVeteran) {
-                        if (shooter.hp < shooter.maxHp) shooter.hp++;
-                        else if (shooter.shield < 3) shooter.shield++; // Hard capped at 3 shields to prevent immortal ships!
+                    if (perksEnabled && shooter.faction >= 0 && shooter.faction < 4) {
+                        // Standard Vampiric Kills
+                        if (factionPerks[shooter.faction].vampiric > 0 && shooter.isVeteran) {
+                            if (shooter.hp < shooter.maxHp) shooter.hp++;
+                            else if (shooter.shield < 3) shooter.shield++; 
+                        }
+                        
+                        // Vampiric Swarm: Drones heal the Carrier instead
+                        if (factionPerks[shooter.faction].vampiricSwarm > 0 && shooter.isDrone) {
+                            let carrier = ships.find(c => c.faction === shooter.faction && c.isCarrier && c.hp > 0 && !c.toRemove);
+                            if (carrier && carrier.hp < carrier.maxHp) {
+                                carrier.hp++;
+                                for(let p=0; p<10; p++) particles.push(new Particle(carrier.position.x, carrier.position.y, '#00ff00', 1.5));
+                            }
+                        }
                     }
                     
                     if (shooter.kills >= 3 && !shooter.isVeteran && perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].veteran > 0) {
@@ -6029,6 +6206,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             missiles = [];
             particles = [];
             explosions = [];
+            plasmaWakes = []; // <--- CLEARS PLASMA TRAILS
             respawnQueue = []; // Clear respawns on new round
             nebulas = []; // Clear nebulas
             flagshipAlive = [false, false, false, false];
@@ -6061,6 +6239,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
                 
                 spawnAsteroidsThisRound = Math.random() < 0.10;
+                bountyEventActive = !isBossRound && Math.random() < 0.10;
+                arenaCollapseActive = !isBossRound && Math.random() < 0.10;
+                arenaBounds = { x: 0, y: 0, w: canvas.width, h: canvas.height };
                 
                 if (Math.random() < 0.10) {
                     wormholes = [
@@ -6339,6 +6520,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     }
                 }
             }
+            
+            // Assign Apex Bounties
+            if (bountyEventActive) {
+                for (let f = 0; f < activeFactionCount; f++) {
+                    let factionShips = ships.filter(s => s.faction === f && !s.isDrone);
+                    if (factionShips.length > 0) {
+                        let bountyTarget = factionShips[Math.floor(Math.random() * factionShips.length)];
+                        bountyTarget.isBounty = true;
+                        bountyTarget.maxHp += 4; // Give the Apex target a huge fighting chance
+                        bountyTarget.hp += 4;
+                        bountyTarget.size *= 1.2;
+                    }
+                }
+            }
+            
             mines = []; 
         }
         
@@ -7008,9 +7204,14 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             asteroids = [];
             wormholes = [];
             explosions = [];
+            plasmaWakes = []; // <--- CLEARS PLASMA TRAILS
             walls = [];
             arenaMines = []; 
             nebulas = []; 
+            
+            // Turn off Active Mutators
+            bountyEventActive = false;
+            arenaCollapseActive = false;
         });
         document.getElementById('adminSpawnPhantom').addEventListener('click', () => bosses.push(new PhantomBoss()));
         document.getElementById('adminSpawnPrism').addEventListener('click', () => bosses.push(new PrismBoss()));
@@ -7034,6 +7235,30 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         // Nebula Spawner
         document.getElementById('adminSpawnNebula').addEventListener('click', () => nebulas.push(new Nebula()));
         document.getElementById('adminClearNebula').addEventListener('click', () => nebulas = []);
+
+        // Mutator Triggers
+        document.getElementById('adminTriggerBounty').addEventListener('click', () => {
+            if (!gameStarted || bountyEventActive) return; 
+            bountyEventActive = true;
+            for (let f = 0; f < activeFactionCount; f++) {
+                // Find ships that are valid targets (no drones, no existing bounties)
+                let factionShips = ships.filter(s => s.faction === f && !s.isDrone && !s.isBounty && !s.toRemove);
+                if (factionShips.length > 0) {
+                    let bountyTarget = factionShips[Math.floor(Math.random() * factionShips.length)];
+                    bountyTarget.isBounty = true;
+                    bountyTarget.maxHp += 4;
+                    bountyTarget.hp += 4;
+                    bountyTarget.size *= 1.2;
+                }
+            }
+        });
+
+        document.getElementById('adminTriggerCollapse').addEventListener('click', () => {
+            if (!gameStarted || arenaCollapseActive) return;
+            arenaCollapseActive = true;
+            // Snap the arena bounds to the current screen size before it starts shrinking
+            arenaBounds = { x: 0, y: 0, w: canvas.width, h: canvas.height };
+        });
 
         // --- CELESTIAL ADMIN OVERRIDES ---
         function forceCelestialSpawn(type) {
@@ -8008,8 +8233,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     if (m.faction !== s.faction && !s.toRemove) {
                         let d = Math.hypot(m.x - s.position.x, m.y - s.position.y);
                         if (d < s.size + 8) { 
-                            hitShip(j, m.shooter);
-                            for(let p=0; p<10; p++) particles.push(new Particle(m.x, m.y, '#ffaa00'));
+                            hitShip(j, m.shooter, 2, m.isEMP); // Pass the EMP flag!
+                            if (!m.isEMP) {
+                                for(let p=0; p<10; p++) particles.push(new Particle(m.x, m.y, '#ffaa00'));
+                            }
                             hit = true;
                             break;
                         }
@@ -8050,6 +8277,26 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 particles[i].update();
                 particles[i].draw();
                 if (particles[i].life <= 0) fastRemove(particles, i);
+            }
+            
+            // Update & Render Plasma Wakes
+            for (let i = plasmaWakes.length - 1; i >= 0; i--) {
+                let pw = plasmaWakes[i];
+                pw.update();
+                pw.draw();
+                
+                let hit = false;
+                for (let j = ships.length - 1; j >= 0; j--) {
+                    let s = ships[j];
+                    if (s.faction !== pw.faction && !s.toRemove && !(s.isStealth && s.cloakTimer > 0)) {
+                        if (Math.hypot(pw.x - s.position.x, pw.y - s.position.y) < s.size + pw.size) {
+                            hitShip(j, null, 1);
+                            hit = true;
+                            break;
+                        }
+                    }
+                }
+                if (hit || pw.life <= 0) fastRemove(plasmaWakes, i);
             }
             
             // Render Nova Core & EMP Explosions
@@ -8409,6 +8656,56 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             if (matchActive && roundActive && !isCountingDown) {
                 matchTicks++; // TICK THE DETERMINISTIC CLOCK!
+                
+                // --- ARENA COLLAPSE MECHANIC ---
+                if (arenaCollapseActive) {
+                    let shrinkSpeed = 0.15; // Slowed down by 50%
+                    let minSize = 500; // Leaves a claustrophobic box in the center
+                    
+                    if (arenaBounds.w > minSize) {
+                        arenaBounds.x += shrinkSpeed;
+                        arenaBounds.w -= shrinkSpeed * 2;
+                    }
+                    if (arenaBounds.h > minSize) {
+                        arenaBounds.y += shrinkSpeed;
+                        arenaBounds.h -= shrinkSpeed * 2;
+                    }
+                    
+                    // Fill the outside with an opaque dark red to visually enforce the "Dead Zone"
+                    ctx.fillStyle = 'rgba(20, 0, 0, 0.7)';
+                    ctx.fillRect(0, 0, canvas.width, arenaBounds.y); // Top
+                    ctx.fillRect(0, arenaBounds.y + arenaBounds.h, canvas.width, canvas.height - (arenaBounds.y + arenaBounds.h)); // Bottom
+                    ctx.fillRect(0, arenaBounds.y, arenaBounds.x, arenaBounds.h); // Left
+                    ctx.fillRect(arenaBounds.x + arenaBounds.w, arenaBounds.y, canvas.width - (arenaBounds.x + arenaBounds.w), arenaBounds.h); // Right
+
+                    // Pre-bake 4 animation frames of the volatile wall into cache if they don't exist yet
+                    if (!globalCache['arenaWall_0']) {
+                        for(let c=0; c<4; c++) globalCache['arenaWall_' + c] = createArenaWallCache();
+                    }
+                    
+                    // Rotate through frames every 50 milliseconds for a crackling effect
+                    let frame = Math.floor(Date.now() / 50) % 4;
+                    let wallCache = globalCache['arenaWall_' + frame];
+                    
+                    // Render the cached walls stretched across the bounding box dimensions
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen'; 
+                    
+                    // Draw Top and Bottom horizontal borders
+                    ctx.drawImage(wallCache, arenaBounds.x, arenaBounds.y - 20, arenaBounds.w, 40);
+                    ctx.drawImage(wallCache, arenaBounds.x, arenaBounds.y + arenaBounds.h - 20, arenaBounds.w, 40);
+                    
+                    // Rotate canvas 90 degrees to stretch the texture vertically for Left and Right borders
+                    ctx.translate(arenaBounds.x, arenaBounds.y);
+                    ctx.rotate(Math.PI / 2);
+                    
+                    // Left border (Y axis points left after rotation)
+                    ctx.drawImage(wallCache, 0, -20, arenaBounds.h, 40); 
+                    // Right border
+                    ctx.drawImage(wallCache, 0, -arenaBounds.w - 20, arenaBounds.h, 40); 
+                    
+                    ctx.restore();
+                }
                 
                 // Filter out Dummies (in Admin) AND Boss Minions (Faction -1) so they don't count as surviving players!
                 let checkShips = adminModeEnabled ? ships.filter(s => s.faction >= 0 && s.faction < 4) : ships.filter(s => s.faction >= 0);
