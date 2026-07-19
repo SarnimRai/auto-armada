@@ -1456,7 +1456,29 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             else newPlanet.cache = createPlanetCache(newPlanet);
             bgPlanets.push(newPlanet);
         }
-
+        function createLightningShieldCache(color) {
+            const buffer = document.createElement('canvas');
+            buffer.width = 120; buffer.height = 120;
+            const bctx = buffer.getContext('2d');
+            bctx.translate(60, 60);
+            
+            bctx.shadowBlur = 10;
+            bctx.shadowColor = color;
+            bctx.strokeStyle = color;
+            bctx.lineWidth = 2;
+            bctx.beginPath();
+            
+            let r = 40; // Base reference radius
+            for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.5) {
+                let jiggle = (Math.random() - 0.5) * 6;
+                let px = Math.cos(a) * (r + jiggle);
+                let py = Math.sin(a) * (r + jiggle);
+                if (a === 0) bctx.moveTo(px, py); else bctx.lineTo(px, py);
+            }
+            bctx.closePath(); bctx.stroke();
+            bctx.shadowBlur = 0;
+            return buffer;
+        }
         function createPlanetCache(p) {
             if (p.type === 'RING_WORLD') return createRingWorldCache(p);
             const buffer = document.createElement('canvas'); 
@@ -2910,24 +2932,20 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.x = x; 
                 this.y = y; 
                 this.faction = faction;
-                this.life = 180; // Lingers for 3 seconds
-                this.size = 6;
+                this.life = 180; 
+                this.size = 8; // Slightly larger hitbox to compensate for dotted spacing
             }
             update() { this.life--; }
             draw() {
-                // Initialize cache if it doesn't exist yet
                 if (!globalCache['plasmaNode']) globalCache['plasmaNode'] = createPlasmaCache();
                 
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.globalAlpha = this.life / 180; // Fades out smoothly without re-rendering gradients
-                ctx.globalCompositeOperation = 'screen'; // Makes overlapping trails burn intensely bright
+                // O(1) Rendering: Removed save, restore, and screen blending for pure GPU speed!
+                ctx.globalAlpha = this.life / 180; 
                 
-                // Draw the 40x40 cache centered at (0,0) scaled to the trail size
-                let drawSize = this.size * 5; 
-                ctx.drawImage(globalCache['plasmaNode'], -drawSize/2, -drawSize/2, drawSize, drawSize);
+                let drawSize = this.size * 3.5; 
+                ctx.drawImage(globalCache['plasmaNode'], this.x - drawSize/2, this.y - drawSize/2, drawSize, drawSize);
                 
-                ctx.restore();
+                ctx.globalAlpha = 1.0; // Reset alpha immediately
             }
         }
         // ---------------------------------------        
@@ -2963,23 +2981,26 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.life--;
             }
             draw() {
-                ctx.strokeStyle = (this.faction === -1) ? '#ff0044' : factionColors[this.faction];
-                ctx.lineWidth = this.isPiercing ? 3 : 2; 
-                
-                // Give the heavy 4-damage Gauss shots a thicker, glowing beam
-                if (this.damage >= 4) {
-                    ctx.lineWidth = 5;
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = ctx.strokeStyle;
+                let cacheKey = 'laser_' + this.faction + '_' + (this.damage >= 4 ? 'h' : (this.isPiercing ? 'p' : 's'));
+                if (!globalCache[cacheKey]) {
+                    let color = (this.faction === -1) ? '#ff0044' : factionColors[this.faction];
+                    let thick = this.damage >= 4 ? 5 : (this.isPiercing ? 3 : 2);
+                    let blur = this.damage >= 4 ? 10 : 0;
+                    globalCache[cacheKey] = createLaserCache(color, thick, blur);
                 }
                 
-                ctx.beginPath();
-                ctx.moveTo(this.x, this.y);
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(Math.atan2(this.vy, this.vx)); // Point beam in direction of travel
+                
                 let tailMult = this.isPiercing ? 1.5 : 1;
-                if (this.damage >= 4) tailMult = 2.5; // Gauss bolts have long trails
-                ctx.lineTo(this.x - (this.vx * tailMult), this.y - (this.vy * tailMult));
-                ctx.stroke();
-                ctx.shadowBlur = 0;
+                if (this.damage >= 4) tailMult = 2.5;
+                let length = Math.hypot(this.vx * tailMult, this.vy * tailMult);
+                
+                ctx.globalCompositeOperation = 'screen';
+                // Stretch the 100x30 image across the calculated distance dynamically
+                ctx.drawImage(globalCache[cacheKey], -length, -15, length, 30);
+                ctx.restore();
             }
         }
         class LightningBolt {
@@ -3052,53 +3073,25 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
             }
             draw() {
-                // Calculate the direction the missile is traveling
-                let angle = Math.atan2(this.vy, this.vx);
+                let cacheKey = 'missile_' + this.faction + (this.isEMP ? '_emp' : '');
+                if (!globalCache[cacheKey]) {
+                    let color = this.isEMP ? '#00ffff' : (factionColors[this.faction] || '#ff0044');
+                    globalCache[cacheKey] = createMissileCache(color, this.isEMP);
+                }
                 
                 ctx.save();
                 ctx.translate(this.x, this.y);
-                ctx.rotate(angle);
-
-                // Add a subtle glow matching the faction (or EMP Cyan)
-                ctx.shadowBlur = 8;
-                let mColor = this.isEMP ? '#00ffff' : (factionColors[this.faction] || '#ff0044');
-                ctx.shadowColor = mColor;
-
-                // Main aerodynamic hull
-                ctx.fillStyle = this.isEMP ? '#bbffff' : '#dddddd';
+                ctx.rotate(Math.atan2(this.vy, this.vx));
+                
+                // Draw cached missile hull
+                ctx.drawImage(globalCache[cacheKey], -20, -10, 40, 20);
+                
+                // Dynamic engine flicker (Keep this uncached so it flickers alive!)
+                ctx.fillStyle = this.isEMP ? '#00ffff' : '#ffaa00';
                 ctx.beginPath();
-                ctx.moveTo(8, 0);    // Sharp nose
-                ctx.lineTo(2, 2.5);  // Right shoulder
-                ctx.lineTo(-6, 2.5); // Right tail
-                ctx.lineTo(-6, -2.5);// Left tail
-                ctx.lineTo(2, -2.5); // Left shoulder
-                ctx.closePath();
-                ctx.fill();
-
-                // Faction-colored energy core/stripe
-                ctx.fillStyle = mColor;
-                ctx.fillRect(-2, -1, 5, 2);
-
-                // Rear stabilizer fins
-                ctx.fillStyle = '#666666';
-                ctx.beginPath();
-                ctx.moveTo(-6, 2.5);
-                ctx.lineTo(-8, 5.5);
-                ctx.lineTo(-2, 2.5);
+                ctx.arc(-5 - Math.random() * 4, 0, 2, 0, Math.PI * 2);
                 ctx.fill();
                 
-                ctx.beginPath();
-                ctx.moveTo(-6, -2.5);
-                ctx.lineTo(-8, -5.5);
-                ctx.lineTo(-2, -2.5);
-                ctx.fill();
-
-                // Bright engine exhaust dot at the very back
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(-7, 0, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-
                 ctx.restore();
             }
         }
@@ -3218,73 +3211,40 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         
         class Asteroid {
             constructor() {
-                this.size = 15 + Math.random() * 35; // Matches new code sizing
-                this.x = Math.random() * canvas.width;
-                this.y = -this.size - 50; // Safely spawn above screen
-                this.vx = (Math.random() - 0.5) * 1;
-                this.vy = 1 + Math.random() * 2; 
-                this.hp = 6;
-                this.rotation = Math.random() * Math.PI * 2;
-                this.spin = (Math.random() - 0.5) * 0.05;
+                this.size = 15 + Math.random() * 25;
+                // Generate 1 of 4 distinct rock variations
+                this.variant = Math.floor(Math.random() * 4); 
                 
-                // --- VISUAL CACHE SETUP ---
-                this.radius = this.size;
-                const grayVal = 40 + Math.floor(Math.random() * 40);
-                this.color = `rgb(${grayVal},${grayVal},${grayVal})`;
-                this.vertices = generatePolygon(this.size, 11, 0.45);
-                this.blur = 0; // Active game hazards should be sharp
-                this.craters = []; 
-                const maxCraters = 5 + Math.floor(Math.random() * 5);
+                let edge = Math.floor(Math.random() * 4);
+                if (edge === 0) { this.x = Math.random() * canvas.width; this.y = -this.size; }
+                else if (edge === 1) { this.x = canvas.width + this.size; this.y = Math.random() * canvas.height; }
+                else if (edge === 2) { this.x = Math.random() * canvas.width; this.y = canvas.height + this.size; }
+                else { this.x = -this.size; this.y = Math.random() * canvas.height; }
                 
-                for(let j=0; j<maxCraters; j++) { 
-                    let attempts = 0, valid = false, nx, ny, nr;
-                    
-                    while (!valid && attempts < 20) {
-                        attempts++;
-                        const baseAngle = Math.random() * Math.PI * 2;
-                        const baseDist = Math.sqrt(Math.random()) * (this.size * 0.95); 
-                        
-                        if (this.craters.length > 0 && Math.random() > 0.5) {
-                            const parent = this.craters[Math.floor(Math.random() * this.craters.length)];
-                            nx = parent.relX + (Math.random() - 0.5) * parent.r * 1.5;
-                            ny = parent.relY + (Math.random() - 0.5) * parent.r * 1.5;
-                            if (Math.hypot(nx, ny) > this.size * 0.95) {
-                                nx = Math.cos(baseAngle) * baseDist;
-                                ny = Math.sin(baseAngle) * baseDist;
-                            }
-                        } else {
-                            nx = Math.cos(baseAngle) * baseDist; 
-                            ny = Math.sin(baseAngle) * baseDist;
-                        }
-                        
-                        nr = 2 + Math.random() * (this.size * 0.25);
-                        let completelySwallowed = false;
-                        for (let other of this.craters) {
-                            if (Math.hypot(nx - other.relX, ny - other.relY) < Math.abs(nr - other.r) + 1) {
-                                completelySwallowed = true;
-                                break;
-                            }
-                        }
-                        if (!completelySwallowed) valid = true;
-                    }
-                    if (valid) this.craters.push({ relX: nx, relY: ny, r: nr }); 
-                }
-                
-                // Bake the highly detailed texture into an image cache for performance!
-                this.cache = createBackgroundAsteroidCache(this);
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.hp = Math.floor(this.size / 10);
+                this.rotation = 0;
+                this.spinSpeed = (Math.random() - 0.5) * 0.05;
             }
             update() {
-                if (isCountingDown) return; 
+                if (isCountingDown) return;
                 this.x += this.vx;
                 this.y += this.vy;
-                this.rotation += this.spin;
+                this.rotation += this.spinSpeed;
             }
             draw() {
+                let cacheKey = 'asteroid_' + this.variant;
+                if (!globalCache[cacheKey]) globalCache[cacheKey] = createAsteroidCache(this.variant);
+                
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
-                // Draw the beautifully cached 3D texture
-                ctx.drawImage(this.cache, -this.cache.width/2, -this.cache.height/2);
+                
+                // Draw the cached 120x120 rock scaled down to the asteroid's actual physical hit size
+                let drawSize = this.size * 2.5; 
+                ctx.drawImage(globalCache[cacheKey], -drawSize/2, -drawSize/2, drawSize, drawSize);
+                
                 ctx.restore();
             }
         }
@@ -4218,6 +4178,113 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.stroke();
             bctx.shadowBlur = 0;
             
+            return buffer;
+        }
+        function createWormholeCache() {
+            const buffer = document.createElement('canvas');
+            buffer.width = 160; buffer.height = 160;
+            const bctx = buffer.getContext('2d');
+            let cx = 80, cy = 80;
+            
+            // Deep space event horizon glow
+            let glow = bctx.createRadialGradient(cx, cy, 15, cx, cy, 75);
+            glow.addColorStop(0, 'rgba(0, 0, 0, 1)');
+            glow.addColorStop(0.2, 'rgba(170, 68, 255, 1)');
+            glow.addColorStop(0.6, 'rgba(85, 0, 150, 0.4)');
+            glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            bctx.fillStyle = glow;
+            bctx.fillRect(0, 0, 160, 160);
+            
+            // Cosmic Swirl Arms
+            bctx.strokeStyle = 'rgba(220, 180, 255, 0.8)';
+            bctx.lineWidth = 3;
+            bctx.lineCap = 'round';
+            for(let i=0; i<4; i++) {
+                bctx.beginPath();
+                for(let a=0; a<Math.PI*2; a+=0.2) {
+                    let r = a * 8; // Spiral math
+                    let x = cx + Math.cos(a + i*(Math.PI*2/4)) * r;
+                    let y = cy + Math.sin(a + i*(Math.PI*2/4)) * r;
+                    if(a===0) bctx.moveTo(x,y); else bctx.lineTo(x,y);
+                }
+                bctx.stroke();
+            }
+            
+            // The Singularity (Absolute Black Center)
+            bctx.fillStyle = '#000000';
+            bctx.beginPath(); bctx.arc(cx, cy, 18, 0, Math.PI*2); bctx.fill();
+            return buffer;
+        }
+
+        function createLaserCache(color, thickness, blur) {
+            const buffer = document.createElement('canvas');
+            buffer.width = 100; buffer.height = 30; // Horizontal beam
+            const bctx = buffer.getContext('2d');
+            
+            bctx.shadowBlur = blur;
+            bctx.shadowColor = color;
+            bctx.strokeStyle = color;
+            bctx.lineWidth = thickness;
+            bctx.lineCap = 'round';
+            
+            // Outer colored beam
+            bctx.beginPath(); bctx.moveTo(20, 15); bctx.lineTo(80, 15); bctx.stroke();
+            
+            // White hot core
+            bctx.shadowBlur = 0;
+            bctx.strokeStyle = '#ffffff';
+            bctx.lineWidth = thickness * 0.5;
+            bctx.beginPath(); bctx.moveTo(25, 15); bctx.lineTo(75, 15); bctx.stroke();
+            return buffer;
+        }
+
+        function createMissileCache(color, isEMP) {
+            const buffer = document.createElement('canvas');
+            buffer.width = 40; buffer.height = 20;
+            const bctx = buffer.getContext('2d');
+            bctx.translate(20, 10); 
+            
+            bctx.shadowBlur = 8;
+            bctx.shadowColor = color;
+            
+            // Aerodynamic Hull
+            bctx.fillStyle = isEMP ? '#bbffff' : '#dddddd';
+            bctx.beginPath();
+            bctx.moveTo(8, 0); bctx.lineTo(-4, 3); bctx.lineTo(-4, -3);
+            bctx.closePath(); bctx.fill();
+            
+            // Faction stripe
+            bctx.fillStyle = color;
+            bctx.fillRect(-2, -1, 5, 2);
+            return buffer;
+        }
+
+        function createAsteroidCache(seed) {
+            const buffer = document.createElement('canvas');
+            let s = 40; // Render at max size to ensure high quality
+            buffer.width = 120; buffer.height = 120;
+            const bctx = buffer.getContext('2d');
+            bctx.translate(60, 60);
+            
+            // Generate a jagged but circular rock
+            bctx.fillStyle = '#666';
+            bctx.beginPath();
+            for (let a = 0; a < Math.PI * 2; a += 0.4) {
+                let r = s + (Math.sin(a * 3 + seed) * 5) + (Math.cos(a * 5) * 4);
+                let px = Math.cos(a) * r;
+                let py = Math.sin(a) * r;
+                if (a === 0) bctx.moveTo(px, py); else bctx.lineTo(px, py);
+            }
+            bctx.closePath(); bctx.fill();
+            
+            // Add crater details based on seed
+            bctx.fillStyle = '#444';
+            for(let i=0; i<3; i++) {
+                let cr = (seed + i) * 10;
+                bctx.beginPath();
+                bctx.arc(Math.cos(cr)*15, Math.sin(cr)*15, 4 + (i*2), 0, Math.PI*2);
+                bctx.fill();
+            }
             return buffer;
         }
         // Helper functions sit safely OUTSIDE the class
@@ -5204,9 +5271,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 // Tick down the cloak window ONLY after the initial 3-second round countdown ends
                 if (!isCountingDown && this.cloakTimer > 0) this.cloakTimer--;
 
-                // Plasma Wake Trail Generation
+                // Plasma Wake Trail Generation (Dotted & Highly Optimized)
                 if (!isCountingDown && this.isFlame && perksEnabled && factionPerks[this.faction].plasmaWake > 0) {
-                    if (matchTicks % 5 === 0) { // Drop a burning plasma node every 5 ticks
+                    // Increased from 5 to 15 to create distinctly separated 'dots' of fire
+                    if (matchTicks % 15 === 0) { 
                         plasmaWakes.push(new PlasmaNode(this.position.x, this.position.y, this.faction));
                     }
                 }
@@ -5925,27 +5993,26 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 if (this.shield > 0) {
                     if (this.isLightning) {
-                        // JAGGED LIGHTNING SHIELD
-                        ctx.strokeStyle = factionColors[this.faction];
-                        ctx.shadowBlur = 10;
-                        ctx.shadowColor = factionColors[this.faction];
-                        ctx.lineWidth = 2;
+                        // CACHED JAGGED LIGHTNING SHIELD
+                        let hex = factionColors[this.faction];
+                        ctx.globalCompositeOperation = 'screen';
                         for (let i = 0; i < this.shield; i++) {
-                            ctx.beginPath();
-                            let r = s * 2.0 + (i * 3);
-                            for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.5) {
-                                let jiggle = (Math.random() - 0.5) * 6; // Sparks and vibrates
-                                let px = this.position.x + Math.cos(a) * (r + jiggle);
-                                let py = this.position.y + Math.sin(a) * (r + jiggle);
-                                if (a === 0) ctx.moveTo(px, py);
-                                else ctx.lineTo(px, py);
+                            // Cycle through 4 pre-baked frames of jitter
+                            let frame = Math.floor(Date.now() / 50 + i) % 4;
+                            let cKey = `ltnShield_${this.faction}_${frame}`;
+                            if (!globalCache[cKey]) {
+                                for(let c=0; c<4; c++) globalCache[`ltnShield_${this.faction}_${c}`] = createLightningShieldCache(hex);
                             }
-                            ctx.closePath();
-                            ctx.stroke();
+                            
+                            // Dynamically scale the 120x120 cache to the required shield radius
+                            let scaleDraw = (s * 2.0 + (i * 3)) / 40; 
+                            let drawSize = 120 * scaleDraw;
+                            
+                            ctx.drawImage(globalCache[cKey], this.position.x - drawSize/2, this.position.y - drawSize/2, drawSize, drawSize);
                         }
-                        ctx.shadowBlur = 0; // reset
+                        ctx.globalCompositeOperation = 'source-over';
                     } else {
-                        // STANDARD SHIELD
+                        // STANDARD SHIELD (Cheap enough to draw normally, but grouped cleanly)
                         ctx.strokeStyle = factionColors[this.faction];
                         ctx.lineWidth = 1.5;
                         for (let i = 0; i < this.shield; i++) {
@@ -6243,10 +6310,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 arenaCollapseActive = !isBossRound && Math.random() < 0.10;
                 arenaBounds = { x: 0, y: 0, w: canvas.width, h: canvas.height };
                 
-                if (Math.random() < 0.10) {
+                if (Math.random() < 0.10) { 
+                    let pad = 150;
+                    // Spawn one on the left 20% of the map, one on the right 20%
+                    let wx1 = pad + Math.random() * (canvas.width * 0.2);
+                    let wy1 = pad + Math.random() * (canvas.height - pad * 2);
+                    
+                    let wx2 = canvas.width - pad - Math.random() * (canvas.width * 0.2);
+                    let wy2 = pad + Math.random() * (canvas.height - pad * 2);
+                    
+                    // Randomly swap so Faction 1 doesn't always get the left wormhole
+                    if (Math.random() > 0.5) { let t = wx1; wx1 = wx2; wx2 = t; }
+                    
                     wormholes = [
-                    {x: canvas.width * 0.15, y: canvas.height * 0.5, angle: 0},
-                    {x: canvas.width * 0.85, y: canvas.height * 0.5, angle: 0}
+                        { x: wx1, y: wy1, angle: 0 },
+                        { x: wx2, y: wy2, angle: 0 }
                     ];
                 }
                 
@@ -7754,28 +7832,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     let isStaticWeb = perksEnabled && factionPerks[i].staticWeb > 0;
                     let segments = [];
                     
+                    // 1. Create an Unbroken "Closed Circuit" Loop
+                    // Every ship connects to the next one in the array, and the last connects to the first.
+                    // Removed the 500px limit so the circuit NEVER breaks, even if ships teleport across the map!
                     if (tShips.length === 2) {
-                        segments.push({
-                            x1: tShips[0].position.x, y1: tShips[0].position.y, 
-                            x2: tShips[1].position.x, y2: tShips[1].position.y
-                        });
-                    } else {
-                        // 1. Find the center point (centroid)
-                        let cx = 0, cy = 0;
-                        for (let sh of tShips) { cx += sh.position.x; cy += sh.position.y; }
-                        cx /= tShips.length; cy /= tShips.length;
-                        
-                        // 2. Sort the ships by their angle relative to the center
-                        tShips.sort((a, b) => {
-                            return Math.atan2(a.position.y - cy, a.position.x - cx) - Math.atan2(b.position.y - cy, b.position.x - cx);
-                        });
-                        
-                        // 3. Define the connecting segments
+                        let s1 = tShips[0], s2 = tShips[1];
+                        segments.push({ x1: s1.position.x, y1: s1.position.y, x2: s2.position.x, y2: s2.position.y });
+                    } else if (tShips.length > 2) {
                         for (let j = 0; j < tShips.length; j++) {
                             let nextIdx = (j + 1) % tShips.length;
+                            let s1 = tShips[j];
+                            let s2 = tShips[nextIdx];
+
                             segments.push({
-                                x1: tShips[j].position.x, y1: tShips[j].position.y, 
-                                x2: tShips[nextIdx].position.x, y2: tShips[nextIdx].position.y
+                                x1: s1.position.x, y1: s1.position.y,
+                                x2: s2.position.x, y2: s2.position.y
                             });
                         }
                     }
@@ -7791,22 +7862,26 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         let frame = Math.floor(Date.now() / 50) % 4;
                         let cacheToUse = globalCache['staticWeb_' + frame];
                         
-                        ctx.shadowBlur = 15;
-                        ctx.shadowColor = '#00ffff';
+                        ctx.save();
+                        ctx.globalCompositeOperation = 'screen'; 
                         
                         for (let seg of segments) {
                             let dist = Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1);
                             let angle = Math.atan2(seg.y2 - seg.y1, seg.x2 - seg.x1);
                             
-                            ctx.save();
+                            // Replaced heavy save/restore with direct matrix reversals
                             ctx.translate(seg.x1, seg.y1);
                             ctx.rotate(angle);
-                            ctx.globalCompositeOperation = 'screen'; 
-                            // O(1) rendering: Rapidly stretches the pre-baked cached image across the distance!
+                            
+                            // Draw twice to retain intense glow. 2 image draws are astronomically faster than 1 dynamic shadowBlur!
                             ctx.drawImage(cacheToUse, 0, -15, dist, 30);
-                            ctx.restore();
+                            ctx.drawImage(cacheToUse, 0, -15, dist, 30);
+                            
+                            // Reverse the matrix for the next segment
+                            ctx.rotate(-angle);
+                            ctx.translate(-seg.x1, -seg.y1);
                         }
-                        ctx.shadowBlur = 0; // Reset
+                        ctx.restore();
                     } else {
                         // Standard Faction Colored Line Rendering
                         let hex = factionColors[i];
@@ -8400,18 +8475,15 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
             
             // Update Wormholes
+            if (!globalCache['wormhole']) globalCache['wormhole'] = createWormholeCache();
+            
             wormholes.forEach((w, i) => {
-                w.angle += 0.05;
+                w.angle += 0.02; // Slower, menacing rotation
                 ctx.save();
                 ctx.translate(w.x, w.y);
                 ctx.rotate(w.angle);
-                ctx.strokeStyle = '#aa44ff';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.arc(0, 0, 30, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.fillStyle = '#000';
-                ctx.fill();
+                // Draw the stunning pre-baked galaxy swirl
+                ctx.drawImage(globalCache['wormhole'], -60, -60, 120, 120); 
                 ctx.restore();
                 
                 ships.forEach(s => {
