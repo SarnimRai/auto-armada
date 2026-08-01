@@ -316,7 +316,7 @@
                 overflow: hidden;
             }
         }
-
+        
         /* --- MOBILE UI RESPONSIVENESS (LIQUID FIT, ZERO SCROLLING) --- */
         @media screen and (max-height: 600px), screen and (max-width: 900px) {
             html, body { touch-action: none; overscroll-behavior: none; overflow: hidden !important; }
@@ -527,7 +527,7 @@
                     <button class="btn-primary" id="adminStartMatch" style="height: 45px; padding: 0 30px; font-size: 1.2rem; margin: 0; flex-grow: 1; background: #ff4444;">INITIALIZE COMBAT</button>
                 </div>
             </div>
-
+            
             <div style="background: rgba(255, 255, 255, 0.05); padding: 15px 30px; border-radius: 10px; border: 1px solid #444; width: 100%; max-width: 1100px; margin-bottom: 30px; flex-shrink: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff4444; padding-bottom: 5px; margin-bottom: 15px;">
                     <h2 style="color: white; margin: 0; font-size: 1.5rem;">PERK POOL CONFIGURATION</h2>
@@ -542,7 +542,7 @@
                 
                 <h3 style="color: #ffcc00; margin: 0 0 10px 0; font-size: 1.1rem; text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);">TEMPORARY PERKS</h3>
                 <div id="adminTempPerkGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 120px; overflow-y: auto; padding-right: 10px; margin-bottom: 15px;"></div>
-
+                
                 <h3 style="color: #aa44ff; margin: 0 0 10px 0; font-size: 1.1rem; text-shadow: 0 0 5px rgba(170, 68, 255, 0.5);">EPIC PERKS</h3>
                 <div id="adminEpicPerkGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 120px; overflow-y: auto; padding-right: 10px;"></div>
             </div>
@@ -591,12 +591,12 @@
                         <button class="btn-secondary admin-btn" id="adminSpawnMaze">Generate Maze</button>
                         <button class="btn-secondary admin-btn" id="adminClearMaze" style="background: #3a2222; border-color: #555;">Clear Maze</button>
                     </div>
-
+                    
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <button class="btn-secondary admin-btn" id="adminSpawnMines">Deploy Mines</button>
                         <button class="btn-secondary admin-btn" id="adminClearMines" style="background: #3a2222; border-color: #555;">Clear Mines</button>
                     </div>
-
+                    
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <button class="btn-secondary admin-btn" id="adminSpawnNebula">Release Nebula</button>
                         <button class="btn-secondary admin-btn" id="adminClearNebula" style="background: #3a2222; border-color: #555;">Clear Nebulas</button>
@@ -609,7 +609,7 @@
                     
                 </div>
             </div>
-
+            
             <div style="width: 100%; max-width: 1100px; flex-shrink: 0; margin-top: 20px;">
                 <h2 style="color: #888; font-size: 1.3rem; margin-bottom: 15px;">CELESTIAL BACKGROUNDS</h2>
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px;">
@@ -662,11 +662,11 @@
                     Your Color: <div id="mySelectedColorBox" style="width:25px; height:25px; border:2px solid #fff; border-radius: 4px;"></div>
                 </div>
             </div>
-
+            
             <div class="config-col" style="display: flex; flex-direction: column; gap: 10px; width: 280px;">
                 <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Pilot Roster</h3>
                 <div id="mpRosterStatusContainer" style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px; background: #07070f; border: 1px solid #333; padding: 10px; border-radius: 4px; overflow-y: auto;">
-                    </div>
+                </div>
                 <button class="btn-primary" id="btnToggleMpReady" style="margin-top: 5px; width: 100%; font-size: 1.1rem; background: #ffcc00; color: #000;">TOGGLE READY</button>
             </div>
         </div>
@@ -676,7 +676,7 @@
             <h3 id="mpWaitingText" style="color: #aaa; display: none; font-size: 1.3rem;">Secure systems connection... Signal Ready.</h3>
         </div>
     </div>
-
+    
     <div id="gameChatMasterContainer" style="display: none; position: absolute; bottom: 20px; right: 20px; z-index: 100; flex-direction: column; align-items: flex-end;">
         <button id="btnToggleChat" style="margin-bottom: 8px; background: rgba(5, 5, 16, 0.6); color: #44aaff; border: 1px solid #44aaff; border-radius: 4px; padding: 5px 15px; font-family: monospace; cursor: pointer; font-weight: bold; backdrop-filter: blur(2px); transition: all 0.2s;">_ MINIMIZE CHAT</button>
         
@@ -700,10 +700,10 @@
         // --- DETERMINISTIC LOCKSTEP ENGINE ---
         let currentMatchSeed = 12345;
         let originalMatchSeed = 12345; // Fixed baseline for the whole match. Never mutated
-                                        // by gameplay random calls — only set once per match.
-                                        // Rounds reseed FROM this, not from the drifting
-                                        // currentMatchSeed, so a desync can't compound forever.
-
+        // by gameplay random calls — only set once per match.
+        // Rounds reseed FROM this, not from the drifting
+        // currentMatchSeed, so a desync can't compound forever.
+        
         function setDeterministicSeed(seedValue, isNewMatch = false) {
             // If passed a string, hash it into an integer
             if (typeof seedValue === 'string') {
@@ -725,7 +725,7 @@
                 return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
             }
         }
-
+        
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
@@ -831,7 +831,7 @@
         engineWorker.onmessage = () => {
             if (typeof animate === 'function') animate();
         };
-
+        
         // Maze Pathfinding Globals
         let mazeGrid = null;
         let mazeCols = 0;
@@ -859,7 +859,7 @@
         let adminMoonsEnabled = true;
         let width = window.innerWidth;
         let height = window.innerHeight;
-
+        
         function initBackgroundPlanet() {
             bgPlanets = [];
             width = canvas.width;
@@ -899,7 +899,7 @@
             // 3. Depth Sorting: Ensure the smaller (distant) planet is always drawn first so it sits cleanly in the background
             bgPlanets.sort((a, b) => a.radius - b.radius);
         }
-
+        
         // --- 1. LIGHTWEIGHT PERLIN NOISE ENGINE ---
         class SimpleNoise {
             constructor() {
@@ -939,7 +939,7 @@
                 return (total / maxValue) + 0.5; 
             }
         }
-
+        
         function generatePolygon(radius, sides, irregularity) { const points = []; for (let i = 0; i < sides; i++) { const angle = (i / sides) * Math.PI * 2; const r = radius * (1 - irregularity/2 + Math.random() * irregularity); points.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r }); } return points; }
         function generatePerlinPolygon(baseRadius, noiseGen, seedOffset, complexity, irregularity) {
             const points = [];
@@ -955,7 +955,7 @@
             }
             return points;
         }
-
+        
         function hexToRGBA(hex, alpha = 1.0) {
             let r = 0, g = 0, b = 0;
             if (hex.length === 4) {
@@ -969,17 +969,17 @@
             }
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
-
+        
         const STAR_SCHEMES = [
-            { name: 'Blue', gradient: ['#00ffff', '#0054c8'] },
-            { name: 'Blue-White', gradient: ['#ccf2ff', '#0088ff'] }, 
-            { name: 'White', gradient: ['#ffffff', '#f0f8ff'] },
-            { name: 'Yellow-White', gradient: ['#ffffff', '#ffdd44'] }, 
-            { name: 'Yellow', gradient: ['#ffff00', '#ffd700'] },
-            { name: 'Orange', gradient: ['#ffea00', '#ff3300'] }, 
-            { name: 'Red', gradient: ['#ff0000', '#8b0000'] }
+        { name: 'Blue', gradient: ['#00ffff', '#0054c8'] },
+        { name: 'Blue-White', gradient: ['#ccf2ff', '#0088ff'] }, 
+        { name: 'White', gradient: ['#ffffff', '#f0f8ff'] },
+        { name: 'Yellow-White', gradient: ['#ffffff', '#ffdd44'] }, 
+        { name: 'Yellow', gradient: ['#ffff00', '#ffd700'] },
+        { name: 'Orange', gradient: ['#ffea00', '#ff3300'] }, 
+        { name: 'Red', gradient: ['#ff0000', '#8b0000'] }
         ];
-
+        
         function darkenColor(hex, amount) {
             if (!hex || !hex.startsWith('#')) return hex;
             let c = hex.slice(1);
@@ -989,147 +989,147 @@
             return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
         }
         const ICE_SCHEMES = [
-            { ocean: '#aad3df', shelf: '#a0c4ff', haze: 'rgba(170, 211, 223, ', glowHex: '#00ffff', land: ['#75bee1', '#9ed8ee', '#2b6394'] },
-            { ocean: '#ffffff', shelf: '#87ceeb', haze: 'rgba(170, 211, 223, ', glowHex: '#00bfff', land: ['#75bee1', '#9ed8ee', '#9ed8ee'] },
-            { ocean: '#b2c3cb', shelf: '#90c6e0', haze: 'rgba(116, 172, 201, ', glowHex: '#74acc9', land: ['#4b7b94', '#74acc9', '#96cbe6'] },
-            { ocean: '#44cde6', shelf: '#196d8f', haze: 'rgba(0, 200, 255, ', glowHex: '#00bfff', land: ['#ffffff', '#8ae6ff', '#2fbce6'] },
-            { ocean: '#083fd7', shelf: '#1e56cc', haze: 'rgba(100, 180, 255, ', glowHex: '#3388ff', land: ['#ffffff', '#d6e8ff', '#85b9ff'] },
-            { ocean: '#6ea2c9', shelf: '#9abfd4', haze: 'rgba(200, 240, 255, ', glowHex: '#add8e6', land: ['#ffffff', '#e6f7ff', '#b3dff5'] },
-            { base: '#e8edf0', detail: '#a4b4c4', atmosphere: '#d0e1eb', glowHex: '#ffffff', cloudHex: '#ffffff' },
-            { base: '#b3dced', detail: '#4a889c', atmosphere: '#82c3d9', glowHex: '#61bfe0', cloudHex: '#d4f1fa' },
-            { base: '#d9eaeb', detail: '#6794a3', atmosphere: '#a5d0d6', glowHex: '#89c9d4', cloudHex: '#eaf4f5' },
-            { base: '#cbd1d4', detail: '#384c5e', atmosphere: '#879fb0', glowHex: '#62849c', cloudHex: '#d3dde3' },
-            { base: '#dcecf2', detail: '#124361', atmosphere: '#99bed1', glowHex: '#78b0cc', cloudHex: '#ffffff' },
-            { base: '#8ab3c4', detail: '#1c384a', atmosphere: '#c2e1f0', glowHex: '#5e95b0', cloudHex: '#e0f0f5' },
-            { base: '#f2f4f5', detail: '#737578', atmosphere: '#b4c5d1', glowHex: '#93afc4', cloudHex: '#ffffff' },
-            { base: '#e0eefa', detail: '#1b4e82', atmosphere: '#a6d2fa', glowHex: '#6cb7fa', cloudHex: '#f2f8fc' },
-            { base: '#5c9ec4', detail: '#346a8c', atmosphere: '#b5dcf2', glowHex: '#b5dcf2', cloudHex: '#ffffff' },
-            { base: '#1a2636', detail: '#0b111a', atmosphere: '#3d81d4', glowHex: '#3d81d4', cloudHex: '#a3c4e0' },
-            { base: '#d4e6eb', detail: '#578291', atmosphere: '#9bd1e6', glowHex: '#9bd1e6', cloudHex: '#ffffff' },
-            { base: '#7fa19e', detail: '#3e5454', atmosphere: '#a4d1cf', glowHex: '#a4d1cf', cloudHex: '#cde0e0' }
+        { ocean: '#aad3df', shelf: '#a0c4ff', haze: 'rgba(170, 211, 223, ', glowHex: '#00ffff', land: ['#75bee1', '#9ed8ee', '#2b6394'] },
+        { ocean: '#ffffff', shelf: '#87ceeb', haze: 'rgba(170, 211, 223, ', glowHex: '#00bfff', land: ['#75bee1', '#9ed8ee', '#9ed8ee'] },
+        { ocean: '#b2c3cb', shelf: '#90c6e0', haze: 'rgba(116, 172, 201, ', glowHex: '#74acc9', land: ['#4b7b94', '#74acc9', '#96cbe6'] },
+        { ocean: '#44cde6', shelf: '#196d8f', haze: 'rgba(0, 200, 255, ', glowHex: '#00bfff', land: ['#ffffff', '#8ae6ff', '#2fbce6'] },
+        { ocean: '#083fd7', shelf: '#1e56cc', haze: 'rgba(100, 180, 255, ', glowHex: '#3388ff', land: ['#ffffff', '#d6e8ff', '#85b9ff'] },
+        { ocean: '#6ea2c9', shelf: '#9abfd4', haze: 'rgba(200, 240, 255, ', glowHex: '#add8e6', land: ['#ffffff', '#e6f7ff', '#b3dff5'] },
+        { base: '#e8edf0', detail: '#a4b4c4', atmosphere: '#d0e1eb', glowHex: '#ffffff', cloudHex: '#ffffff' },
+        { base: '#b3dced', detail: '#4a889c', atmosphere: '#82c3d9', glowHex: '#61bfe0', cloudHex: '#d4f1fa' },
+        { base: '#d9eaeb', detail: '#6794a3', atmosphere: '#a5d0d6', glowHex: '#89c9d4', cloudHex: '#eaf4f5' },
+        { base: '#cbd1d4', detail: '#384c5e', atmosphere: '#879fb0', glowHex: '#62849c', cloudHex: '#d3dde3' },
+        { base: '#dcecf2', detail: '#124361', atmosphere: '#99bed1', glowHex: '#78b0cc', cloudHex: '#ffffff' },
+        { base: '#8ab3c4', detail: '#1c384a', atmosphere: '#c2e1f0', glowHex: '#5e95b0', cloudHex: '#e0f0f5' },
+        { base: '#f2f4f5', detail: '#737578', atmosphere: '#b4c5d1', glowHex: '#93afc4', cloudHex: '#ffffff' },
+        { base: '#e0eefa', detail: '#1b4e82', atmosphere: '#a6d2fa', glowHex: '#6cb7fa', cloudHex: '#f2f8fc' },
+        { base: '#5c9ec4', detail: '#346a8c', atmosphere: '#b5dcf2', glowHex: '#b5dcf2', cloudHex: '#ffffff' },
+        { base: '#1a2636', detail: '#0b111a', atmosphere: '#3d81d4', glowHex: '#3d81d4', cloudHex: '#a3c4e0' },
+        { base: '#d4e6eb', detail: '#578291', atmosphere: '#9bd1e6', glowHex: '#9bd1e6', cloudHex: '#ffffff' },
+        { base: '#7fa19e', detail: '#3e5454', atmosphere: '#a4d1cf', glowHex: '#a4d1cf', cloudHex: '#cde0e0' }
         ];
-
+        
         const VOLCANIC_SCHEMES = [
-            { base: '#080404', atmosphere: 'rgba(255, 51, 0, ', glowHex: '#ff3300', lava: ['#800000', '#ff4500', '#ffcc00'], poolColor: '#ff4500', cloudHex: '#ffffff' },
-            { base: '#050505', atmosphere: 'rgba(255, 120, 0, ', glowHex: '#ff8800', lava: ['#4d0000', '#e62e00', '#ffffcc'], poolColor: '#ffcc00', cloudHex: '#221100' },
-            { base: '#1a0505', atmosphere: 'rgba(230, 0, 0, ', glowHex: '#ff0000', lava: ['#330000', '#cc0000', '#ff4d4d'], poolColor: '#cc0000', cloudHex: '#d9c8c8' },
-            { base: '#0d0d0f', atmosphere: 'rgba(217, 166, 26, ', glowHex: '#d9a61a', lava: ['#662200', '#ff8800', '#ffd500'], poolColor: '#ffaa00', cloudHex: '#4d4533' },
-            { base: '#020202', atmosphere: 'rgba(255, 69, 0, ', glowHex: '#ff4500', lava: ['#440000', '#ff4500', '#ffea00'], poolColor: '#ff4500', cloudHex: '#ffffff' },
-            { base: '#5e1b04', atmosphere: 'rgba(255, 70, 0, ', glowHex: '#ff4d00', lava: ['#991a00', '#ff4d00', '#ffb300'], poolColor: '#ff6600', cloudHex: '#3a1102' },
-            { base: '#2b2b2e', atmosphere: 'rgba(255, 100, 0, ', glowHex: '#ff7700', lava: ['#802b00', '#ff6600', '#ffcc00'], poolColor: '#ff8800', cloudHex: '#1a1a1c' },
-            { base: '#4b4d6b', atmosphere: 'rgba(255, 110, 50, ', glowHex: '#ff8c42', lava: ['#8a2b10', '#e35d22', '#ffcca8'], poolColor: '#ff9955', cloudHex: '#2c2b3d' },
-            { base: '#423c40', atmosphere: 'rgba(255, 80, 0, ', glowHex: '#ff4400', lava: ['#cc2200', '#ff5500', '#ffcc00'], poolColor: '#ff4400', cloudHex: '#302626' },
-            { base: '#4a0808', atmosphere: 'rgba(255, 20, 20, ', glowHex: '#ff1a1a', lava: ['#660000', '#cc0000', '#ff6666'], poolColor: '#cc0000', cloudHex: '#2b0404' },
-            { base: '#2e3236', atmosphere: 'rgba(255, 30, 30, ', glowHex: '#e62b2b', lava: ['#590000', '#a81b1b', '#ff4d4d'], poolColor: '#a81b1b', cloudHex: '#141517' },
-            { base: '#170b0c', atmosphere: 'rgba(220, 30, 30, ', glowHex: '#ff2a2a', lava: ['#660a0a', '#cc1818', '#ff8888'], poolColor: '#ff3333', cloudHex: '#0a0405' },
-            { base: '#3b3838', atmosphere: 'rgba(180, 20, 20, ', glowHex: '#8a1212', lava: ['#2b0202', '#590909', '#9e1c1c'], poolColor: '#590909', cloudHex: '#1f1d1d' }
+        { base: '#080404', atmosphere: 'rgba(255, 51, 0, ', glowHex: '#ff3300', lava: ['#800000', '#ff4500', '#ffcc00'], poolColor: '#ff4500', cloudHex: '#ffffff' },
+        { base: '#050505', atmosphere: 'rgba(255, 120, 0, ', glowHex: '#ff8800', lava: ['#4d0000', '#e62e00', '#ffffcc'], poolColor: '#ffcc00', cloudHex: '#221100' },
+        { base: '#1a0505', atmosphere: 'rgba(230, 0, 0, ', glowHex: '#ff0000', lava: ['#330000', '#cc0000', '#ff4d4d'], poolColor: '#cc0000', cloudHex: '#d9c8c8' },
+        { base: '#0d0d0f', atmosphere: 'rgba(217, 166, 26, ', glowHex: '#d9a61a', lava: ['#662200', '#ff8800', '#ffd500'], poolColor: '#ffaa00', cloudHex: '#4d4533' },
+        { base: '#020202', atmosphere: 'rgba(255, 69, 0, ', glowHex: '#ff4500', lava: ['#440000', '#ff4500', '#ffea00'], poolColor: '#ff4500', cloudHex: '#ffffff' },
+        { base: '#5e1b04', atmosphere: 'rgba(255, 70, 0, ', glowHex: '#ff4d00', lava: ['#991a00', '#ff4d00', '#ffb300'], poolColor: '#ff6600', cloudHex: '#3a1102' },
+        { base: '#2b2b2e', atmosphere: 'rgba(255, 100, 0, ', glowHex: '#ff7700', lava: ['#802b00', '#ff6600', '#ffcc00'], poolColor: '#ff8800', cloudHex: '#1a1a1c' },
+        { base: '#4b4d6b', atmosphere: 'rgba(255, 110, 50, ', glowHex: '#ff8c42', lava: ['#8a2b10', '#e35d22', '#ffcca8'], poolColor: '#ff9955', cloudHex: '#2c2b3d' },
+        { base: '#423c40', atmosphere: 'rgba(255, 80, 0, ', glowHex: '#ff4400', lava: ['#cc2200', '#ff5500', '#ffcc00'], poolColor: '#ff4400', cloudHex: '#302626' },
+        { base: '#4a0808', atmosphere: 'rgba(255, 20, 20, ', glowHex: '#ff1a1a', lava: ['#660000', '#cc0000', '#ff6666'], poolColor: '#cc0000', cloudHex: '#2b0404' },
+        { base: '#2e3236', atmosphere: 'rgba(255, 30, 30, ', glowHex: '#e62b2b', lava: ['#590000', '#a81b1b', '#ff4d4d'], poolColor: '#a81b1b', cloudHex: '#141517' },
+        { base: '#170b0c', atmosphere: 'rgba(220, 30, 30, ', glowHex: '#ff2a2a', lava: ['#660a0a', '#cc1818', '#ff8888'], poolColor: '#ff3333', cloudHex: '#0a0405' },
+        { base: '#3b3838', atmosphere: 'rgba(180, 20, 20, ', glowHex: '#8a1212', lava: ['#2b0202', '#590909', '#9e1c1c'], poolColor: '#590909', cloudHex: '#1f1d1d' }
         ];
-
+        
         const EARTH_SCHEMES = [
-            { ocean: '#020d2b', shelf: '#00ffe1', haze: 'rgba(0, 255, 225, ', glowHex: '#4fc3f7', land: ['#004d00', '#31682e', '#cc7722'] },
-            { ocean: '#1a3c4d', shelf: '#4f9db0', haze: 'rgba(79, 157, 176, ', glowHex: '#4f9db0', land: ['#3d2b1f', '#a67c52', '#d9b382'] },
-            { ocean: '#3a3335', shelf: '#5e4d4d', haze: 'rgba(158, 126, 114, ', glowHex: '#9e7e72', land: ['#5a4640', '#9e7e72', '#c5aba3'] },
-            { ocean: '#112b47', shelf: '#2f667a', haze: 'rgba(155, 200, 230, ', glowHex: '#7fb3d5', land: ['#1e4d26', '#3b7040', '#638562'] },
-            { ocean: '#13263b', shelf: '#2b4e6a', haze: 'rgba(160, 200, 240, ', glowHex: '#8cbce6', land: ['#3a4038', '#524941', '#7a7974'] },
-            { ocean: '#111613', shelf: '#1c2822', haze: 'rgba(130, 150, 140, ', glowHex: '#586b62', land: ['#273528', '#384639', '#18221c'] },
-            { ocean: '#008b8b', shelf: '#20b2aa', haze: 'rgba(200, 255, 255, ', glowHex: '#8ee5ee', land: ['#2e8b57', '#43cd80', '#a0d6b4'] },
-            { ocean: '#16403b', shelf: '#287a66', haze: 'rgba(140, 180, 160, ', glowHex: '#5c8f7a', land: ['#2c3b1e', '#4b5e2d', '#1d2414'] },
-            { ocean: '#539a21', shelf: '#7cc443', haze: 'rgba(200, 230, 240, ', glowHex: '#a3d8f4', land: ['#5c5651', '#7d756d', '#968e86'] },
-            { ocean: '#1b3b5a', shelf: '#326685', haze: 'rgba(170, 210, 230, ', glowHex: '#74a8c9', land: ['#244a35', '#38664b', '#1b3325'] },
-            { ocean: '#102a52', shelf: '#265a8a', haze: 'rgba(180, 210, 240, ', glowHex: '#8ab6d6', land: ['#214d2e', '#3d6e49', '#635842'] },
-            { ocean: '#b05333', shelf: '#d67e52', haze: 'rgba(240, 180, 140, ', glowHex: '#e8a57b', land: ['#6b2713', '#4a190a', '#cca085'] },
-            { ocean: '#1a5b82', shelf: '#4fc4d1', haze: 'rgba(200, 240, 255, ', glowHex: '#5bc0c6', land: ['#5c5040', '#8b7a61', '#bca98f'] },
-            { ocean: '#275a3a', shelf: '#4b8e5c', haze: 'rgba(150, 220, 180, ', glowHex: '#78c48a', land: ['#3c4f2d', '#587545', '#869e6b'] },
-            { ocean: '#1b4c7a', shelf: '#4aa6d6', haze: 'rgba(150, 200, 240, ', glowHex: '#66b5e0', land: ['#a66b32', '#d49955', '#e6b87c'] },
-            { ocean: '#0f353a', shelf: '#235c60', haze: 'rgba(100, 180, 180, ', glowHex: '#388b86', land: ['#5c2a1a', '#964b32', '#b56a4a'] },
-            { ocean: '#32356b', shelf: '#60629c', haze: 'rgba(180, 170, 220, ', glowHex: '#8688c7', land: ['#947558', '#c7a383', '#dfbf9f'] },
-            { ocean: '#0f2847', shelf: '#2b6b8a', haze: 'rgba(180, 230, 240, ', glowHex: '#6bc1d6', land: ['#245424', '#3b823b', '#5ebd5e'] },
-            { ocean: '#020b1f', shelf: '#0a285e', haze: 'rgba(100, 180, 255, ', glowHex: '#3a80d4', land: ['#1c3622', '#425246', '#eef4f5'] }
+        { ocean: '#020d2b', shelf: '#00ffe1', haze: 'rgba(0, 255, 225, ', glowHex: '#4fc3f7', land: ['#004d00', '#31682e', '#cc7722'] },
+        { ocean: '#1a3c4d', shelf: '#4f9db0', haze: 'rgba(79, 157, 176, ', glowHex: '#4f9db0', land: ['#3d2b1f', '#a67c52', '#d9b382'] },
+        { ocean: '#3a3335', shelf: '#5e4d4d', haze: 'rgba(158, 126, 114, ', glowHex: '#9e7e72', land: ['#5a4640', '#9e7e72', '#c5aba3'] },
+        { ocean: '#112b47', shelf: '#2f667a', haze: 'rgba(155, 200, 230, ', glowHex: '#7fb3d5', land: ['#1e4d26', '#3b7040', '#638562'] },
+        { ocean: '#13263b', shelf: '#2b4e6a', haze: 'rgba(160, 200, 240, ', glowHex: '#8cbce6', land: ['#3a4038', '#524941', '#7a7974'] },
+        { ocean: '#111613', shelf: '#1c2822', haze: 'rgba(130, 150, 140, ', glowHex: '#586b62', land: ['#273528', '#384639', '#18221c'] },
+        { ocean: '#008b8b', shelf: '#20b2aa', haze: 'rgba(200, 255, 255, ', glowHex: '#8ee5ee', land: ['#2e8b57', '#43cd80', '#a0d6b4'] },
+        { ocean: '#16403b', shelf: '#287a66', haze: 'rgba(140, 180, 160, ', glowHex: '#5c8f7a', land: ['#2c3b1e', '#4b5e2d', '#1d2414'] },
+        { ocean: '#539a21', shelf: '#7cc443', haze: 'rgba(200, 230, 240, ', glowHex: '#a3d8f4', land: ['#5c5651', '#7d756d', '#968e86'] },
+        { ocean: '#1b3b5a', shelf: '#326685', haze: 'rgba(170, 210, 230, ', glowHex: '#74a8c9', land: ['#244a35', '#38664b', '#1b3325'] },
+        { ocean: '#102a52', shelf: '#265a8a', haze: 'rgba(180, 210, 240, ', glowHex: '#8ab6d6', land: ['#214d2e', '#3d6e49', '#635842'] },
+        { ocean: '#b05333', shelf: '#d67e52', haze: 'rgba(240, 180, 140, ', glowHex: '#e8a57b', land: ['#6b2713', '#4a190a', '#cca085'] },
+        { ocean: '#1a5b82', shelf: '#4fc4d1', haze: 'rgba(200, 240, 255, ', glowHex: '#5bc0c6', land: ['#5c5040', '#8b7a61', '#bca98f'] },
+        { ocean: '#275a3a', shelf: '#4b8e5c', haze: 'rgba(150, 220, 180, ', glowHex: '#78c48a', land: ['#3c4f2d', '#587545', '#869e6b'] },
+        { ocean: '#1b4c7a', shelf: '#4aa6d6', haze: 'rgba(150, 200, 240, ', glowHex: '#66b5e0', land: ['#a66b32', '#d49955', '#e6b87c'] },
+        { ocean: '#0f353a', shelf: '#235c60', haze: 'rgba(100, 180, 180, ', glowHex: '#388b86', land: ['#5c2a1a', '#964b32', '#b56a4a'] },
+        { ocean: '#32356b', shelf: '#60629c', haze: 'rgba(180, 170, 220, ', glowHex: '#8688c7', land: ['#947558', '#c7a383', '#dfbf9f'] },
+        { ocean: '#0f2847', shelf: '#2b6b8a', haze: 'rgba(180, 230, 240, ', glowHex: '#6bc1d6', land: ['#245424', '#3b823b', '#5ebd5e'] },
+        { ocean: '#020b1f', shelf: '#0a285e', haze: 'rgba(100, 180, 255, ', glowHex: '#3a80d4', land: ['#1c3622', '#425246', '#eef4f5'] }
         ];
-
+        
         const DESERT_SCHEMES = [
-            { base: '#e65100', detail: '#bf360c', atmosphere: '#ffccbc', glowHex: '#ff7043', cloudHex: '#ffffff' },
-            { base: '#8c5e42', detail: '#3e3b3f', atmosphere: '#dcc6ba', glowHex: '#c18f72', cloudHex: '#e0d0c0' },
-            { base: '#d67954', detail: '#8a3219', atmosphere: '#f4bd90', glowHex: '#e08a5f', cloudHex: '#ffffff' },
-            { base: '#6b522b', detail: '#2e1205', atmosphere: '#828c46', glowHex: '#667a29', cloudHex: '#4a572a' },
-            { base: '#cca585', detail: '#75505b', atmosphere: '#e6f0ff', glowHex: '#b3ccff', cloudHex: '#ffffff' },
-            { base: '#cc9977', detail: '#3b3842', atmosphere: '#e0e8f5', glowHex: '#b8c9e6', cloudHex: '#f0f0f0' },
-            { base: '#c4b045', detail: '#293011', atmosphere: '#c0c975', glowHex: '#aebf45', cloudHex: '#e8edb4' },
-            { base: '#9e672b', detail: '#2e1e0f', atmosphere: '#b57b3c', glowHex: '#bd7a2a', cloudHex: '#7a5229' },
-            { base: '#9c5e4a', detail: '#4a8e94', atmosphere: '#7bb2c9', glowHex: '#589fa6', cloudHex: '#ffffff' },
-            { base: '#5b3a6e', detail: '#c9a86b', atmosphere: '#8a6b9e', glowHex: '#a888c2', cloudHex: '#fcf2c2' },
-            { base: '#b5c299', detail: '#6b664e', atmosphere: '#d1e0c1', glowHex: '#a3c286', cloudHex: '#e8f5da' },
-            { base: '#d18b47', detail: '#303b4d', atmosphere: '#f0b884', glowHex: '#d9924c', cloudHex: '#f5d5b8' },
-            { base: '#d6be92', detail: '#4a4036', atmosphere: '#f0e8db', glowHex: '#e3d1b8', cloudHex: '#ffffff' },
-            { base: '#a35c47', detail: '#1c4f52', atmosphere: '#8ebbd1', glowHex: '#5e8b9e', cloudHex: '#e0e0e0' },
-            { base: '#cc5500', detail: '#381000', atmosphere: '#ffcc66', glowHex: '#ff9933', cloudHex: '#ffdf99' },
-            { base: '#b85b40', detail: '#54281f', atmosphere: '#d49484', glowHex: '#a65d49', cloudHex: '#ffffff' },
-            { base: '#a17a54', detail: '#524538', atmosphere: '#b8c5cc', glowHex: '#899ca8', cloudHex: '#f0f4f5' },
-            { base: '#dcd3b8', detail: '#586b62', atmosphere: '#e8e4d3', glowHex: '#c4bba3', cloudHex: '#ffffff' },
-            { base: '#7d7266', detail: '#2b423d', atmosphere: '#a5b5c2', glowHex: '#7a8c99', cloudHex: '#d9e2e8' },
-            { base: '#ba6b6b', detail: '#612f45', atmosphere: '#d9b8c0', glowHex: '#ab7b88', cloudHex: '#ebdce0' },
-            { base: '#997a41', detail: '#3b3224', atmosphere: '#bfa77e', glowHex: '#8c754d', cloudHex: '#444444' }
+        { base: '#e65100', detail: '#bf360c', atmosphere: '#ffccbc', glowHex: '#ff7043', cloudHex: '#ffffff' },
+        { base: '#8c5e42', detail: '#3e3b3f', atmosphere: '#dcc6ba', glowHex: '#c18f72', cloudHex: '#e0d0c0' },
+        { base: '#d67954', detail: '#8a3219', atmosphere: '#f4bd90', glowHex: '#e08a5f', cloudHex: '#ffffff' },
+        { base: '#6b522b', detail: '#2e1205', atmosphere: '#828c46', glowHex: '#667a29', cloudHex: '#4a572a' },
+        { base: '#cca585', detail: '#75505b', atmosphere: '#e6f0ff', glowHex: '#b3ccff', cloudHex: '#ffffff' },
+        { base: '#cc9977', detail: '#3b3842', atmosphere: '#e0e8f5', glowHex: '#b8c9e6', cloudHex: '#f0f0f0' },
+        { base: '#c4b045', detail: '#293011', atmosphere: '#c0c975', glowHex: '#aebf45', cloudHex: '#e8edb4' },
+        { base: '#9e672b', detail: '#2e1e0f', atmosphere: '#b57b3c', glowHex: '#bd7a2a', cloudHex: '#7a5229' },
+        { base: '#9c5e4a', detail: '#4a8e94', atmosphere: '#7bb2c9', glowHex: '#589fa6', cloudHex: '#ffffff' },
+        { base: '#5b3a6e', detail: '#c9a86b', atmosphere: '#8a6b9e', glowHex: '#a888c2', cloudHex: '#fcf2c2' },
+        { base: '#b5c299', detail: '#6b664e', atmosphere: '#d1e0c1', glowHex: '#a3c286', cloudHex: '#e8f5da' },
+        { base: '#d18b47', detail: '#303b4d', atmosphere: '#f0b884', glowHex: '#d9924c', cloudHex: '#f5d5b8' },
+        { base: '#d6be92', detail: '#4a4036', atmosphere: '#f0e8db', glowHex: '#e3d1b8', cloudHex: '#ffffff' },
+        { base: '#a35c47', detail: '#1c4f52', atmosphere: '#8ebbd1', glowHex: '#5e8b9e', cloudHex: '#e0e0e0' },
+        { base: '#cc5500', detail: '#381000', atmosphere: '#ffcc66', glowHex: '#ff9933', cloudHex: '#ffdf99' },
+        { base: '#b85b40', detail: '#54281f', atmosphere: '#d49484', glowHex: '#a65d49', cloudHex: '#ffffff' },
+        { base: '#a17a54', detail: '#524538', atmosphere: '#b8c5cc', glowHex: '#899ca8', cloudHex: '#f0f4f5' },
+        { base: '#dcd3b8', detail: '#586b62', atmosphere: '#e8e4d3', glowHex: '#c4bba3', cloudHex: '#ffffff' },
+        { base: '#7d7266', detail: '#2b423d', atmosphere: '#a5b5c2', glowHex: '#7a8c99', cloudHex: '#d9e2e8' },
+        { base: '#ba6b6b', detail: '#612f45', atmosphere: '#d9b8c0', glowHex: '#ab7b88', cloudHex: '#ebdce0' },
+        { base: '#997a41', detail: '#3b3224', atmosphere: '#bfa77e', glowHex: '#8c754d', cloudHex: '#444444' }
         ];
-
+        
         const WATER_SCHEMES = [
-            { ocean: '#012148', shallow: '#01579b', glowHex: '#00b0ff' },
-            { ocean: '#2b666a', shallow: '#4faeb4', glowHex: '#5bc0c6' },
-            { ocean: '#0d47a1', shallow: '#29b6f6', glowHex: '#4fc3f7' },
-            { ocean: '#4e9bb8', shallow: '#8be1f0', glowHex: '#78d3e6' },
-            { ocean: '#08358c', shallow: '#1d76e0', glowHex: '#196edd' },
-            { ocean: '#72bfe0', shallow: '#a3e8ff', glowHex: '#89d4f0' },
-            { ocean: '#093336', shallow: '#167a7d', glowHex: '#229ba1' },
-            { ocean: '#142236', shallow: '#2e637a', glowHex: '#417e99' }
+        { ocean: '#012148', shallow: '#01579b', glowHex: '#00b0ff' },
+        { ocean: '#2b666a', shallow: '#4faeb4', glowHex: '#5bc0c6' },
+        { ocean: '#0d47a1', shallow: '#29b6f6', glowHex: '#4fc3f7' },
+        { ocean: '#4e9bb8', shallow: '#8be1f0', glowHex: '#78d3e6' },
+        { ocean: '#08358c', shallow: '#1d76e0', glowHex: '#196edd' },
+        { ocean: '#72bfe0', shallow: '#a3e8ff', glowHex: '#89d4f0' },
+        { ocean: '#093336', shallow: '#167a7d', glowHex: '#229ba1' },
+        { ocean: '#142236', shallow: '#2e637a', glowHex: '#417e99' }
         ];
-
+        
         const GAS_PALETTES = [
-            { name: 'Jovian', base: '#c6b696', bands: ['#a88a68', '#dfd0b5', '#8d6d4a', '#f5ebd0', '#c6b696'], spot: '#9b4d32' },
-            { name: 'Cytherean', base: '#eec988', bands: ['#d9a05b', '#f9e7c4', '#c28543', '#ffffff', '#eec988'], spot: '#b66d2a' },
-            { name: 'Uranian', base: '#ace5ee', bands: ['#c4f0f6', '#87ceeb', '#b0e0e6', '#ffffff'], spot: '#5f9ea0' },
-            { name: 'Neptunian', base: '#4b70dd', bands: ['#2a4d9b', '#608df3', '#1e3c8a', '#ffffff'], spot: '#152b63' },
-            { name: 'Erisian', base: '#d4c4fb', bands: ['#a291d4', '#e6defc', '#7b68af', '#ffffff'], spot: '#5e4c91' },
-            { name: 'Aurelian', base: '#d67954', bands: ['#ad4226', '#e89e68', '#782512', '#f4bd90', '#c8603b'], spot: '#5c1a06' },
-            { name: 'Abyssal', base: '#101630', bands: ['#1d2b53', '#2c52a3', '#7da6d8', '#cddbe8'], spot: '#1a244d' },
-            { name: 'Cerulean', base: '#0f4c81', bands: ['#1982c4', '#7cd3dd', '#0a335c', '#e8db9c'], spot: '#0b3963' },
-            { name: 'Noxious', base: '#0b3004', bands: ['#1b5e0f', '#4cd137', '#b8e92a', '#bf360c'], spot: '#bf360c' },
-            { name: 'Crimson', base: '#211e1e', bands: ['#4a1c17', '#8b2d22', '#e0cfc8', '#a85b4f'], spot: '#3d1612' },
-            { name: 'Sanguine', base: '#1c050a', bands: ['#6b1522', '#b83b4e', '#e3b1b8', '#400b14'], spot: '#821124' },
-            { name: 'Ignis', base: '#2e0502', bands: ['#ba2f16', '#e86b35', '#fcd6c5', '#5c1208'], spot: '#d14d24' },
-            { name: 'Aether', base: '#030c24', bands: ['#123c8a', '#4aa4e0', '#8a3124', '#d2e5f5'], spot: '#541913' },
-            { name: 'Cobalt', base: '#051b4d', bands: ['#2080cc', '#60b6f0', '#114296', '#a8defa'], spot: '#051640' },
-            { name: 'Pastel', base: '#cce3dd', bands: ['#54addb', '#b1a6de', '#f0f5f4', '#8ecac9'], spot: '#619ccc' },
-            { name: 'Vortex', base: '#111d2b', bands: ['#c7b8aa', '#4d687d', '#7d4332', '#20272e'], spot: '#b53328' },
-            { name: 'Synthwave', base: '#100d1f', bands: ['#30a9ba', '#6d4d82', '#c9744b', '#0a1124'], spot: '#65447a' },
-            { name: 'Fuchsia', base: '#36112c', bands: ['#8a315f', '#c7678e', '#d198b1', '#541f47'], spot: '#ab4877' },
-            { name: 'Glacial Rust', base: '#506b7a', bands: ['#8aa3b3', '#b8c5cc', '#7a594b', '#3c4f5c'], spot: '#b8c5cc' },
-            { name: 'Deep Ocean', base: '#08395e', bands: ['#1773ad', '#5cb3e6', '#a8dcf5', '#0f5282'], spot: '#5cb3e6' },
-            { name: 'Turquoise', base: '#0a4a47', bands: ['#1f8a84', '#5adbd4', '#c4f5f2', '#106360'], spot: '#5adbd4' },
-            { name: 'Steel Void', base: '#283b42', bands: ['#485d66', '#708894', '#a5b9c4', '#1a272e'], spot: '#708894' },
-            { name: 'Azure Eye', base: '#0c4759', bands: ['#278ba8', '#d9d8d7', '#805953', '#155b70'], spot: '#8f1f21' },
-            { name: 'Aurora', base: '#091b36', bands: ['#18396e', '#288185', '#392263', '#0d2b52'], spot: '#288185' },
-            { name: 'Monarch', base: '#996942', bands: ['#d6a678', '#fcead7', '#874825', '#5c2e14'], spot: '#b53f12' },
-            { name: 'Neon Amethyst', base: '#4a1261', bands: ['#9033b5', '#d785f5', '#bd4bed', '#2e0b3d'], spot: '#d785f5' },
-            { name: 'Nightshade', base: '#19142b', bands: ['#3e326b', '#6a54a3', '#c3abc4', '#100d1c'], spot: '#6a54a3' },
-            { name: 'Toxic Swirl', base: '#160a26', bands: ['#2d1245', '#5cd65c', '#1e822e', '#48206b'], spot: '#bfff00' },
-            { name: 'Blood Storm', base: '#0a0000', bands: ['#330000', '#800000', '#cc1100', '#1a0505'], spot: '#ff1100' },
-            { name: 'Golden Pearl', base: '#b08d53', bands: ['#e8cf9e', '#ffffff', '#76a5af', '#8c6b36'], spot: '#ffffff' },
-            { name: 'Bruised Crimson', base: '#2b0c11', bands: ['#4a151d', '#782631', '#a34856', '#140608'], spot: '#a34856' },
-            { name: 'Cobalt Brilliance', base: '#0b3975', bands: ['#1c6abf', '#4fb8f5', '#e0f5ff', '#07244a'], spot: '#4fb8f5' },
-            { name: 'Frosty Indigo', base: '#263b63', bands: ['#466a9c', '#799dc7', '#a172a8', '#dceaf2'], spot: '#1b2a47' }
+        { name: 'Jovian', base: '#c6b696', bands: ['#a88a68', '#dfd0b5', '#8d6d4a', '#f5ebd0', '#c6b696'], spot: '#9b4d32' },
+        { name: 'Cytherean', base: '#eec988', bands: ['#d9a05b', '#f9e7c4', '#c28543', '#ffffff', '#eec988'], spot: '#b66d2a' },
+        { name: 'Uranian', base: '#ace5ee', bands: ['#c4f0f6', '#87ceeb', '#b0e0e6', '#ffffff'], spot: '#5f9ea0' },
+        { name: 'Neptunian', base: '#4b70dd', bands: ['#2a4d9b', '#608df3', '#1e3c8a', '#ffffff'], spot: '#152b63' },
+        { name: 'Erisian', base: '#d4c4fb', bands: ['#a291d4', '#e6defc', '#7b68af', '#ffffff'], spot: '#5e4c91' },
+        { name: 'Aurelian', base: '#d67954', bands: ['#ad4226', '#e89e68', '#782512', '#f4bd90', '#c8603b'], spot: '#5c1a06' },
+        { name: 'Abyssal', base: '#101630', bands: ['#1d2b53', '#2c52a3', '#7da6d8', '#cddbe8'], spot: '#1a244d' },
+        { name: 'Cerulean', base: '#0f4c81', bands: ['#1982c4', '#7cd3dd', '#0a335c', '#e8db9c'], spot: '#0b3963' },
+        { name: 'Noxious', base: '#0b3004', bands: ['#1b5e0f', '#4cd137', '#b8e92a', '#bf360c'], spot: '#bf360c' },
+        { name: 'Crimson', base: '#211e1e', bands: ['#4a1c17', '#8b2d22', '#e0cfc8', '#a85b4f'], spot: '#3d1612' },
+        { name: 'Sanguine', base: '#1c050a', bands: ['#6b1522', '#b83b4e', '#e3b1b8', '#400b14'], spot: '#821124' },
+        { name: 'Ignis', base: '#2e0502', bands: ['#ba2f16', '#e86b35', '#fcd6c5', '#5c1208'], spot: '#d14d24' },
+        { name: 'Aether', base: '#030c24', bands: ['#123c8a', '#4aa4e0', '#8a3124', '#d2e5f5'], spot: '#541913' },
+        { name: 'Cobalt', base: '#051b4d', bands: ['#2080cc', '#60b6f0', '#114296', '#a8defa'], spot: '#051640' },
+        { name: 'Pastel', base: '#cce3dd', bands: ['#54addb', '#b1a6de', '#f0f5f4', '#8ecac9'], spot: '#619ccc' },
+        { name: 'Vortex', base: '#111d2b', bands: ['#c7b8aa', '#4d687d', '#7d4332', '#20272e'], spot: '#b53328' },
+        { name: 'Synthwave', base: '#100d1f', bands: ['#30a9ba', '#6d4d82', '#c9744b', '#0a1124'], spot: '#65447a' },
+        { name: 'Fuchsia', base: '#36112c', bands: ['#8a315f', '#c7678e', '#d198b1', '#541f47'], spot: '#ab4877' },
+        { name: 'Glacial Rust', base: '#506b7a', bands: ['#8aa3b3', '#b8c5cc', '#7a594b', '#3c4f5c'], spot: '#b8c5cc' },
+        { name: 'Deep Ocean', base: '#08395e', bands: ['#1773ad', '#5cb3e6', '#a8dcf5', '#0f5282'], spot: '#5cb3e6' },
+        { name: 'Turquoise', base: '#0a4a47', bands: ['#1f8a84', '#5adbd4', '#c4f5f2', '#106360'], spot: '#5adbd4' },
+        { name: 'Steel Void', base: '#283b42', bands: ['#485d66', '#708894', '#a5b9c4', '#1a272e'], spot: '#708894' },
+        { name: 'Azure Eye', base: '#0c4759', bands: ['#278ba8', '#d9d8d7', '#805953', '#155b70'], spot: '#8f1f21' },
+        { name: 'Aurora', base: '#091b36', bands: ['#18396e', '#288185', '#392263', '#0d2b52'], spot: '#288185' },
+        { name: 'Monarch', base: '#996942', bands: ['#d6a678', '#fcead7', '#874825', '#5c2e14'], spot: '#b53f12' },
+        { name: 'Neon Amethyst', base: '#4a1261', bands: ['#9033b5', '#d785f5', '#bd4bed', '#2e0b3d'], spot: '#d785f5' },
+        { name: 'Nightshade', base: '#19142b', bands: ['#3e326b', '#6a54a3', '#c3abc4', '#100d1c'], spot: '#6a54a3' },
+        { name: 'Toxic Swirl', base: '#160a26', bands: ['#2d1245', '#5cd65c', '#1e822e', '#48206b'], spot: '#bfff00' },
+        { name: 'Blood Storm', base: '#0a0000', bands: ['#330000', '#800000', '#cc1100', '#1a0505'], spot: '#ff1100' },
+        { name: 'Golden Pearl', base: '#b08d53', bands: ['#e8cf9e', '#ffffff', '#76a5af', '#8c6b36'], spot: '#ffffff' },
+        { name: 'Bruised Crimson', base: '#2b0c11', bands: ['#4a151d', '#782631', '#a34856', '#140608'], spot: '#a34856' },
+        { name: 'Cobalt Brilliance', base: '#0b3975', bands: ['#1c6abf', '#4fb8f5', '#e0f5ff', '#07244a'], spot: '#4fb8f5' },
+        { name: 'Frosty Indigo', base: '#263b63', bands: ['#466a9c', '#799dc7', '#a172a8', '#dceaf2'], spot: '#1b2a47' }
         ];
-
+        
         const MOON_PALETTES = [
-            { name: 'Classic Lunar', base: '#888888', maria: '#555555', crater: '#bbbbbb' },
-            { name: 'Amethyst', base: '#4a1261', maria: '#2e0b3d', crater: '#9033b5' },
-            { name: 'Emerald', base: '#0a4a47', maria: '#106360', crater: '#1f8a84' },
-            { name: 'Iron', base: '#283b42', maria: '#1a272e', crater: '#485d66' },
-            { name: 'Cobalt', base: '#08395e', maria: '#0f5282', crater: '#1773ad' },
-            { name: 'Nebula', base: '#36112c', maria: '#541f47', crater: '#8a315f' },
-            { name: 'Earthen', base: '#996942', maria: '#5c2e14', crater: '#d6a678' },
-            { name: 'Borealis', base: '#091b36', maria: '#0d2b52', crater: '#288185' },
-            { name: 'Nightshade', base: '#19142b', maria: '#100d1c', crater: '#3e326b' }
+        { name: 'Classic Lunar', base: '#888888', maria: '#555555', crater: '#bbbbbb' },
+        { name: 'Amethyst', base: '#4a1261', maria: '#2e0b3d', crater: '#9033b5' },
+        { name: 'Emerald', base: '#0a4a47', maria: '#106360', crater: '#1f8a84' },
+        { name: 'Iron', base: '#283b42', maria: '#1a272e', crater: '#485d66' },
+        { name: 'Cobalt', base: '#08395e', maria: '#0f5282', crater: '#1773ad' },
+        { name: 'Nebula', base: '#36112c', maria: '#541f47', crater: '#8a315f' },
+        { name: 'Earthen', base: '#996942', maria: '#5c2e14', crater: '#d6a678' },
+        { name: 'Borealis', base: '#091b36', maria: '#0d2b52', crater: '#288185' },
+        { name: 'Nightshade', base: '#19142b', maria: '#100d1c', crater: '#3e326b' }
         ];
-
+        
         function drawPlanetaryRings(ctx, planet, isFront, angleOverride = null, customRingSets = null) {
             const rings = customRingSets || planet.ringSets;
             if (!planet.hasRings || !rings || rings.length === 0) return;
@@ -1227,8 +1227,8 @@
             tctx.restore();
             ctx.save(); ctx.resetTransform(); ctx.drawImage(tempCanvas, 0, 0); ctx.restore();
         }
-
-function spawnBackgroundPlanet(pType, forceSize = null) {
+        
+        function spawnBackgroundPlanet(pType, forceSize = null) {
             let type = pType;
             let forcedRing = null;
             
@@ -1401,7 +1401,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     }
                 }
             }
-
+            
             if (type === 'VOLCANIC' || type === 'ICE_GIANT') {
                 const topoScale = Math.max(0.3, Math.min(3.0, size / 200.0));
                 const generateBranch = (startX, startY, angle, thickness, length, depth) => {
@@ -1551,7 +1551,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 cctx.putImageData(cData, 0, 0);
                 bctx.save(); applyBlur(2.5); bctx.drawImage(cloudCanvas, -p.radius, -p.radius); bctx.restore(); bctx.globalAlpha = 1.0;
             };
-
+            
             const drawDaytimeCities = (colorHex) => {
                 const dayCanvas = document.createElement('canvas');
                 dayCanvas.width = Math.ceil(p.radius * 2); dayCanvas.height = Math.ceil(p.radius * 2);
@@ -1577,7 +1577,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 });
                 bctx.save(); applyBlur(0); bctx.shadowBlur = 0; bctx.globalCompositeOperation = 'source-over'; bctx.drawImage(dayCanvas, -p.radius, -p.radius); bctx.restore();
             };
-
+            
             applyBlur(14); 
             const atmosphere = bctx.createRadialGradient(0, 0, p.radius * 0.8, 0, 0, p.radius * 1.9); 
             atmosphere.addColorStop(0, hexToRGBA(glowColor, 0.5)); atmosphere.addColorStop(1, 'rgba(0,0,0,0)');
@@ -1765,7 +1765,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             if (p.hasRings) { applyBlur(3); drawPlanetaryRings(bctx, p, true, p.ringAngle, p.ringSets); }
             return buffer;
         }
-
+        
         function createMoonCache(m) {
             const buffer = document.createElement('canvas');
             const totalRadius = Math.ceil(m.radius * 3) + 2; 
@@ -1796,9 +1796,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.beginPath(); bctx.arc(0, 0, m.radius + 2, 0, Math.PI * 2); bctx.fill(); bctx.restore();
             return buffer;
         }
-
+        
         function createRingWorldCache(p) { return document.createElement('canvas'); } // Dummy fallback
-
+        
         function spawnBackgroundStar(isDyson) {
             // 50% chance for the star/dyson to spawn very far away (much smaller radius)
             let isDistant = Math.random() > 0.5;
@@ -1813,7 +1813,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             const dysonTypes = ['MULTI', 'NEXUS', 'MULTI_NEXUS', 'DENSE_NEXUS'];
             const dType = dysonTypes[Math.floor(Math.random() * dysonTypes.length)];
-
+            
             const newStar = {
                 x: startX, y: startY, radius: size, type: 'STAR', speed: 0,
                 hasDyson: isDyson,
@@ -1828,7 +1828,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             newStar.cache = createStarCache(newStar);
             bgPlanets.push(newStar);
         }
-
+        
         function createStarCache(s) {
             const buffer = document.createElement('canvas');
             
@@ -2498,7 +2498,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             return buffer;
         }
-
+        
         // --- WEB AUDIO API SYNTHESIZER ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
@@ -2593,8 +2593,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         { id: 'vampiricSwarm', name: "Vampiric Swarm", desc: "Requires Drone Formation + Veteran. Drones inherit Vampiric. When a drone gets a kill, the Carrier is healed by 1 HP instead.", maxLevel: 1, requires: ['droneFormation', 'veteran'], rarity: 'standard' },
         { id: 'plasmaWake', name: "Plasma Wake", desc: "Requires Pyromancers. Flame ships leave a lingering trail of heated plasma. Enemies crossing it take 1 damage.", maxLevel: 1, requires: 'flameFleet', rarity: 'standard' },
         { id: 'empPayload', name: "EMP Payloads", desc: "Requires Missile Cruiser. 1 missile per volley is an EMP. Deals no hull damage, but completely strips all shields off the target.", maxLevel: 1, requires: 'missileCruiser', rarity: 'standard' },
+        { id: 'shrapnelPayload', name: "Shrapnel Payload", desc: "Requires Mine Layer. Mines explode into 8 outward shrapnel shards dealing 1 damage to enemies.", maxLevel: 1, requires: 'mineLayer', rarity: 'standard' },
+        { id: 'magneticPayload', name: "Magnetic Payload", desc: "Requires Mine Layer. Mines slowly drift toward the nearest enemy ship.", maxLevel: 1, requires: 'mineLayer', rarity: 'standard' },
+        { id: 'twinMines', name: "Twin Mines", desc: "Requires Mine Layer. Drops two mines at a time instead of one.", maxLevel: 1, requires: 'mineLayer', rarity: 'standard' },
+        { id: 'proximityFuse', name: "Proximity Fuse", desc: "Requires Mine Layer. Doubles the detonation trigger range and the explosion area of effect.", maxLevel: 1, requires: 'mineLayer', rarity: 'standard' },
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
+        { id: 'singularityCollapse', name: "Singularity Collapse", desc: "Requires Mine Layer. Mines detonate into a singularity, dealing double damage (4 Area Damage).", maxLevel: 1, requires: 'mineLayer', rarity: 'epic' },
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
         { id: 'sentinelFleet', name: "Sentinel Guard", desc: "2 ships become heavy Sentinels (4 HP, 2 Shields) and permanently grant +1 Shield to their 3 nearest allies.", maxLevel: 1, rarity: 'epic' },
         { id: 'stealthFleet', name: "Ghost Spectre", desc: "4 ships become Stealth units (2 HP). They cloak for the first 3s of a round, bypassing all hazards and dealing double damage.", maxLevel: 1, rarity: 'epic' },
@@ -2607,15 +2612,15 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         
         // NEW: Temporary Perk Pool
         const tempPerkDefs = [
-            { id: 'temp_speed', name: "Overdrive Engines", desc: "Double the movement speed of all your ships for this round.", rarity: 'temp' },
-            { id: 'temp_fireRate', name: "Hyper Capacitors", desc: "Double the fire rate of all your ships for this round.", rarity: 'temp' },
-            { id: 'temp_shield', name: "Deflector Surge", desc: "All your ships gain a +1 HP Shield for this round.", rarity: 'temp' },
-            { id: 'temp_extraShips', name: "Mercenary Squadron", desc: "Gain +10 extra ships instantly for this round.", rarity: 'temp' },
-            { id: 'temp_extraFlagship', name: "Escort Flagship", desc: "Gain an extra Flagship this round. Its buffs stack with your existing Flagship!", requires: 'flagship', rarity: 'temp' },
-            // THE NEW ADDITIONS
-            { id: 'temp_missileSwarm', name: "Pre-Emptive Strike", desc: "Half of your ships instantly fire a homing missile right as the round starts.", rarity: 'temp' },
-            { id: 'temp_kamikaze', name: "Volatile Cores", desc: "For this round, 100% of your ships are guaranteed to explode upon death.", rarity: 'temp' },
-            { id: 'temp_railgun', name: "Railgun Override", desc: "All your lasers pierce infinitely through targets for this round.", rarity: 'temp' }
+        { id: 'temp_speed', name: "Overdrive Engines", desc: "Double the movement speed of all your ships for this round.", rarity: 'temp' },
+        { id: 'temp_fireRate', name: "Hyper Capacitors", desc: "Double the fire rate of all your ships for this round.", rarity: 'temp' },
+        { id: 'temp_shield', name: "Deflector Surge", desc: "All your ships gain a +1 HP Shield for this round.", rarity: 'temp' },
+        { id: 'temp_extraShips', name: "Mercenary Squadron", desc: "Gain +10 extra ships instantly for this round.", rarity: 'temp' },
+        { id: 'temp_extraFlagship', name: "Escort Flagship", desc: "Gain an extra Flagship this round. Its buffs stack with your existing Flagship!", requires: 'flagship', rarity: 'temp' },
+        // THE NEW ADDITIONS
+        { id: 'temp_missileSwarm', name: "Pre-Emptive Strike", desc: "Half of your ships instantly fire a homing missile right as the round starts.", rarity: 'temp' },
+        { id: 'temp_kamikaze', name: "Volatile Cores", desc: "For this round, 100% of your ships are guaranteed to explode upon death.", rarity: 'temp' },
+        { id: 'temp_railgun', name: "Railgun Override", desc: "All your lasers pierce infinitely through targets for this round.", rarity: 'temp' }
         ];
         
         function getBasePerks() {
@@ -2627,6 +2632,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 sentinelFleet: 0, stealthFleet: 0, globalShield: 0, splitFlagship: 0, veteranFireRate: 0,
                 sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0, acePilot: 0, lightningFleet: 0, flameFleet: 0, missileCruiser: 0, expandedLink: 0,
                 pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, stormShield: 0, scorchAura: 0, staticWeb: 0, phantomStrike: 0, gaussCannon: 0, mobileBastion: 0, vampiricSwarm: 0, plasmaWake: 0, empPayload: 0,
+                shrapnelPayload: 0, magneticPayload: 0, twinMines: 0, proximityFuse: 0, singularityCollapse: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -3107,6 +3113,27 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             }
             update() {
                 this.life--;
+                
+                // MAGNETIC PAYLOAD LOGIC
+                if (perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].magneticPayload > 0) {
+                    let nearest = null;
+                    let minDist = 300; // Magnet detection range
+                    for (let s of ships) {
+                        if (s.faction !== this.faction && s.hp > 0 && !s.toRemove && !(s.isStealth && s.cloakTimer > 0)) {
+                            let d = Math.hypot(this.x - s.position.x, this.y - s.position.y);
+                            if (d < minDist) {
+                                minDist = d;
+                                nearest = s;
+                            }
+                        }
+                    }
+                    if (nearest) {
+                        let angle = Math.atan2(nearest.position.y - this.y, nearest.position.x - this.x);
+                        this.x += Math.cos(angle) * 1.5; // Slow homing drift
+                        this.y += Math.sin(angle) * 1.5;
+                    }
+                }
+                
                 if (Math.random() > 0.8) {
                     particles.push(new Particle(this.x, this.y, factionColors[this.faction], 0.3));
                 }
@@ -3119,6 +3146,15 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 1;
                 ctx.stroke();
+                
+                // Epic Singularity Aura Visuals
+                if (perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].singularityCollapse > 0) {
+                    ctx.strokeStyle = 'rgba(170, 68, 255, 0.8)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size + 4 + Math.sin(Date.now() * 0.01) * 2, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
             }
         }
         class ArenaMine {
@@ -3165,7 +3201,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     ctx.arc(Math.cos(angle) * (this.size + 6), Math.sin(angle) * (this.size + 6), 2, 0, Math.PI * 2);
                     ctx.fill();
                 }
-
+                
                 // Draw Heavy Metallic Body
                 ctx.fillStyle = '#1a1a1a';
                 ctx.beginPath();
@@ -3248,7 +3284,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.restore();
             }
         }
-
+        
         function createBackgroundAsteroidCache(a) {
             const buffer = document.createElement('canvas'); 
             const totalRadius = a.radius + a.blur * 2 + 10; 
@@ -3385,7 +3421,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.restore(); 
             return buffer;
         }
-
+        
         // Added seamlessly just in case you expand your engine to use XP orbs later!
         function spawnXP(x, y, amount) {
             const xpData = { type: 'XP_ORB', amount: amount, isMagnet: true };
@@ -3438,7 +3474,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.beginPath();
                 ctx.ellipse(-this.size * 1.2, 0, this.size * 2.5, this.size * 1.2, 0, 0, Math.PI * 2);
                 ctx.fill();
-
+                
                 // 2. Base Tail (Your original ellipse shape, but with a richer gradient)
                 ctx.shadowBlur = 0;
                 let grad = ctx.createLinearGradient(0, 0, -this.size * 3, 0);
@@ -3465,16 +3501,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.arc(0, 0, this.size * 0.5, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
-
+                
                 // 5. Icy Surface Details (Gives the white dot some texture)
                 ctx.fillStyle = 'rgba(200, 240, 255, 0.9)';
                 ctx.beginPath(); ctx.arc(-this.size * 0.1, -this.size * 0.15, this.size * 0.15, 0, Math.PI*2); ctx.fill();
                 ctx.beginPath(); ctx.arc(this.size * 0.15, this.size * 0.1, this.size * 0.2, 0, Math.PI*2); ctx.fill();
-
+                
                 ctx.restore();
             }
         }
-
+        
         class Nebula {
             constructor() {
                 this.radius = 350 + Math.random() * 450; 
@@ -3493,11 +3529,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
                 
                 const nebulaColors = [
-                    { name: 'red', rgb: '255, 50, 50', clashes: ['Red', 'Orange'] },
-                    { name: 'yellow', rgb: '255, 210, 50', clashes: ['Yellow', 'Yellow-White', 'White'] },
-                    { name: 'orange', rgb: '255, 120, 30', clashes: ['Orange', 'Yellow', 'Red'] },
-                    { name: 'blue', rgb: '40, 150, 255', clashes: ['Blue', 'Blue-White'] },
-                    { name: 'purple', rgb: '160, 60, 255', clashes: ['Blue', 'Red'] } 
+                { name: 'red', rgb: '255, 50, 50', clashes: ['Red', 'Orange'] },
+                { name: 'yellow', rgb: '255, 210, 50', clashes: ['Yellow', 'Yellow-White', 'White'] },
+                { name: 'orange', rgb: '255, 120, 30', clashes: ['Orange', 'Yellow', 'Red'] },
+                { name: 'blue', rgb: '40, 150, 255', clashes: ['Blue', 'Blue-White'] },
+                { name: 'purple', rgb: '160, 60, 255', clashes: ['Blue', 'Red'] } 
                 ];
                 
                 let validColors = nebulaColors;
@@ -3539,7 +3575,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.restore();
             }
         }
-
+        
         function createNebulaCache(radius, colorRGB) {
             const buffer = document.createElement('canvas');
             const size = Math.ceil(radius * 2);
@@ -3637,7 +3673,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         this.targetAngle = this.moveAngle + (Math.random() - 0.5) * Math.PI * 1.5; 
                     }
                 }
-
+                
                 if (this.state === 'ATTACK') {
                     let nearest = null; let minDist = Infinity;
                     for (let s of ships) {
@@ -3650,7 +3686,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 } else {
                     if (Math.random() < 0.05) this.targetAngle += (Math.random() - 0.5) * 0.5;
                 }
-
+                
                 // EDGE FIX: Smooth, aggressive steering back to the center of the map. No more vibrating stops!
                 let margin = 150;
                 if (head.x < margin || head.x > canvas.width - margin || head.y < margin || head.y > canvas.height - margin) {
@@ -3658,12 +3694,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     this.targetAngle = angleToCenter;
                     this.state = 'WANDER'; // Cancel attack to prioritize turning
                 }
-
+                
                 let diff = this.targetAngle - this.moveAngle;
                 diff = Math.atan2(Math.sin(diff), Math.cos(diff));
                 let turnSpeed = this.state === 'ATTACK' ? 0.06 : 0.04; 
                 this.moveAngle += Math.min(Math.max(diff, -turnSpeed), turnSpeed);
-
+                
                 // ALWAYS DRIVE FORWARD CONSTANTLY
                 head.x += Math.cos(this.moveAngle) * this.speed;
                 head.y += Math.sin(this.moveAngle) * this.speed;
@@ -3781,7 +3817,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     }
                     this.spawnTimer = 45; 
                 }
-
+                
                 this.laserCooldown--;
                 if (this.laserCooldown <= 0) {
                     let target = null;
@@ -3792,7 +3828,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             if (d < minDist) { minDist = d; target = s; }
                         }
                     }
-
+                    
                     if (target) {
                         let aimAngle = Math.atan2(target.position.y - this.y, target.position.x - this.x);
                         let mockShooter = { isSniper: true, isAce: false, faction: this.faction }; 
@@ -3827,7 +3863,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.restore();
             }
         }
-
+        
         class PrismBoss {
             constructor() {
                 this.size = 75; 
@@ -3876,7 +3912,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     if (this.y >= this.targetY) this.introPhase = false;
                     return; 
                 }
-
+                
                 // COLLISION: Faction ships cannot pass through the Boss!
                 for (let s of ships) {
                     if (s.hp > 0 && !s.toRemove) {
@@ -3898,12 +3934,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                 }
-
+                
                 this.x += (canvas.width/2 - this.x) * 0.002;
                 this.y += (canvas.height/2 - this.y) * 0.002;
-
+                
                 this.stateTimer--;
-
+                
                 if (this.state === 'ABSORB') {
                     let target = this.getNearestTarget(ships);
                     if (target) {
@@ -3912,7 +3948,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         diff = Math.atan2(Math.sin(diff), Math.cos(diff));
                         this.beamAngle += Math.min(Math.max(diff, -0.03), 0.03); 
                     }
-
+                    
                     if (this.stateTimer <= 0) {
                         this.state = 'BEAM';
                         this.stateTimer = 120; // 2 seconds
@@ -3934,17 +3970,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         diff = Math.atan2(Math.sin(diff), Math.cos(diff));
                         this.beamAngle += Math.min(Math.max(diff, -0.015), 0.015); 
                     }
-
+                    
                     this.beamDamageTimer--;
                     let doDamage = (this.beamDamageTimer <= 0);
                     if (doDamage) this.beamDamageTimer = 15; // Exactly 1 damage every 15 frames (0.25s)
-
+                    
                     let spread = 0.25; 
                     let startingOffset = -((this.beamCount - 1) * spread) / 2;
-
+                    
                     this.beamLengths = [];
                     this.beamAngles = [];
-
+                    
                     for (let b = 0; b < this.beamCount; b++) {
                         let bAngle = this.beamAngle + startingOffset + (b * spread);
                         let dx = Math.cos(bAngle);
@@ -3952,7 +3988,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         let beamLen = 2500;
                         let hitIndex = -1;
                         let hitShipObj = null;
-
+                        
                         for (let i = 0; i < ships.length; i++) {
                             let s = ships[i];
                             if (s.faction === this.faction || s.toRemove || s.hp <= 0 || (s.isStealth && s.cloakTimer > 0)) continue;
@@ -3973,7 +4009,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 }
                             }
                         }
-
+                        
                         this.beamLengths.push(beamLen);
                         this.beamAngles.push(bAngle);
                         
@@ -3982,7 +4018,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             for(let p=0; p<10; p++) particles.push(new Particle(this.x + dx * beamLen, this.y + dy * beamLen, '#00ffff', 3.0));
                         }
                     }
-
+                    
                     if (this.stateTimer <= 0) {
                         this.state = 'ABSORB';
                         this.stateTimer = 120; // 2 seconds
@@ -4014,7 +4050,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     ctx.stroke();
                 }
                 ctx.restore();
-
+                
                 if (this.state === 'BEAM' && !this.introPhase) {
                     ctx.save();
                     ctx.shadowBlur = 20;
@@ -4042,14 +4078,14 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
             }
         }
-
+        
         function createPhantomCache(size) {
             const buffer = document.createElement('canvas');
             const safeDim = Math.ceil(size * 3);
             buffer.width = safeDim; buffer.height = safeDim;
             const bctx = buffer.getContext('2d');
             bctx.translate(safeDim / 2, safeDim / 2);
-
+            
             bctx.fillStyle = '#050508';
             bctx.beginPath();
             bctx.moveTo(size * 1.2, 0); 
@@ -4063,19 +4099,19 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.strokeStyle = '#330011';
             bctx.lineWidth = 3;
             bctx.stroke();
-
+            
             bctx.fillStyle = '#0a0a0c';
             bctx.strokeStyle = '#ff0044';
             bctx.lineWidth = 2;
             bctx.beginPath(); bctx.moveTo(size * 0.5, size * 0.45); bctx.lineTo(-size * 0.5, size * 1.1); bctx.lineTo(-size * 0.9, size * 1.1); bctx.lineTo(-size * 0.3, size * 0.45); bctx.closePath(); bctx.fill(); bctx.stroke();
             bctx.beginPath(); bctx.moveTo(size * 0.5, -size * 0.45); bctx.lineTo(-size * 0.5, -size * 1.1); bctx.lineTo(-size * 0.9, -size * 1.1); bctx.lineTo(-size * 0.3, -size * 0.45); bctx.closePath(); bctx.fill(); bctx.stroke();
-
+            
             bctx.strokeStyle = 'rgba(255, 0, 68, 0.5)';
             bctx.lineWidth = 2; bctx.setLineDash([4, 4]); bctx.beginPath();
             bctx.moveTo(0, size * 0.25); bctx.lineTo(0, size * 0.6);
             bctx.moveTo(0, -size * 0.25); bctx.lineTo(0, -size * 0.6);
             bctx.stroke(); bctx.setLineDash([]); 
-
+            
             bctx.shadowBlur = 25; bctx.shadowColor = '#ff0044'; bctx.fillStyle = '#440000';
             bctx.beginPath(); bctx.ellipse(-size * 0.2, 0, size * 0.4, size * 0.15, 0, 0, Math.PI * 2); bctx.fill();
             bctx.fillStyle = '#ff0044'; bctx.beginPath(); bctx.ellipse(-size * 0.2, 0, size * 0.2, size * 0.08, 0, 0, Math.PI * 2); bctx.fill();
@@ -4084,14 +4120,14 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.shadowBlur = 0; 
             return buffer;
         }
-
+        
         function createPrismCache(size) {
             const buffer = document.createElement('canvas');
             const safeDim = Math.ceil(size * 3);
             buffer.width = safeDim; buffer.height = safeDim;
             const bctx = buffer.getContext('2d');
             bctx.translate(safeDim / 2, safeDim / 2);
-
+            
             bctx.shadowBlur = 20; bctx.shadowColor = '#00ffff';
             bctx.fillStyle = '#05111a'; bctx.strokeStyle = '#00ffff'; bctx.lineWidth = 4;
             bctx.beginPath();
@@ -4100,13 +4136,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if(i===0) bctx.moveTo(px, py); else bctx.lineTo(px, py);
             }
             bctx.closePath(); bctx.fill(); bctx.stroke();
-
+            
             bctx.shadowBlur = 0; bctx.lineWidth = 2; bctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
             for(let i=0; i<6; i++) {
                 let a = (Math.PI / 3) * i;
                 bctx.beginPath(); bctx.moveTo(0, 0); bctx.lineTo(Math.cos(a) * size, Math.sin(a) * size); bctx.stroke();
             }
-
+            
             bctx.shadowBlur = 15; bctx.shadowColor = '#ffffff'; bctx.fillStyle = '#ffffff';
             bctx.beginPath(); bctx.arc(0, 0, size * 0.2, 0, Math.PI * 2); bctx.fill();
             return buffer;
@@ -4157,7 +4193,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.fill();
             return buffer;
         }
-
+        
         function createArenaWallCache() {
             const buffer = document.createElement('canvas');
             buffer.width = 200; // Base texture width
@@ -4215,7 +4251,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.beginPath(); bctx.arc(cx, cy, 18, 0, Math.PI*2); bctx.fill();
             return buffer;
         }
-
+        
         function createLaserCache(color, thickness, blur) {
             const buffer = document.createElement('canvas');
             buffer.width = 100; buffer.height = 30; // Horizontal beam
@@ -4237,7 +4273,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.beginPath(); bctx.moveTo(25, 15); bctx.lineTo(75, 15); bctx.stroke();
             return buffer;
         }
-
+        
         function createMissileCache(color, isEMP) {
             const buffer = document.createElement('canvas');
             buffer.width = 40; buffer.height = 20;
@@ -4258,7 +4294,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             bctx.fillRect(-2, -1, 5, 2);
             return buffer;
         }
-
+        
         function createAsteroidCache(seed) {
             const buffer = document.createElement('canvas');
             let s = 40; // Render at max size to ensure high quality
@@ -4293,21 +4329,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             c.width = radius * 3; c.height = radius * 3;
             const ctx = c.getContext('2d');
             ctx.translate(radius * 1.5, radius * 1.5);
-
+            
             // Base black bio-mechanical tissue
             ctx.fillStyle = '#050505';
             ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.fill();
-
+            
             // Dark red outer armor ring (carapace)
             ctx.strokeStyle = '#3a0000';
             ctx.lineWidth = radius * 0.2;
             ctx.beginPath(); ctx.arc(0, 0, radius * 0.9, 0, Math.PI * 2); ctx.stroke();
-
+            
             // Inner metallic ring
             ctx.strokeStyle = '#1a1a1a';
             ctx.lineWidth = radius * 0.1;
             ctx.beginPath(); ctx.arc(0, 0, radius * 0.6, 0, Math.PI * 2); ctx.stroke();
-
+            
             // Threatening dark red spikes/ridges projecting outwards
             ctx.fillStyle = '#660000';
             for(let i=0; i<8; i++) {
@@ -4320,7 +4356,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.fill();
                 ctx.restore();
             }
-
+            
             // Deep red venting channels
             ctx.strokeStyle = '#ff1111';
             ctx.lineWidth = 2;
@@ -4333,7 +4369,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 ctx.stroke();
                 ctx.restore();
             }
-
+            
             // Glowing magma core
             ctx.fillStyle = '#ff2200';
             ctx.shadowBlur = 20;
@@ -4344,16 +4380,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             ctx.fillStyle = '#ffffff';
             ctx.shadowBlur = 10;
             ctx.beginPath(); ctx.arc(0, 0, radius * 0.15, 0, Math.PI * 2); ctx.fill();
-
+            
             return c;
         }
-
+        
         function createWormHeadCache(radius) {
             const c = document.createElement('canvas');
             c.width = radius * 4; c.height = radius * 4;
             const ctx = c.getContext('2d');
             ctx.translate(radius * 2, radius * 2);
-
+            
             // Base heavy black skull plate
             ctx.fillStyle = '#050505';
             ctx.beginPath();
@@ -4362,7 +4398,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             ctx.lineTo(-radius * 0.8, 0); // Back center indent
             ctx.lineTo(-radius * 0.6, -radius * 1.3); // Back right
             ctx.closePath(); ctx.fill();
-
+            
             // Dark red armor plating
             ctx.fillStyle = '#4a0000';
             ctx.beginPath();
@@ -4371,7 +4407,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             ctx.lineTo(-radius * 0.5, 0);
             ctx.lineTo(-radius * 0.2, -radius * 0.9);
             ctx.closePath(); ctx.fill();
-
+            
             // Bright red tribal/circuit lines
             ctx.strokeStyle = '#ff0000';
             ctx.lineWidth = 3;
@@ -4379,7 +4415,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             ctx.moveTo(radius * 0.8, 0); ctx.lineTo(-radius * 0.3, radius * 0.6);
             ctx.moveTo(radius * 0.8, 0); ctx.lineTo(-radius * 0.3, -radius * 0.6);
             ctx.stroke();
-
+            
             // Massive Serrated Mandibles (Jaws)
             ctx.fillStyle = '#111';
             ctx.strokeStyle = '#aa0000';
@@ -4400,12 +4436,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             ctx.lineTo(radius * 1.2, -radius * 1.0); // Outer curve
             ctx.lineTo(radius * 0.2, -radius * 1.2); // Base
             ctx.closePath(); ctx.fill(); ctx.stroke();
-
+            
             // Multi-eyed demonic cluster (Glowing)
             ctx.shadowBlur = 15;
             ctx.shadowColor = '#ff2200';
             ctx.fillStyle = '#ffcc00'; // Fiery yellow/orange eyes
-
+            
             // Primary Eyes
             ctx.beginPath(); ctx.arc(radius * 0.6, radius * 0.35, radius * 0.15, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(radius * 0.6, -radius * 0.35, radius * 0.15, 0, Math.PI * 2); ctx.fill();
@@ -4413,7 +4449,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             // Secondary smaller eyes
             ctx.beginPath(); ctx.arc(radius * 0.25, radius * 0.55, radius * 0.08, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(radius * 0.25, -radius * 0.55, radius * 0.08, 0, Math.PI * 2); ctx.fill();
-
+            
             return c;
         }
         
@@ -4469,12 +4505,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.burnTimer = 0;
                 this.droneSpawnTimer = 60;
                 this.sentinelPulseTimer = 180; 
-
+                
                 // --- NEW TRACKERS ---
                 this.isEliteDrone = false;
                 this.turrets = [{ angle: 0, cooldown: 0 }, { angle: 0, cooldown: 0 }];
                 this.isBounty = false;
-
+                
                 // ORB TRACKERS
                 this.orbAngle = Math.random() * Math.PI * 2;
                 this.orbCooldowns = [0, 0, 0];
@@ -4590,7 +4626,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                 }
-
+                
                 // Wall Avoidance (steering force — unchanged)
                 let closestWallDist = Infinity;
                 let closestWallNormal = null;
@@ -4673,7 +4709,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (perksEnabled && this.faction >= 0 && this.faction < 4) {
                     let hasStormOrbs = this.isLightning && factionPerks[this.faction].stormOrbs > 0;
                     let hasInfernoOrbs = this.isFlame && factionPerks[this.faction].infernoOrbs > 0;
-
+                    
                     if (hasStormOrbs || hasInfernoOrbs) {
                         let orbitRadius = this.size + 16; 
                         this.orbAngle += 0.05; // Spin speed
@@ -4822,7 +4858,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     if (this.droneSpawnTimer <= 0) {
                         let maxDrones = (perksEnabled && factionPerks[this.faction].droneFormation > 0) ? 8 : 6;
                         if (perksEnabled && factionPerks[this.faction].eliteDrones > 0) maxDrones += 2; 
-
+                        
                         let currentDrones = ships.filter(s => s.faction === this.faction && s.isDrone && !s.toRemove);
                         
                         if (currentDrones.length < maxDrones) {
@@ -4846,7 +4882,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                         this.droneSpawnTimer = 60; // 1 Second loop
                     }
-
+                    
                     // 2. POINT DEFENSE TURRETS
                     if (perksEnabled && factionPerks[this.faction].pointDefense > 0) {
                         let pdRange = 250;
@@ -4856,7 +4892,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         lasers.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
                         missiles.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
                         fireballs.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
-
+                        
                         this.turrets.forEach(turret => {
                             if (turret.cooldown > 0) turret.cooldown--;
                             
@@ -4870,7 +4906,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                     minDist = d; closestProj = ep; 
                                 }
                             });
-
+                            
                             if (closestProj) {
                                 closestProj.targetedByPD = true; // Prevent both turrets from shooting the same target
                                 let targetAngle = Math.atan2(closestProj.y - this.position.y, closestProj.x - this.position.x);
@@ -4879,7 +4915,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 let diff = targetAngle - turret.angle;
                                 diff = Math.atan2(Math.sin(diff), Math.cos(diff));
                                 turret.angle += Math.min(Math.max(diff, -0.15), 0.15); // Fast rotation
-
+                                
                                 // Fire hitscan laser if aiming closely
                                 if (Math.abs(diff) < 0.2 && turret.cooldown <= 0) {
                                     closestProj.toRemove = true; 
@@ -4898,7 +4934,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                     ctx.lineWidth = 1;
                                     ctx.stroke();
                                     ctx.restore();
-
+                                    
                                     turret.cooldown = 20; 
                                 }
                             } else {
@@ -4957,7 +4993,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                 }
-
+                
                 // 3. Target Worms (Check every 2nd segment to save CPU)
                 for (let w of worms) {
                     if (w.faction === this.faction) continue; 
@@ -5007,7 +5043,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         playSound('missile');
                         this.tempMissileReady = false; // Only fires once!
                     }
-                
+                    
                     let engage = { 
                         x: nearestEnemy.position.x - this.position.x, 
                         y: nearestEnemy.position.y - this.position.y 
@@ -5138,7 +5174,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 
                                 let rightX = this.position.x + (localX * cosA - localYRight * sinA);
                                 let rightY = this.position.y + (localX * sinA + localYRight * cosA);
-
+                                
                                 // Spawn 2 missiles from each pod
                                 let hasEMP = perksEnabled && factionPerks[this.faction].empPayload > 0;
                                 missiles.push(new Missile(leftX, leftY, nearestEnemy, this.faction, this, hasEMP)); // First one is EMP if unlocked!
@@ -5220,6 +5256,10 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 if (this.isMineLayer) {
                     if (this.mineCooldown <= 0) {
                         mines.push(new Mine(this.position.x, this.position.y, this.faction, this));
+                        if (perksEnabled && factionPerks[this.faction].twinMines > 0) {
+                            // Drop a second mine slightly offset
+                            mines.push(new Mine(this.position.x + 12, this.position.y + 12, this.faction, this));
+                        }
                         this.mineCooldown = 180; 
                     } else {
                         this.mineCooldown--;
@@ -5237,7 +5277,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             update() {
                 if (this.tetherShockCooldown > 0) this.tetherShockCooldown--;
-
+                
                 // Apply Burn DoT Effect
                 if (this.burnTicks > 0 && !this.isCrashing) {
                     this.burnTimer--;
@@ -5252,7 +5292,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         if (this.hp <= 0) this.toRemove = true; // Burned to death
                     }
                 }
-
+                
                 this.velocity.x += this.acceleration.x;
                 this.velocity.y += this.acceleration.y;
                 
@@ -5270,7 +5310,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 
                 // Tick down the cloak window ONLY after the initial 3-second round countdown ends
                 if (!isCountingDown && this.cloakTimer > 0) this.cloakTimer--;
-
+                
                 // Plasma Wake Trail Generation (Dotted & Highly Optimized)
                 if (!isCountingDown && this.isFlame && perksEnabled && factionPerks[this.faction].plasmaWake > 0) {
                     // Increased from 5 to 15 to create distinctly separated 'dots' of fire
@@ -5317,7 +5357,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     ctx.fill();
                     ctx.restore();
                 }
-
+                
                 let angle = Math.atan2(this.velocity.y, this.velocity.x);
                 ctx.save();
                 ctx.translate(this.position.x, this.position.y);
@@ -5365,7 +5405,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.closePath(); cctx.fill();
                         cctx.shadowBlur = 0;
                         cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
-
+                        
                         // 2. Faction-Colored Interlocking Armor Plates
                         cctx.fillStyle = factionColors[this.faction];
                         cctx.beginPath();
@@ -5376,7 +5416,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         // Wing Armor Panels
                         cctx.beginPath(); cctx.moveTo(s * 0.4, s * 0.9); cctx.lineTo(-s * 0.8, s * 1.5); cctx.lineTo(-s * 0.5, s * 0.8); cctx.closePath(); cctx.fill();
                         cctx.beginPath(); cctx.moveTo(s * 0.4, -s * 0.9); cctx.lineTo(-s * 0.8, -s * 1.5); cctx.lineTo(-s * 0.5, -s * 0.8); cctx.closePath(); cctx.fill();
-
+                        
                         // 3. Glowing Command Bridge
                         cctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
                         cctx.shadowBlur = 8; cctx.shadowColor = '#00ffff';
@@ -5385,16 +5425,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.lineTo(-s * 0.2, -s * 0.3); cctx.lineTo(s * 0.3, -s * 0.3);
                         cctx.closePath(); cctx.fill();
                         cctx.shadowBlur = 0;
-
+                        
                         // 4. Base Weapon Ports
                         cctx.fillStyle = '#ffaa00';
                         cctx.fillRect(-s * 0.3, s * 0.8, s * 0.5, s * 0.15);
                         cctx.fillRect(-s * 0.3, -s * 0.95, s * 0.5, s * 0.15);
-
+                        
                         // 5. Command Aura
                         cctx.fillStyle = factionColors[this.faction]; cctx.globalAlpha = 0.15;
                         cctx.beginPath(); cctx.arc(0, 0, s * 3.5, 0, Math.PI * 2); cctx.fill(); cctx.globalAlpha = 1.0;
-
+                        
                     } else if (this.isMissileCruiser) {
                         // --- MISSILE CRUISER (New Siege Barge Design) ---
                         // 1. Base Heavy Siege Hull (Blocky, Armored Catamaran style)
@@ -5416,24 +5456,24 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.closePath(); cctx.fill();
                         cctx.shadowBlur = 0;
                         cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
-
+                        
                         // 2. Faction Striping
                         cctx.fillStyle = factionColors[this.faction];
                         cctx.beginPath(); cctx.moveTo(s * 0.8, s * 0.8); cctx.lineTo(-s * 0.8, s * 1.0); cctx.lineTo(-s * 0.5, s * 0.5); cctx.lineTo(s * 0.5, s * 0.4); cctx.closePath(); cctx.fill();
                         cctx.beginPath(); cctx.moveTo(s * 0.8, -s * 0.8); cctx.lineTo(-s * 0.8, -s * 1.0); cctx.lineTo(-s * 0.5, -s * 0.5); cctx.lineTo(s * 0.5, -s * 0.4); cctx.closePath(); cctx.fill();
-
+                        
                         // 3. Command Tower (Rear-mounted)
                         cctx.fillStyle = '#1c202b';
                         cctx.fillRect(-s * 0.8, -s * 0.4, s * 0.8, s * 0.8);
                         cctx.fillStyle = 'rgba(255, 68, 68, 0.9)'; // Aggressive red/orange bridge
                         cctx.fillRect(-s * 0.4, -s * 0.2, s * 0.1, s * 0.4);
-
+                        
                         // 4. Exposed VLS (Vertical Launch System) Missile Tubes
                         cctx.fillStyle = '#050608';
                         cctx.fillRect(s * 0.1, -s * 0.65, s * 1.0, s * 1.3);
                         cctx.strokeStyle = '#444'; cctx.lineWidth = 1;
                         cctx.strokeRect(s * 0.1, -s * 0.65, s * 1.0, s * 1.3);
-
+                        
                         // Draw grid of missile tubes (2 rows, 3 columns)
                         for (let row = 0; row < 3; row++) {
                             for (let col = 0; col < 2; col++) {
@@ -5445,11 +5485,11 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 cctx.beginPath(); cctx.arc(tubeX, tubeY, s * 0.08, 0, Math.PI * 2); cctx.fill();
                             }
                         }
-
+                        
                         // 5. Command Aura
                         cctx.fillStyle = factionColors[this.faction]; cctx.globalAlpha = 0.15;
                         cctx.beginPath(); cctx.arc(0, 0, s * 3.5, 0, Math.PI * 2); cctx.fill(); cctx.globalAlpha = 1.0;
-
+                        
                     } else if (this.isSniper) {
                         cctx.shadowBlur = 12; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
                         cctx.beginPath();
@@ -5494,7 +5534,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.closePath(); cctx.fill();
                         cctx.shadowBlur = 0;
                         cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
-
+                        
                         // 2. Prominent Faction-Colored Plating
                         cctx.fillStyle = factionColors[this.faction];
                         // Right Prong Armor
@@ -5503,7 +5543,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.beginPath(); cctx.moveTo(s * 1.8, -s * 1.2); cctx.lineTo(s * 0.5, -s * 1.2); cctx.lineTo(s * 0.5, -s * 0.7); cctx.lineTo(s * 1.8, -s * 0.7); cctx.closePath(); cctx.fill();
                         // Heavy Rear Faction Core
                         cctx.fillRect(-s * 1.2, -s * 0.5, s * 0.6, s * 1.0);
-
+                        
                         // 3. Central Launch Harbor (Dark Deck)
                         cctx.fillStyle = 'rgba(10, 15, 25, 0.9)';
                         cctx.fillRect(-s * 0.2, -s * 0.6, s * 2.0, s * 1.2);
@@ -5517,13 +5557,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.beginPath(); cctx.moveTo(-s * 0.1, -s * 0.3); cctx.lineTo(s * 1.8, -s * 0.3); cctx.stroke();
                         cctx.setLineDash([]);
                         cctx.shadowBlur = 0;
-
+                        
                         // 4. ATC / Command Bridge
                         cctx.fillStyle = '#1c202b';
                         cctx.fillRect(-s * 0.8, -s * 0.2, s * 0.4, s * 0.4);
                         cctx.fillStyle = 'rgba(0, 255, 255, 0.8)'; // Windows
                         cctx.fillRect(-s * 0.5, -s * 0.1, s * 0.1, s * 0.2);
-
+                        
                         // 5. Heavy Engine Vents
                         cctx.fillStyle = '#ffaa00';
                         cctx.fillRect(-s * 1.8, s * 0.8, s * 0.2, s * 0.5);
@@ -5554,7 +5594,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.shadowBlur = 5; cctx.shadowColor = this.isEliteDrone ? '#ffcc00' : '#00ffff';
                         cctx.beginPath(); cctx.arc(s*0.7, 0, s*0.3, 0, Math.PI*2); cctx.fill();
                         cctx.shadowBlur = 0;
-
+                        
                         // RENDER MOBILE BASTION SHIELD ON DRONES
                         // Drones don't use the global shield drawing block, so we bake it into their cache!
                         if (this.shield > 0) {
@@ -5591,7 +5631,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.strokeStyle = '#11151c'; 
                         cctx.lineWidth = 1.5; 
                         cctx.stroke();
-
+                        
                         // 2. Dark Radar-Absorbent Inner Plating (Segmented Core)
                         cctx.fillStyle = '#161a22'; 
                         cctx.beginPath();
@@ -5607,7 +5647,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.strokeStyle = '#2a3040'; 
                         cctx.lineWidth = 1.5;
                         cctx.stroke();
-
+                        
                         // 3. Stealth "V" Visor / Forward Optical Array
                         cctx.shadowBlur = 10; cctx.shadowColor = '#00ffff';
                         cctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
@@ -5618,18 +5658,18 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.lineTo(s * 0.8 * scale, -s * 0.25 * scale);
                         cctx.closePath();
                         cctx.fill();
-
+                        
                         // 4. Cloak Emitters (Glowing nodes on the wings)
                         cctx.fillStyle = '#ffffff';
                         cctx.beginPath(); cctx.arc(-s * 0.4 * scale, s * 1.2 * scale, s * 0.15 * scale, 0, Math.PI*2); cctx.fill();
                         cctx.beginPath(); cctx.arc(-s * 0.4 * scale, -s * 1.2 * scale, s * 0.15 * scale, 0, Math.PI*2); cctx.fill();
-
+                        
                         // 5. Twin Sub-Thrusters (Energy coils)
                         cctx.fillStyle = 'rgba(0, 255, 255, 0.6)';
                         cctx.fillRect(-s * 1.0 * scale, s * 0.2 * scale, s * 0.4 * scale, s * 0.15 * scale); 
                         cctx.fillRect(-s * 1.0 * scale, -s * 0.35 * scale, s * 0.4 * scale, s * 0.15 * scale);
                         cctx.shadowBlur = 0;
-
+                        
                         // 6. Hull Paneling & Geometric Lines
                         cctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
                         cctx.lineWidth = 1.5;
@@ -5685,12 +5725,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.strokeStyle = factionColors[this.faction]; 
                         cctx.lineWidth = 1.5; 
                         cctx.stroke();
-
+                        
                         // 2. Heavy Faction Plating on the wings
                         cctx.fillStyle = factionColors[this.faction];
                         cctx.beginPath(); cctx.moveTo(-s * 0.8, s * 0.4); cctx.lineTo(-s * 1.2, s * 0.9); cctx.lineTo(-s * 0.2, s * 1.2); cctx.closePath(); cctx.fill();
                         cctx.beginPath(); cctx.moveTo(-s * 0.8, -s * 0.4); cctx.lineTo(-s * 1.2, -s * 0.9); cctx.lineTo(-s * 0.2, -s * 1.2); cctx.closePath(); cctx.fill();
-
+                        
                         // 3. Central Magma Chamber / Volatile Fuel Tank
                         cctx.fillStyle = '#1c0a00';
                         cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.6, 0, Math.PI * 2); cctx.fill();
@@ -5700,13 +5740,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.fillStyle = '#ffffff'; // White-hot core
                         cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.15, 0, Math.PI * 2); cctx.fill();
                         cctx.shadowBlur = 0;
-
+                        
                         // 4. Glowing Igniter Coils (Forward Prongs)
                         cctx.strokeStyle = '#ffaa00'; cctx.lineWidth = 2.5;
                         cctx.lineCap = 'round';
                         cctx.beginPath(); cctx.moveTo(s * 0.8, s * 0.8); cctx.lineTo(s * 1.8, s * 0.8); cctx.stroke();
                         cctx.beginPath(); cctx.moveTo(s * 0.8, -s * 0.8); cctx.lineTo(s * 1.8, -s * 0.8); cctx.stroke();
-
+                        
                         // 5. Rear Thermal Vents bleeding off excess heat
                         cctx.fillStyle = '#ff2200';
                         cctx.fillRect(-s * 1.2, s * 0.3, s * 0.4, s * 0.15);
@@ -5730,7 +5770,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, s * 1.0);
                         cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, -s * 1.0);
                         cctx.stroke();
-
+                        
                         // Blazing white-hot core
                         cctx.fillStyle = '#ffffff';
                         cctx.beginPath();
@@ -5832,7 +5872,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     let offX = s * 0.4;
                     let offY = s * 0.8;
                     let tOffsets = [{ x: -offX, y: offY }, { x: -offX, y: -offY }];
-
+                    
                     this.turrets.forEach((turret, index) => {
                         ctx.save();
                         ctx.translate(tOffsets[index].x, tOffsets[index].y);
@@ -5846,7 +5886,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         ctx.beginPath(); ctx.arc(0, 0, s * 0.25, 0, Math.PI * 2); ctx.fill();
                         ctx.strokeStyle = '#00ffff';
                         ctx.lineWidth = 1; ctx.stroke();
-
+                        
                         // Barrels
                         ctx.fillStyle = '#666';
                         ctx.fillRect(0, -s * 0.1, s * 0.4, s * 0.06);
@@ -5854,27 +5894,27 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         ctx.restore();
                     });
                 }
-
+                
                 // --- RENDER REVOLVING ORBS ---
                 if (perksEnabled && factionPerks[this.faction]) {
                     let hasStormOrbs = this.isLightning && factionPerks[this.faction].stormOrbs > 0;
                     let hasInfernoOrbs = this.isFlame && factionPerks[this.faction].infernoOrbs > 0;
-
+                    
                     if (hasStormOrbs || hasInfernoOrbs) {
                         let orbitRadius = s * 2.0 + 8; 
                         
                         ctx.save();
                         // Cancel out the ship's facing angle so the orbs rotate smoothly in world space
                         ctx.rotate(this.orbAngle - angle); 
-
+                        
                         for (let o = 0; o < 3; o++) {
                             let a = o * ((Math.PI * 2) / 3);
                             let ox = Math.cos(a) * orbitRadius;
                             let oy = Math.sin(a) * orbitRadius;
-
+                            
                             let onCooldown = this.orbCooldowns[o] > 0;
                             ctx.globalAlpha = onCooldown ? 0.2 : 1.0;
-
+                            
                             if (hasStormOrbs) {
                                 // --- ELECTRIC ORB (High-voltage cyan plasma sphere) ---
                                 let sColor = '#00ffff'; // Force standard lightning blue!
@@ -5884,7 +5924,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 // Soft outer corona
                                 ctx.fillStyle = `rgba(0, 255, 255, ${onCooldown ? 0.2 : 0.6})`;
                                 ctx.beginPath(); ctx.arc(ox, oy, 5, 0, Math.PI * 2); ctx.fill();
-
+                                
                                 // Bright inner core
                                 ctx.fillStyle = '#ffffff';
                                 ctx.beginPath(); ctx.arc(ox, oy, 2.5, 0, Math.PI * 2); ctx.fill();
@@ -5957,7 +5997,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     ctx.stroke();
                     ctx.restore();
                 }
-
+                
                 // HP Pips
                 if (this.maxHp <= 20) {
                     ctx.fillStyle = '#fff';
@@ -5981,7 +6021,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     ctx.stroke();
                     ctx.setLineDash([]); // Reset dash for other draws
                 }
-
+                
                 // Phase Armor & Shields (Drawn in absolute world space)
                 if (this.hasPhaseArmor) {
                     ctx.strokeStyle = '#cccccc';
@@ -6131,7 +6171,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                 }
-
+                
                 // 2. Quantum Link Respawn Logic
                 if (s.isTethered) {
                     let livingTethers = ships.filter(sh => sh.faction === s.faction && sh.isTethered && sh !== s && !sh.toRemove);
@@ -6145,7 +6185,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         respawnQueue = respawnQueue.filter(rq => rq.faction !== s.faction);
                     }
                 }
-
+                
                 // 3. Process Standard Capital Deaths
                 if (s.isFlagship) {
                     flagshipCount[s.faction]--;
@@ -6182,7 +6222,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let isKamikaze = perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].temp_kamikaze > 0;
                 let isNovaCore = perksEnabled && s.faction >= 0 && s.faction < 4 && factionPerks[s.faction].explosiveDeath > 0 && Math.random() < 0.20;
                 let isVolatileSwarm = perksEnabled && s.faction >= 0 && s.faction < 4 && s.isDrone && factionPerks[s.faction].droneFormation > 0;
-
+                
                 if (isKamikaze || isNovaCore || isVolatileSwarm) {
                     // Volatile Cores do 2 Area Damage, standard Nova Core & Volatile Swarm do 1.
                     let dmg = isKamikaze ? 2 : 1; 
@@ -6323,8 +6363,8 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     if (Math.random() > 0.5) { let t = wx1; wx1 = wx2; wx2 = t; }
                     
                     wormholes = [
-                        { x: wx1, y: wy1, angle: 0 },
-                        { x: wx2, y: wy2, angle: 0 }
+                    { x: wx1, y: wy1, angle: 0 },
+                    { x: wx2, y: wy2, angle: 0 }
                     ];
                 }
                 
@@ -6572,7 +6612,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         ships[factionSpawnStartIndex + i].shield += 1;
                     }
                 }
-
+                
                 // Super Carrier Fabrication Ship
                 if (perksEnabled && factionPerks[f].carrierFleet > 0) {
                     let numCarriers = 1;
@@ -6689,7 +6729,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         // --- LIVE MULTIPLAYER SOCKET CONNECTIONS ---
         // Moved to the top of the block to prevent initialization errors!
         const socket = io(); 
-
+        
         document.getElementById('btnMultiPlayer').addEventListener('click', () => {
             modeSelectMenu.style.display = 'none';
             multiplayerLoginMenu.style.display = 'flex';
@@ -6700,7 +6740,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 document.getElementById('btnCreateRoom').innerText = "ESTABLISHING LINK...";
             }
         });
-
+        
         // Re-enable instantly once connection handshakes clear
         socket.on('connect', () => {
             const hostBtn = document.getElementById('btnCreateRoom');
@@ -6871,7 +6911,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 document.getElementById('mpWaitingText').style.display = 'block';
             }
         });
-
+        
         // HANDLE DYNAMIC READY CHECKS AND INTER-PLAYER COLOR EXCLUSIONS
         socket.on('lobby_config_update', (data) => {
             const myUsername = usernameInput.value.trim();
@@ -6950,13 +6990,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
             }
         });
-
+        
         // Toggle ready event trigger binding handlers
         document.getElementById('btnToggleMpReady').addEventListener('click', () => {
             const myUsername = usernameInput.value.trim();
             socket.emit('sync_ready_toggle', { roomCode: lobbyRoomCode.innerText, username: myUsername });
         });
-
+        
         // CHAT PACKET SYSTEM ROUTERS
         document.getElementById('gameChatInput').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
@@ -6968,7 +7008,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 this.value = ''; // Clean box input field immediately
             }
         });
-
+        
         socket.on('receive_room_chat', (data) => {
             const chatBox = document.getElementById('gameChatBox');
             const cleanSender = data.sender.toUpperCase();
@@ -6977,7 +7017,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             chatBox.innerHTML += `<div><span style="color:#ffcc00;">[${cleanSender}]:</span> <span style="color:#fff;">${data.msg}</span></div>`;
             chatBox.scrollTop = chatBox.scrollHeight; // Autoscroll timeline feeds
         });
-
+        
         // HOST ADDS AI (NOW SYNCED VIA BACKEND)
         document.getElementById('btnAddAI').addEventListener('click', () => {
             if (mpAiCount < 2) {
@@ -7069,7 +7109,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             isPerkPhase = false; 
             spawnFleets(false); 
         });
-
+        
         // SERVER RELAYS: Another pilot picked a perk — apply it to our local copy
         // of their faction so everyone's fleets match across all clients.
         socket.on('peer_perk_selected', (data) => {
@@ -7079,7 +7119,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 factionPerks[factionIdx][data.perkId]++;
             }
         });
-
+        
         // SERVER SAYS: A Pilot Disconnected!
         socket.on('player_left', (data) => {
             if (!isMultiplayer) return;
@@ -7313,7 +7353,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
         // Nebula Spawner
         document.getElementById('adminSpawnNebula').addEventListener('click', () => nebulas.push(new Nebula()));
         document.getElementById('adminClearNebula').addEventListener('click', () => nebulas = []);
-
+        
         // Mutator Triggers
         document.getElementById('adminTriggerBounty').addEventListener('click', () => {
             if (!gameStarted || bountyEventActive) return; 
@@ -7330,21 +7370,21 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
             }
         });
-
+        
         document.getElementById('adminTriggerCollapse').addEventListener('click', () => {
             if (!gameStarted || arenaCollapseActive) return;
             arenaCollapseActive = true;
             // Snap the arena bounds to the current screen size before it starts shrinking
             arenaBounds = { x: 0, y: 0, w: canvas.width, h: canvas.height };
         });
-
+        
         // --- CELESTIAL ADMIN OVERRIDES ---
         function forceCelestialSpawn(type) {
             bgPlanets = []; // Instantly clear the sky
             width = canvas.width;
             height = canvas.height;
             const types = ['EARTH_LIKE', 'WATER', 'DESERT', 'VOLCANIC', 'ICE_GIANT', 'GAS_GIANT', 'RING_WORLD'];
-
+            
             if (type === 'PLANET') {
                 const pType = types[Math.floor(Math.random() * types.length)];
                 spawnBackgroundPlanet(pType, 300 + Math.random() * 250);
@@ -7374,7 +7414,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 spawnBackgroundStar(true);
             }
         }
-
+        
         document.getElementById('adminForcePlanet').addEventListener('click', () => forceCelestialSpawn('PLANET'));
         document.getElementById('adminForceDual').addEventListener('click', () => forceCelestialSpawn('DUAL'));
         document.getElementById('adminForceStar').addEventListener('click', () => forceCelestialSpawn('STAR'));
@@ -7420,9 +7460,9 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             // Only inject a number input if the perk has multiple levels
             let levelInputHtml = (perk.maxLevel && perk.maxLevel > 1) 
-                ? `<input type="number" id="${levelInputId}" min="1" max="${perk.maxLevel}" value="${perk.maxLevel}" style="width: 40px; padding: 2px; background: #222; color: #fff; border: 1px solid #555; border-radius: 3px; font-family: monospace;">` 
-                : '';
-
+            ? `<input type="number" id="${levelInputId}" min="1" max="${perk.maxLevel}" value="${perk.maxLevel}" style="width: 40px; padding: 2px; background: #222; color: #fff; border: 1px solid #555; border-radius: 3px; font-family: monospace;">` 
+            : '';
+            
             // Layout: Checkbox -> Name (flex-grow pushes input right) -> Level Input
             container.innerHTML = `
                 <input type="checkbox" id="${checkboxId}" checked style="cursor: pointer; margin: 0;"> 
@@ -7432,7 +7472,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             
             const checkbox = container.querySelector(`#${checkboxId}`);
             const levelInput = container.querySelector(`#${levelInputId}`);
-
+            
             // Handle Checkbox Toggle
             checkbox.addEventListener('change', (e) => {
                 perk.allowed = e.target.checked;
@@ -7440,13 +7480,13 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let applyLevel = 1;
                 if (levelInput) applyLevel = parseInt(levelInput.value);
                 else applyLevel = perk.maxLevel || 1;
-
+                
                 // ONLY apply to the active player's faction
                 factionPerks[playerFactionId][perk.id] = e.target.checked ? applyLevel : 0;
                 
                 if (gameStarted) spawnFleets(false);
             });
-
+            
             // Handle Dynamic Level Adjustment
             if (levelInput) {
                 levelInput.addEventListener('change', (e) => {
@@ -7454,7 +7494,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     if (val < 1) val = 1;
                     if (val > perk.maxLevel) val = perk.maxLevel;
                     e.target.value = val;
-
+                    
                     // Only update the live game if the perk is actually checked on
                     if (checkbox.checked) {
                         factionPerks[playerFactionId][perk.id] = val; // ONLY apply to Player
@@ -7467,7 +7507,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             else if (perk.rarity === 'temp') tempGrid.appendChild(container);
             else standardGrid.appendChild(container);
         });
-
+        
         document.getElementById('adminEnableAllPerks').addEventListener('click', () => {
             allPerksCombined.forEach((p) => {
                 p.allowed = true;
@@ -7481,7 +7521,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             });
             if (gameStarted) spawnFleets(false);
         });
-
+        
         document.getElementById('adminDisableAllPerks').addEventListener('click', () => {
             allPerksCombined.forEach((p) => {
                 p.allowed = false;
@@ -7532,17 +7572,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             // SYNC FIX: We no longer change the canvas dimensions or redraw stars here.
             // Calling Math.random() mid-match during a resize permanently breaks the deterministic seed!
         });
-
+        
         // Global runtime matrix tracking individual flocking configurations across networks
         let factionSliders = [
-            { align: 0.5, cohere: 1.0, separ: 1.5 }, // Fleet 0
-            { align: 0.5, cohere: 1.0, separ: 1.5 }, // Fleet 1
-            { align: 0.5, cohere: 1.0, separ: 1.5 }, // Fleet 2
-            { align: 0.5, cohere: 1.0, separ: 1.5 }, // Fleet 3
-            { align: 0.0, cohere: 0.0, separ: 1.5 }, // Fleet 4 (Still Dummies)
-            { align: 0.5, cohere: 1.0, separ: 1.5 }  // Fleet 5 (Active Dummies)
+        { align: 0.5, cohere: 1.0, separ: 1.5 }, // Fleet 0
+        { align: 0.5, cohere: 1.0, separ: 1.5 }, // Fleet 1
+        { align: 0.5, cohere: 1.0, separ: 1.5 }, // Fleet 2
+        { align: 0.5, cohere: 1.0, separ: 1.5 }, // Fleet 3
+        { align: 0.0, cohere: 0.0, separ: 1.5 }, // Fleet 4 (Still Dummies)
+        { align: 0.5, cohere: 1.0, separ: 1.5 }  // Fleet 5 (Active Dummies)
         ];
-
+        
         // --- REAL-TIME FLOCKING SLIDER SYNC ---
         function transmitSliderChange() {
             if (!isMultiplayer) {
@@ -7565,12 +7605,12 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 separ: separSlider.value
             });
         }
-
+        
         // Attach network triggers to your UI sliders
         alignSlider.addEventListener('input', transmitSliderChange);
         cohereSlider.addEventListener('input', transmitSliderChange);
         separSlider.addEventListener('input', transmitSliderChange);
-
+        
         // Catch synchronized slider adjustments from the server (including our own!)
         socket.on('peer_slider_update', (data) => {
             let fid = parseInt(data.factionId); // Fixed int() typo to parseInt()
@@ -7738,7 +7778,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
             // SEAMLESS FULLSCREEN ILLUSION: Sync the HTML background to the canvas background
             // so the aspect-ratio letterboxes become completely invisible deep space!
             document.body.style.backgroundColor = ambientTint || '#050510';
-
+            
             if (!gameStarted) {
                 ctx.fillStyle = '#050510';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -7820,7 +7860,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     if (p.moons) p.moons.forEach(m => m.angle += m.rotSpeed);
                 }
             }
-
+            
             walls.forEach(w => w.draw()); // Draw the maze
             
             // Draw Quantum Link Tethers (Optimized Cache Method)
@@ -7843,7 +7883,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                             let nextIdx = (j + 1) % tShips.length;
                             let s1 = tShips[j];
                             let s2 = tShips[nextIdx];
-
+                            
                             segments.push({
                                 x1: s1.position.x, y1: s1.position.y,
                                 x2: s2.position.x, y2: s2.position.y
@@ -8006,7 +8046,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                 }
-
+                
                 // Laser Arena Mine Collision
                 if (!hit) {
                     for (let am of arenaMines) {
@@ -8071,7 +8111,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 let hit = false;
                 let hitTarget = null;
                 let hitX = l.x, hitY = l.y;
-
+                
                 // 1. Wall Collision
                 for (let w of walls) {
                     if (l.x > w.x && l.x < w.x + w.w && l.y > w.y && l.y < w.y + w.h) {
@@ -8288,7 +8328,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                 }
-
+                
                 // Missile Arena Mine Collision
                 if (!hit) {
                     for (let am of arenaMines) {
@@ -8330,13 +8370,16 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 m.draw();
                 
                 let hit = false;
+                let baseTrigger = m.size + 15; 
+                if (perksEnabled && factionPerks[m.faction] && factionPerks[m.faction].proximityFuse > 0) {
+                    baseTrigger = 35; // Proximity Fuse trips the bomb from further away
+                }
+                
                 for (let j = ships.length - 1; j >= 0; j--) {
                     let s = ships[j];
-                    if (m.faction !== s.faction && !s.toRemove) {
+                    if (m.faction !== s.faction && !s.toRemove && !(s.isStealth && s.cloakTimer > 0)) {
                         let d = Math.hypot(m.x - s.position.x, m.y - s.position.y);
-                        if (d < s.size + m.size) { 
-                            hitShip(j, m.shooter, 2); 
-                            for(let p=0; p<15; p++) particles.push(new Particle(m.x, m.y, '#ff4444', 2));
+                        if (d < s.size + baseTrigger) { 
                             hit = true;
                             break;
                         }
@@ -8344,6 +8387,40 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 }
                 
                 if (hit || m.life <= 0) {
+                    if (hit) {
+                        let dmg = 2;
+                        let expRadius = 60;
+                        let isSingularity = false;
+                        
+                        if (perksEnabled && factionPerks[m.faction]) {
+                            if (factionPerks[m.faction].proximityFuse > 0) expRadius *= 2;
+                            if (factionPerks[m.faction].singularityCollapse > 0) {
+                                dmg *= 2; 
+                                isSingularity = true;
+                            }
+                        }
+                        
+                        playSound('explosion');
+                        // Push a true AoE explosion
+                        explosions.push({
+                            x: m.x, 
+                            y: m.y, 
+                            radius: 0, 
+                            maxRadius: expRadius, 
+                            faction: m.faction, 
+                            damage: dmg,
+                            isSingularity: isSingularity
+                        });
+                        
+                        // Blast Shrapnel outward!
+                        if (perksEnabled && factionPerks[m.faction] && factionPerks[m.faction].shrapnelPayload > 0) {
+                            for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+                                // "isSniper: true" makes the shrapnel laser cleanly pierce through multiple targets!
+                                let mockShooter = { isSniper: true, isAce: false, faction: m.faction }; 
+                                lasers.push(new Laser(m.x, m.y, a, m.faction, mockShooter, 1, 1.2));
+                            }
+                        }
+                    }
                     fastRemove(mines, i);
                 }
             }
@@ -8412,12 +8489,17 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                         }
                     }
                     ctx.shadowBlur = 0;
-                } else {
-                    // Standard Nova Core Explosion
+               } else {
+                    // Standard Nova Core & Mine Explosion
                     ex.radius += 4;
                     ctx.beginPath();
                     ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255, 136, 0, ${1 - (ex.radius/ex.maxRadius)})`;
+                    
+                    if (ex.isSingularity) {
+                        ctx.fillStyle = `rgba(170, 68, 255, ${1 - (ex.radius/ex.maxRadius)})`; // Epic Purple/Black hole flash
+                    } else {
+                        ctx.fillStyle = `rgba(255, 136, 0, ${1 - (ex.radius/ex.maxRadius)})`;
+                    }
                     ctx.fill();
                     
                     if (ex.radius === 20) {
@@ -8528,7 +8610,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     worms[i].draw();
                 }
             }
-
+            
             // Update Bosses
             for (let i = bosses.length - 1; i >= 0; i--) {
                 let b = bosses[i];
@@ -8546,7 +8628,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 for (let j = lasers.length - 1; j >= 0; j--) {
                     let l = lasers[j];
                     if (l.faction === b.faction) continue; // Boss ignores its own scattered lasers
-
+                    
                     if (Math.hypot(l.x - b.x, l.y - b.y) < b.size) {
                         let hitShield = false;
                         
@@ -8579,7 +8661,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                 for (let j = missiles.length - 1; j >= 0; j--) {
                     let m = missiles[j];
                     if (m.faction === b.faction) continue;
-
+                    
                     if (Math.hypot(m.x - b.x, m.y - b.y) < b.size + 8) {
                         let hitShield = false;
                         if (b.isPrism && (b.state === 'ABSORB' || b.state === 'BEAM') && !b.introPhase) {
@@ -8593,7 +8675,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                                 for(let p=0; p<15; p++) particles.push(new Particle(m.x, m.y, '#00ffff', 2.0));
                             }
                         }
-
+                        
                         if (!hitShield && !b.introPhase) {
                             b.hp -= 2;
                             playSound('explosion'); 
@@ -8749,7 +8831,7 @@ function spawnBackgroundPlanet(pType, forceSize = null) {
                     ctx.fillRect(0, arenaBounds.y + arenaBounds.h, canvas.width, canvas.height - (arenaBounds.y + arenaBounds.h)); // Bottom
                     ctx.fillRect(0, arenaBounds.y, arenaBounds.x, arenaBounds.h); // Left
                     ctx.fillRect(arenaBounds.x + arenaBounds.w, arenaBounds.y, canvas.width - (arenaBounds.x + arenaBounds.w), arenaBounds.h); // Right
-
+                    
                     // Pre-bake 4 animation frames of the volatile wall into cache if they don't exist yet
                     if (!globalCache['arenaWall_0']) {
                         for(let c=0; c<4; c++) globalCache['arenaWall_' + c] = createArenaWallCache();
