@@ -756,6 +756,7 @@
         let lasers = [];
         let lightnings = []; 
         let fireballs = []; // NEW: Array for Pyromancer projectiles
+        let pdLasers = []; // NEW: Point Defense Tracer array
         let plasmaWakes = []; // NEW: Array for lingering plasma trails
         let missiles = [];
         let particles = [];
@@ -2579,10 +2580,10 @@
         { id: 'explosiveDeath', name: "Nova Core", desc: "20% chance to explode on death (1 AoE dmg to ships/mines).", maxLevel: 1, rarity: 'standard' },
         { id: 'missileCruiser', name: "Missile Cruiser", desc: "Requires Flagship. The flagship stops firing lasers and shoots 4 missiles per second. -40% Speed, +2 HP, +1 Shield.", maxLevel: 1, requires: 'flagship', rarity: 'standard' },
         { id: 'expandedLink', name: "Expanded Link", desc: "Requires Quantum Link. Increases the maximum number of tethered ships by 2 per level.", maxLevel: 1, requires: 'quantumLink', rarity: 'standard' },
-        { id: 'sentinelUpgrade', name: "Aegis Command", desc: "Requires Sentinel Guard. +1 Sentinel. Sentinels now shield 5 nearest allies every 3 seconds (Max 5 shields per ship).", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
-        { id: 'aegisOvercharge', name: "Aegis Overcharge", desc: "Requires Aegis Command. Shield pulse time decreased to 2s. Targets increased to 7. Max shield limit increased to 8.", maxLevel: 1, requires: 'sentinelUpgrade', rarity: 'standard' },
+        { id: 'sentinelUpgrade', name: "Aegis Command", desc: "Requires Sentinel Guard. +1 Sentinel. Sentinels shield 5 nearest allies every 3s (Max 5 shields. Excludes Sentinels).", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
+        { id: 'aegisOvercharge', name: "Aegis Overcharge", desc: "Requires Aegis Command. Shield pulse time decreased to 2s. Targets increased to 7. Max shield limit increased to 8 (Excludes Sentinels).", maxLevel: 1, requires: 'sentinelUpgrade', rarity: 'standard' },
         { id: 'sentinelArmor', name: "Bastion Plating", desc: "Requires Sentinel Guard. Sentinels start with an additional +2 HP and +1 Shield.", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
-        { id: 'sentinelAura', name: "Restoration Aura", desc: "Requires Sentinel Guard. Sentinels project an aura that heals nearby allies for 1 HP every 3 seconds.", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
+        { id: 'sentinelAura', name: "Restoration Aura", desc: "Requires Sentinel Guard. Sentinels project an aura that heals nearby allies for 1 HP every 3s (Excludes Sentinels).", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
         { id: 'sniperUpgrade', name: "Hyper-Velocity Sabots", desc: "Requires Sniper Squadron. Snipers gain +40% Range and +20% additional Projectile Speed.", maxLevel: 1, requires: 'sniperFleet', rarity: 'standard' },
         { id: 'veteranFireRate', name: "Bloodlust", desc: "Requires Veteran. Every kill a ship gets increases its fire rate by 10%.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         { id: 'veteranMissile', name: "Macross Pods", desc: "Requires Veteran. Veterans fire 2 homing missiles instead of 1.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
@@ -2598,7 +2599,7 @@
         { id: 'stormShield', name: "Thunderguard", desc: "Requires Storm Callers. Grants a 1 HP shield that releases a massive EMP stun wave when destroyed.", maxLevel: 1, requires: 'lightningFleet', rarity: 'standard' },
         { id: 'scorchAura', name: "Thermal Expulsion", desc: "Requires Pyromancers. Projects a fiery aura that deals 1 damage per second to nearby enemies.", maxLevel: 1, requires: 'flameFleet', rarity: 'standard' },
         { id: 'staticWeb', name: "Static Web", desc: "Requires Storm Callers & Quantum Link. Tethers become electrified, shocking enemies who cross them and chaining to 1 nearby target.", maxLevel: 1, requires: ['lightningFleet', 'quantumLink'], rarity: 'standard' },
-        { id: 'phantomStrike', name: "Phantom Strike", desc: "Requires Ghost Spectre. Cloak lasts 1s longer. While cloaked, Spectres prioritize targeting specialized enemy ships over basic fighters.", maxLevel: 1, requires: 'stealthFleet', rarity: 'standard' },
+        { id: 'phantomStrike', name: "Phantom Strike", desc: "Requires Ghost Spectre. Cloak +1s. While cloaked, Spectres gain +50% Fire Rate & +50% Proj Speed, and target specialized ships.", maxLevel: 1, requires: 'stealthFleet', rarity: 'standard' },
         { id: 'gaussCannon', name: "Gauss Cannon", desc: "Requires Sniper Squadron. Snipers charge for 2s to fire a devastating shot dealing 4 damage. +25% Projectile Speed, +40% Range.", maxLevel: 1, requires: 'sniperFleet', rarity: 'standard' },
         { id: 'mobileBastion', name: "Mobile Bastions", desc: "Requires Sentinel + Carrier. Carrier drones spawn with a 1 HP Sentinel shield already equipped.", maxLevel: 1, requires: ['sentinelFleet', 'carrierFleet'], rarity: 'standard' },
         { id: 'vampiricSwarm', name: "Vampiric Swarm", desc: "Requires Drone Formation + Veteran. Drones inherit Vampiric. When a drone gets a kill, the Carrier is healed by 1 HP instead.", maxLevel: 1, requires: ['droneFormation', 'veteran'], rarity: 'standard' },
@@ -2609,7 +2610,8 @@
         { id: 'twinMines', name: "Twin Mines", desc: "Requires Mine Layer. Drops two mines at a time instead of one.", maxLevel: 1, requires: 'mineLayer', rarity: 'standard' },
         { id: 'proximityFuse', name: "Proximity Fuse", desc: "Requires Mine Layer. Doubles the detonation trigger range and the explosion area of effect.", maxLevel: 1, requires: 'mineLayer', rarity: 'standard' },
         { id: 'kineticChain', name: "Kinetic Chain", desc: "Requires Hyper-Velocity Sabots & Gauss Cannon. Sniper range & projectile speed doubled. Piercing shots that kill a target violently ricochet to a new target for -1 damage.", maxLevel: 1, requires: ['sniperUpgrade', 'gaussCannon'], rarity: 'standard' },
-        { id: 'wraithEngine', name: "Wraith Engine", desc: "Requires Phantom Strike. Cloak lasts for an additional 1 second. Ghost Spectres gain +30% movement speed.", maxLevel: 1, requires: 'phantomStrike', rarity: 'standard' },
+        { id: 'wraithEngine', name: "Wraith Engine", desc: "Requires Phantom Strike. Cloak +1s. Ghost Spectres strictly target specialized enemy ships and gain +60% Speed.", maxLevel: 1, requires: 'phantomStrike', rarity: 'standard' },
+        { id: 'etherealForm', name: "Ethereal Form", desc: "Requires Wraith Engine. While cloaked, Spectres gain an additional +60% Speed, phase through all obstacles, and fly straight to targets.", maxLevel: 1, requires: 'wraithEngine', rarity: 'standard' },
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
         { id: 'singularityCollapse', name: "Singularity Collapse", desc: "Requires Mine Layer. Mines create a 1s gravity well that violently traps enemies at its center, then detonates for double damage (4 AoE).", maxLevel: 1, requires: 'mineLayer', rarity: 'epic' },
@@ -2646,7 +2648,7 @@
                 sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0, acePilot: 0, lightningFleet: 0, flameFleet: 0, missileCruiser: 0, expandedLink: 0,
                 pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, stormShield: 0, scorchAura: 0, staticWeb: 0, phantomStrike: 0, gaussCannon: 0, mobileBastion: 0, vampiricSwarm: 0, plasmaWake: 0, empPayload: 0,
                 shrapnelPayload: 0, magneticPayload: 0, twinMines: 0, proximityFuse: 0, singularityCollapse: 0,
-                kineticChain: 0, wraithEngine: 0, aegisOvercharge: 0, sentinelArmor: 0, sentinelAura: 0,
+                kineticChain: 0, wraithEngine: 0, aegisOvercharge: 0, sentinelArmor: 0, sentinelAura: 0, etherealForm: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -3029,6 +3031,42 @@
                 ctx.globalCompositeOperation = 'screen';
                 // Stretch the 100x30 image across the calculated distance dynamically
                 ctx.drawImage(globalCache[cacheKey], -length, -15, length, 30);
+                ctx.restore();
+            }
+        }
+        
+        class PDLaser {
+            constructor(x, y, targetProj, faction) {
+                this.x = x; this.y = y;
+                this.target = targetProj;
+                this.faction = faction;
+                let angle = Math.atan2(targetProj.y - y, targetProj.x - x);
+                this.speed = 15; // Very fast interceptor tracer
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+                this.life = 60;
+            }
+            update() {
+                // Slightly home in on the projectile to guarantee interception
+                if (this.target && this.target.life > 0) {
+                    let angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                    this.vx = Math.cos(angle) * this.speed;
+                    this.vy = Math.sin(angle) * this.speed;
+                }
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life--;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(Math.atan2(this.vy, this.vx));
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = '#ffcc00';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-6, -1.5, 12, 3);
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillRect(-6, -0.5, 8, 1);
                 ctx.restore();
             }
         }
@@ -4065,12 +4103,12 @@
                         this.stateTimer = 120; // 2 seconds
                         playSound('laser');
                         
-                        // Scale beams dynamically!
+                        // Scale beams dynamically (Always odd so the center beam tracks the target perfectly!)
                         let enemyCount = ships.filter(s => s.faction !== this.faction && s.hp > 0 && !s.toRemove).length;
-                        if (enemyCount > 110) this.beamCount = 8;
-                        else if (enemyCount > 60) this.beamCount = 6;
-                        else if (enemyCount > 30) this.beamCount = 4;
-                        else this.beamCount = 2;
+                        if (enemyCount > 110) this.beamCount = 9;
+                        else if (enemyCount > 60) this.beamCount = 7;
+                        else if (enemyCount > 30) this.beamCount = 5;
+                        else this.beamCount = 3;
                     }
                 } 
                 else if (this.state === 'BEAM') {
@@ -4686,6 +4724,8 @@
                 let align = { x: 0, y: 0 }, cohere = { x: 0, y: 0 }, separ = { x: 0, y: 0 };
                 let totalAlly = 0, totalSepar = 0;
                 
+                let isEthereal = this.isStealth && this.cloakTimer > 0 && perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].etherealForm > 0;
+                
                 // Nebula Blindness: Drastically reduced vision inside gas clouds
                 this.inNebula = false;
                 for (let neb of nebulas) {
@@ -4705,7 +4745,7 @@
                         totalAlly++;
                     }
                     
-                    if (other !== this && d < 25) { 
+                    if (other !== this && d < 25 && !isEthereal) { 
                         let diff = { x: this.position.x - other.position.x, y: this.position.y - other.position.y };
                         diff.x /= d; diff.y /= d;
                         separ.x += diff.x; separ.y += diff.y;
@@ -4713,78 +4753,73 @@
                     }
                 }
                 
-                for (let ast of asteroids) {
-                    let d = Math.hypot(this.position.x - ast.x, this.position.y - ast.y);
-                    if (d < this.perceptionRadius + ast.size) {
-                        let diff = { x: this.position.x - ast.x, y: this.position.y - ast.y };
-                        diff.x /= d; diff.y /= d;
-                        separ.x += diff.x * 5; 
-                        separ.y += diff.y * 5;
-                        totalSepar++;
-                    }
-                }
-                
-                // Worm Avoidance (Panic Steering!)
-                for (let w of worms) {
-                    for (let seg of w.segments) {
-                        let d = Math.hypot(this.position.x - seg.x, this.position.y - seg.y);
-                        // If they see it coming, they break formation and run!
-                        if (d < this.perceptionRadius * 2.5) { 
-                            let diff = { x: this.position.x - seg.x, y: this.position.y - seg.y };
-                            if (d > 0) { diff.x /= d; diff.y /= d; }
-                            separ.x += diff.x * 20; // EXTREME evasion force
-                            separ.y += diff.y * 20;
+                if (!isEthereal) {
+                    for (let ast of asteroids) {
+                        let d = Math.hypot(this.position.x - ast.x, this.position.y - ast.y);
+                        if (d < this.perceptionRadius + ast.size) {
+                            let diff = { x: this.position.x - ast.x, y: this.position.y - ast.y };
+                            diff.x /= d; diff.y /= d;
+                            separ.x += diff.x * 5; 
+                            separ.y += diff.y * 5;
                             totalSepar++;
+                        }
+                    }
+                    
+                    // Worm Avoidance (Panic Steering!)
+                    for (let w of worms) {
+                        for (let seg of w.segments) {
+                            let d = Math.hypot(this.position.x - seg.x, this.position.y - seg.y);
+                            if (d < this.perceptionRadius * 2.5) { 
+                                let diff = { x: this.position.x - seg.x, y: this.position.y - seg.y };
+                                if (d > 0) { diff.x /= d; diff.y /= d; }
+                                separ.x += diff.x * 20; 
+                                separ.y += diff.y * 20;
+                                totalSepar++;
+                            }
                         }
                     }
                 }
                 
-                // Wall Avoidance (steering force — unchanged)
+                // Wall Avoidance (steering force)
                 let closestWallDist = Infinity;
                 let closestWallNormal = null;
                 
-                for (let w of walls) {
-                    let testX = Math.max(w.x, Math.min(this.position.x, w.x + w.w));
-                    let testY = Math.max(w.y, Math.min(this.position.y, w.y + w.h));
-                    let d = Math.hypot(this.position.x - testX, this.position.y - testY);
-                    
-                    if (d < this.perceptionRadius) {
-                        let diff = { x: this.position.x - testX, y: this.position.y - testY };
-                        if (d > 0) { diff.x /= d; diff.y /= d; }
-                        separ.x += diff.x * 8; // Strong steering away from walls
-                        separ.y += diff.y * 8;
-                        totalSepar++;
+                if (!isEthereal) {
+                    for (let w of walls) {
+                        let testX = Math.max(w.x, Math.min(this.position.x, w.x + w.w));
+                        let testY = Math.max(w.y, Math.min(this.position.y, w.y + w.h));
+                        let d = Math.hypot(this.position.x - testX, this.position.y - testY);
+                        
+                        if (d < this.perceptionRadius) {
+                            let diff = { x: this.position.x - testX, y: this.position.y - testY };
+                            if (d > 0) { diff.x /= d; diff.y /= d; }
+                            separ.x += diff.x * 8; // Strong steering away from walls
+                            separ.y += diff.y * 8;
+                            totalSepar++;
+                        }
+                        
+                        // Only remember the SINGLE nearest wall contact for the hard-bounce
+                        if (d < this.size + 2 && d < closestWallDist) {
+                            closestWallDist = d;
+                            let nx = this.position.x - testX;
+                            let ny = this.position.y - testY;
+                            let len = Math.hypot(nx, ny);
+                            closestWallNormal = (len > 0)
+                            ? { x: nx / len, y: ny / len, testX, testY }
+                            : { x: 0, y: -1, testX, testY };
+                        }
                     }
                     
-                    // Only remember the SINGLE nearest wall contact for the hard-bounce
-                    // resolution below, instead of resolving every nearby wall in this
-                    // loop. Resolving multiple walls per frame is what made ships
-                    // vibrate in place in narrow gaps — each wall flipped + amplified
-                    // velocity independently, fighting each other forever.
-                    if (d < this.size + 2 && d < closestWallDist) {
-                        closestWallDist = d;
-                        let nx = this.position.x - testX;
-                        let ny = this.position.y - testY;
-                        let len = Math.hypot(nx, ny);
-                        closestWallNormal = (len > 0)
-                        ? { x: nx / len, y: ny / len, testX, testY }
-                        : { x: 0, y: -1, testX, testY };
-                    }
-                }
-                
-                if (closestWallNormal) {
-                    // Depenetrate cleanly along the contact normal
-                    this.position.x = closestWallNormal.testX + closestWallNormal.x * (this.size + 2);
-                    this.position.y = closestWallNormal.testY + closestWallNormal.y * (this.size + 2);
-                    
-                    // Only cancel the velocity component driving INTO the wall.
-                    // The tangential (sideways) component is left alone, so the ship
-                    // can slide along the wall and slip through a narrow gap instead
-                    // of bouncing back and forth in place.
-                    let vDotN = this.velocity.x * closestWallNormal.x + this.velocity.y * closestWallNormal.y;
-                    if (vDotN < 0) {
-                        this.velocity.x -= vDotN * closestWallNormal.x;
-                        this.velocity.y -= vDotN * closestWallNormal.y;
+                    if (closestWallNormal) {
+                        // Depenetrate cleanly along the contact normal
+                        this.position.x = closestWallNormal.testX + closestWallNormal.x * (this.size + 2);
+                        this.position.y = closestWallNormal.testY + closestWallNormal.y * (this.size + 2);
+                        
+                        let vDotN = this.velocity.x * closestWallNormal.x + this.velocity.y * closestWallNormal.y;
+                        if (vDotN < 0) {
+                            this.velocity.x -= vDotN * closestWallNormal.x;
+                            this.velocity.y -= vDotN * closestWallNormal.y;
+                        }
                     }
                 }
                 
@@ -4796,7 +4831,6 @@
                     separ.x /= totalSepar; separ.y /= totalSepar;
                 }
                 
-                // Read configuration settings directly from the synchronized server matrix
                 let currentFleetSliders = factionSliders[this.faction] || { align: 0.5, cohere: 1.0, separ: 1.5 };
                 
                 if (perksEnabled && this.faction >= 0 && this.faction < 4) {
@@ -4997,21 +5031,26 @@
                     
                     // 2. POINT DEFENSE TURRETS
                     if (perksEnabled && factionPerks[this.faction].pointDefense > 0) {
-                        let pdRange = 250;
+                        let pdRange = 300; // Increased range to account for tracer travel time
                         let enemyProjectiles = [];
                         
-                        // Gather hostile projectiles
-                        lasers.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
-                        missiles.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
-                        fireballs.forEach(p => { if (p.faction !== this.faction && !p.toRemove) enemyProjectiles.push(p); });
+                        // Gather hostile projectiles that are actively moving
+                        lasers.forEach(p => { if (p.faction !== this.faction && !p.toRemove && p.life > 0) enemyProjectiles.push(p); });
+                        missiles.forEach(p => { if (p.faction !== this.faction && !p.toRemove && p.life > 0) enemyProjectiles.push(p); });
+                        fireballs.forEach(p => { if (p.faction !== this.faction && !p.toRemove && p.life > 0) enemyProjectiles.push(p); });
                         
-                        this.turrets.forEach(turret => {
+                        let angle = Math.atan2(this.velocity.y, this.velocity.x);
+                        let sBase = this.size * 1.8; // Carrier scale
+                        let offX = sBase * 0.4;
+                        let offY = sBase * 0.8;
+                        let tOffsets = [{ x: -offX, y: offY }, { x: -offX, y: -offY }];
+                        
+                        this.turrets.forEach((turret, index) => {
                             if (turret.cooldown > 0) turret.cooldown--;
                             
                             let closestProj = null;
                             let minDist = pdRange;
                             
-                            // Find the closest valid projectile
                             enemyProjectiles.forEach(ep => {
                                 let d = Math.hypot(this.position.x - ep.x, this.position.y - ep.y);
                                 if (d < minDist && !ep.targetedByPD) { 
@@ -5020,37 +5059,32 @@
                             });
                             
                             if (closestProj) {
-                                closestProj.targetedByPD = true; // Prevent both turrets from shooting the same target
-                                let targetAngle = Math.atan2(closestProj.y - this.position.y, closestProj.x - this.position.x);
+                                closestProj.targetedByPD = true; 
                                 
-                                // Smoothly track the target
+                                // Calculate EXACT physical turret position in world space
+                                let cosA = Math.cos(angle);
+                                let sinA = Math.sin(angle);
+                                let localX = tOffsets[index].x;
+                                let localY = tOffsets[index].y;
+                                let turretWorldX = this.position.x + (localX * cosA - localY * sinA);
+                                let turretWorldY = this.position.y + (localX * sinA + localY * cosA);
+                                
+                                let targetAngle = Math.atan2(closestProj.y - turretWorldY, closestProj.x - turretWorldX);
+                                
                                 let diff = targetAngle - turret.angle;
                                 diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-                                turret.angle += Math.min(Math.max(diff, -0.15), 0.15); // Fast rotation
+                                turret.angle += Math.min(Math.max(diff, -0.25), 0.25); // Extremely fast rotation
                                 
-                                // Fire hitscan laser if aiming closely
-                                if (Math.abs(diff) < 0.2 && turret.cooldown <= 0) {
-                                    closestProj.toRemove = true; 
-                                    closestProj.life = 0; 
+                                // Fire Physical Tracer
+                                if (Math.abs(diff) < 0.3 && turret.cooldown <= 0) {
+                                    // Spawn the tracer directly from the tip of the turret barrel
+                                    let barrelX = turretWorldX + Math.cos(turret.angle) * (sBase * 0.4);
+                                    let barrelY = turretWorldY + Math.sin(turret.angle) * (sBase * 0.4);
                                     
-                                    // Visual Impact
-                                    playSound('hit');
-                                    for(let i=0; i<6; i++) particles.push(new Particle(closestProj.x, closestProj.y, '#00ffff', 1.0));
-                                    
-                                    // Draw instantaneous interception beam
-                                    ctx.save();
-                                    ctx.beginPath();
-                                    ctx.moveTo(this.position.x, this.position.y);
-                                    ctx.lineTo(closestProj.x, closestProj.y);
-                                    ctx.strokeStyle = '#00ffff';
-                                    ctx.lineWidth = 1;
-                                    ctx.stroke();
-                                    ctx.restore();
-                                    
-                                    turret.cooldown = 20; 
+                                    pdLasers.push(new PDLaser(barrelX, barrelY, closestProj, this.faction));
+                                    turret.cooldown = 15; // High rate of fire
                                 }
                             } else {
-                                // Relax turrets to face forward
                                 let restingAngle = Math.atan2(this.velocity.y, this.velocity.x);
                                 let diff = restingAngle - turret.angle;
                                 diff = Math.atan2(Math.sin(diff), Math.cos(diff));
@@ -5076,7 +5110,8 @@
                     // Do not target cloaked stealth ships
                     if (other.faction !== this.faction && other.hp > 0 && !other.toRemove && !(other.isStealth && other.cloakTimer > 0)) {
                         let d = Math.hypot(this.position.x - other.position.x, this.position.y - other.position.y);
-                        let isSpecial = other.isFlagship || other.isCarrier || other.isSniper || other.isSentinel || other.isLightning || other.isFlame || other.isMissileCruiser;
+                        // Added Stealth ships so enemy spectres hunt each other!
+                        let isSpecial = other.isFlagship || other.isCarrier || other.isSniper || other.isSentinel || other.isLightning || other.isFlame || other.isMissileCruiser || other.isStealth;
                         
                         if (d < minDist) { minDist = d; nearestEnemy = other; }
                         if (isSpecial && d < specialMinDist) { specialMinDist = d; specialTarget = other; }
@@ -5135,16 +5170,34 @@
                     }
                 }
                 
-                // Phantom Strike Stealth Targeting Override (Prioritizes Elites/Specialists)
-                // Runs LAST so it overrides visibility of basic ships, but still respects walls if applicable!
-                if (this.isStealth && this.cloakTimer > 0 && perksEnabled && factionPerks[this.faction].phantomStrike > 0) {
-                    // Try to pick a visible special target first, fallback to any special, fallback to standard target
-                    if (walls.length > 0 && specialVisibleTarget) {
-                        nearestEnemy = specialVisibleTarget;
-                        minDist = specialMinVisDist;
-                    } else if (walls.length === 0 && specialTarget) {
-                        nearestEnemy = specialTarget;
-                        minDist = specialMinDist;
+                // Phantom Strike & Wraith Engine Target Override
+                if (this.isStealth && perksEnabled && factionPerks[this.faction]) {
+                    let hasPhantom = factionPerks[this.faction].phantomStrike > 0;
+                    let hasWraith = factionPerks[this.faction].wraithEngine > 0;
+                    let hasEthereal = factionPerks[this.faction].etherealForm > 0;
+                    let isCloaked = this.cloakTimer > 0;
+
+                    if (hasWraith) {
+                        // Wraith Engine STRICTLY locks onto specialized ships above all else.
+                        // If they are cloaked AND Ethereal, they completely ignore walls to acquire targets.
+                        if (isCloaked && hasEthereal) {
+                            if (specialTarget) {
+                                nearestEnemy = specialTarget;
+                                minDist = specialMinDist;
+                            }
+                        } else {
+                            // Respect walls normally, but strongly prefer special targets
+                            if (walls.length > 0) {
+                                if (specialVisibleTarget) { nearestEnemy = specialVisibleTarget; minDist = specialMinVisDist; }
+                                else if (specialTarget) { nearestEnemy = specialTarget; minDist = specialMinDist; } // Pathfinding will handle the walls
+                            } else {
+                                if (specialTarget) { nearestEnemy = specialTarget; minDist = specialMinDist; }
+                            }
+                        }
+                    } else if (hasPhantom && isCloaked) {
+                        // Original Phantom Strike logic
+                        if (walls.length > 0 && specialVisibleTarget) { nearestEnemy = specialVisibleTarget; minDist = specialMinVisDist; }
+                        else if (walls.length === 0 && specialTarget) { nearestEnemy = specialTarget; minDist = specialMinDist; }
                     }
                 }
                 
@@ -5163,7 +5216,9 @@
                     
                     // Maze Pathfinding Overlay
                     let inMazeNav = false;
-                    if (walls.length > 0 && !this.isCrashing) {
+                    let bypassMaze = this.isStealth && this.cloakTimer > 0 && perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].etherealForm > 0;
+                    
+                    if (walls.length > 0 && !this.isCrashing && !bypassMaze) {
                         this.pathTimer--;
                         if (this.pathTimer <= 0 || this.navPath.length === 0) {
                             let cx = Math.floor(this.position.x / mazeCellSize);
@@ -5214,16 +5269,22 @@
                         return;
                     }
                     
-                    // --- SNIPER KITING & STRAFING TACTICS ---
-                    if (this.isSniper && !inMazeNav && minDist > 0) {
+                    // Calculate attack bounds by adding the target's physical size so ships don't fly inside bosses
+                    let effectiveAttackRange = this.attackRange + (nearestEnemy.size || 0);
+
+                    // --- KITING & STRAFING TACTICS (Snipers OR ANY Ship Attacking a Boss) ---
+                    let isSpecialTarget = nearestEnemy.isBoss || nearestEnemy.isWorm;
+                    
+                    if ((this.isSniper || isSpecialTarget) && !inMazeNav && minDist > 0) {
                         // Assign a permanent strafe direction (clockwise or counter-clockwise) if not set
                         if (!this.strafeDir) this.strafeDir = (Math.random() > 0.5 ? 1 : -1);
                         
                         // 1% chance per frame to Juke (reverse strafe direction) for unpredictable flight paths
                         if (Math.random() < 0.01) this.strafeDir *= -1;
 
-                        let idealMin = this.attackRange * 0.55; 
-                        let idealMax = this.attackRange * 0.85;
+                        // Normal ships orbit closer, snipers orbit further away
+                        let idealMin = this.isSniper ? effectiveAttackRange * 0.55 : effectiveAttackRange * 0.5; 
+                        let idealMax = this.isSniper ? effectiveAttackRange * 0.85 : effectiveAttackRange * 0.9;
                         
                         // Normalized vector pointing directly AT the enemy
                         let dirX = engage.x / minDist;
@@ -5264,6 +5325,12 @@
                     if (this.isAce) baseSpeed *= 1.15;
                     if (this.isMissileCruiser) baseSpeed *= 0.6; // Heavy 40% speed reduction!
                     
+                    // Apply Stealth Speed Bonuses
+                    if (this.isStealth && perksEnabled && factionPerks[this.faction]) {
+                        if (factionPerks[this.faction].wraithEngine > 0) baseSpeed *= 1.6; // +60% passive speed
+                        if (this.cloakTimer > 0 && factionPerks[this.faction].etherealForm > 0) baseSpeed *= 1.6; // +60% speed while cloaked
+                    }
+                    
                     // Nebula Slowdown: Gas friction cuts speed in half!
                     if (this.inNebula) {
                         baseSpeed *= 0.5;
@@ -5286,6 +5353,10 @@
                                 let isGauss = this.isSniper && perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].gaussCannon > 0;
                                 let dmg = isGauss ? 4 : 1;
                                 let projSpd = isGauss ? 1.25 : 1;
+                                
+                                // Phantom Strike Burst Buffs (+50% Projectile Speed)
+                                let isPhantomCloaked = this.isStealth && this.cloakTimer > 0 && perksEnabled && factionPerks[this.faction].phantomStrike > 0;
+                                if (isPhantomCloaked) projSpd *= 1.5;
                                 
                                 if (this.isLightning) {
                                     lightnings.push(new LightningBolt(this.position.x, this.position.y, angle, this.faction, this));
@@ -5336,7 +5407,7 @@
                                 playSound('missile');
                                 this.missileCooldown = 60; // Exactly 1 second
                             }
-                        } else if (minDist < this.attackRange && this.laserCooldown <= 0 && this.burstsLeft <= 0) {
+                        } else if (minDist < effectiveAttackRange && this.laserCooldown <= 0 && this.burstsLeft <= 0) {
                             let isGauss = this.isSniper && perksEnabled && factionPerks[this.faction].gaussCannon > 0;
                             
                             // Gauss Cannon 2-Second Charging Phase
@@ -5355,6 +5426,10 @@
                             
                             let dmg = isGauss ? 4 : 1;
                             let projSpd = isGauss ? 1.25 : 1;
+                            
+                            // Phantom Strike Standard Buffs (+50% Projectile Speed)
+                            let isPhantomCloaked = this.isStealth && this.cloakTimer > 0 && perksEnabled && factionPerks[this.faction].phantomStrike > 0;
+                            if (isPhantomCloaked) projSpd *= 1.5;
                             
                             if (this.isLightning) {
                                 lightnings.push(new LightningBolt(this.position.x, this.position.y, angle, this.faction, this));
@@ -5380,6 +5455,9 @@
                             let finalCooldown = 60 * (1 - Math.min(0.85, cdReduc));
                             if (this.isSniper) finalCooldown *= 1.25; 
                             if (perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].temp_fireRate > 0) finalCooldown *= 0.5; 
+                            
+                            // Phantom Strike Fire Rate Buff (+50% Fire Rate)
+                            if (isPhantomCloaked) finalCooldown /= 1.5;
                             
                             this.laserCooldown = finalCooldown; 
                         }
@@ -6175,44 +6253,34 @@
                     ctx.stroke();
                     ctx.restore();
                 }
-                // --- RENDER SCORCH AURA ---
-                if (perksEnabled && this.isFlame && factionPerks[this.faction] && factionPerks[this.faction].scorchAura > 0) {
-                    let auraRadius = s * 6.0;
-                    ctx.save();
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = '#ff4400';
-                    
-                    // Pulse effect based on the cooldown timer
-                    let pulse = 0.15 + (Math.sin(Date.now() * 0.005) * 0.05);
-                    ctx.fillStyle = `rgba(255, 68, 0, ${pulse})`;
-                    ctx.beginPath();
-                    // FIXED: Context is already translated to the ship, so draw at 0,0!
-                    ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.strokeStyle = `rgba(255, 170, 0, ${pulse + 0.2})`;
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.restore();
-                }
 
                 // --- RENDER RESTORATION AURA ---
                 if (perksEnabled && this.isSentinel && factionPerks[this.faction] && factionPerks[this.faction].sentinelAura > 0) {
                     let healRadius = s * 12.0; 
                     ctx.save();
-                    ctx.shadowBlur = 10;
+                    
+                    // A mild glow just so the thin lines don't get lost in the dark background
+                    ctx.shadowBlur = 5;
                     ctx.shadowColor = '#00ff00';
                     
-                    let pulse = 0.1 + (Math.sin(Date.now() * 0.003) * 0.05);
-                    ctx.fillStyle = `rgba(0, 255, 0, ${pulse})`;
+                    // Opacity fluctuates between 15% and 35%
+                    let pulse = 0.25 + (Math.sin(Date.now() * 0.003) * 0.10); 
+                    
+                    ctx.strokeStyle = `rgba(0, 255, 100, ${pulse})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([8, 12]); // Noticeable dashed boundary, but still hollow inside
+                    
                     ctx.beginPath();
                     ctx.arc(0, 0, healRadius, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.strokeStyle = `rgba(0, 255, 100, ${pulse + 0.2})`;
-                    ctx.lineWidth = 1.5;
-                    ctx.setLineDash([5, 10]); // Gives it a techy, dashed radar look
                     ctx.stroke();
+                    
+                    // Faint inner tracker ring
+                    ctx.strokeStyle = `rgba(0, 255, 100, ${pulse * 0.5})`;
+                    ctx.setLineDash([4, 24]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, healRadius * 0.9, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
                     ctx.restore();
                 }
                 
@@ -6527,13 +6595,14 @@
             ships = [...retainedDummies];
             
             lasers = [];
-            lightnings = []; // Reset lightnings between rounds
+            lightnings = []; 
             missiles = [];
+            pdLasers = []; // <--- NEW: Clear Point Defense Tracers!
             particles = [];
             explosions = [];
-            plasmaWakes = []; // <--- CLEARS PLASMA TRAILS
-            respawnQueue = []; // Clear respawns on new round
-            nebulas = []; // Clear nebulas
+            plasmaWakes = []; 
+            respawnQueue = []; 
+            nebulas = [];
             flagshipAlive = [false, false, false, false];
             flagshipCount = [0, 0, 0, 0, 0, 0]; 
             
@@ -6831,7 +6900,6 @@
                             s.isStealth = true;
                             s.maxHp = 2; s.hp = 2; s.size = 9.5; 
                             s.cloakTimer = 180 + (hasPhantom ? 60 : 0) + (hasWraith ? 60 : 0); // Both add 1s
-                            if (hasWraith) s.maxSpeed *= 1.3; // Wraith Engine grants +30% Speed
                             stealthMade++;
                         }
                     }
@@ -8629,6 +8697,28 @@
                 }
             }
             
+            // Update PD Lasers
+            for (let i = pdLasers.length - 1; i >= 0; i--) {
+                let pd = pdLasers[i];
+                pd.update();
+                pd.draw();
+                
+                let hit = false;
+                if (pd.target && pd.target.life > 0 && !pd.target.toRemove) {
+                    // Check interception collision
+                    if (Math.hypot(pd.x - pd.target.x, pd.y - pd.target.y) < 15) {
+                        hit = true;
+                        pd.target.life = 0; // Destroy the target projectile
+                        pd.target.toRemove = true; 
+                        for(let p=0; p<5; p++) particles.push(new Particle(pd.x, pd.y, '#ffff00', 1.5));
+                    }
+                }
+                
+                if (hit || pd.life <= 0) {
+                    fastRemove(pdLasers, i);
+                }
+            }
+
             // Update Mines
             for (let i = mines.length - 1; i >= 0; i--) {
                 let m = mines[i];
@@ -8975,8 +9065,11 @@
                 c.draw();
                 
                 for (let j = ships.length - 1; j >= 0; j--) {
-                    if (Math.hypot(c.x - ships[j].position.x, c.y - ships[j].position.y) < c.size + ships[j].size) {
-                        for(let p=0; p<20; p++) particles.push(new Particle(ships[j].position.x, ships[j].position.y, factionColors[ships[j].faction]));
+                    let s = ships[j];
+                    let isEthereal = s.isStealth && s.cloakTimer > 0 && perksEnabled && factionPerks[s.faction] && factionPerks[s.faction].etherealForm > 0;
+                    
+                    if (!isEthereal && Math.hypot(c.x - s.position.x, c.y - s.position.y) < c.size + s.size) {
+                        for(let p=0; p<20; p++) particles.push(new Particle(s.position.x, s.position.y, factionColors[s.faction]));
                         fastRemove(ships, j);
                     }
                 }
