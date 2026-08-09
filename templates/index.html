@@ -245,7 +245,7 @@
         #perkScreen .perk-card { cursor: pointer; }
         #perkScreen .perk-card:hover { transform: scale(1.05); background: #222; }
         .perk-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; color: #44aaff; }
-        .perk-desc { font-size: 0.85rem; color: #ccc; margin-bottom: 10px; height: 60px; }
+        .perk-desc { font-size: 0.85rem; color: #ccc; margin-bottom: 10px; min-height: 60px; height: auto; display: flex; align-items: center; justify-content: center; line-height: 1.2; }
         .perk-level { font-size: 0.8rem; color: #888; }
         
         /* Epic Rarity Styling */
@@ -359,7 +359,7 @@
             .perk-container { gap: 1vw; padding: 1vh; justify-content: center; align-content: center; flex-direction: row !important; flex-wrap: wrap; max-height: 100%; }
             .perk-card { width: 22vw; padding: 1vh; border-width: 1px; }
             .perk-title { font-size: 3vh; margin-bottom: 0.5vh; }
-            .perk-desc { font-size: 2.2vh; height: 8vh; margin-bottom: 0.5vh; line-height: 1.1; }
+            .perk-desc { font-size: 2.2vh; min-height: 8vh; height: auto; margin-bottom: 0.5vh; line-height: 1.1; display: flex; align-items: center; justify-content: center; }
             .perk-level { font-size: 2vh; }
             
             /* Modals & Admin */
@@ -2591,7 +2591,6 @@
         { id: 'droneFormation', name: "Volatile Swarm", desc: "Requires Carrier. Max drones increased to 8. Drones violently explode upon destruction.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'carrierSplit', name: "Drone Bays", desc: "Requires Carrier. The Carrier releases 3 final drones when destroyed.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'capitalEscort', name: "Capital Escort", desc: "Requires Flagship & Carrier. Capitals fly together. Drones gain +15% Speed and Fire Rate.", maxLevel: 1, requires: ['flagship', 'carrierFleet'], rarity: 'standard' },
-        { id: 'acePilot', name: "Ace Pilot", desc: "Requires Veteran. At 7 kills, Veterans become Aces. Gains piercing lasers, +25% ricochet, +15% speed/fire rate, and +1 missile.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         { id: 'pointDefense', name: "Point Defense", desc: "Requires Super Carrier. The Carrier mounts 2 automated turrets that track and shoot down incoming projectiles.", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'eliteDrones', name: "Advanced Robotics", desc: "Requires Super Carrier. Max drones +2. Two of your drones are upgraded to Elites (+1 HP, +15% Fire Rate).", maxLevel: 1, requires: 'carrierFleet', rarity: 'standard' },
         { id: 'stormOrbs', name: "Voltaic Halo", desc: "Requires Storm Callers. 3 electro-orbs revolve around the ship. Deals 1 damage on contact and chains to nearby enemies.", maxLevel: 1, requires: 'lightningFleet', rarity: 'standard' },
@@ -2618,9 +2617,11 @@
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
         { id: 'sentinelFleet', name: "Sentinel Guard", desc: "2 ships become heavy Sentinels (4 HP, 2 Shields) and permanently grant +1 Shield to their 3 nearest allies.", maxLevel: 1, rarity: 'epic' },
         { id: 'stealthFleet', name: "Ghost Spectre", desc: "4 ships become Stealth units (2 HP). They cloak for the first 3s of a round, bypassing all hazards and dealing double damage.", maxLevel: 1, rarity: 'epic' },
+        { id: 'acePilot', name: "Ace Pilot", desc: "Requires Veteran. At 7 kills, Veterans become Aces. Gains piercing lasers, +25% ricochet, +15% speed/fire rate, and +1 missile.", maxLevel: 1, requires: 'veteran', rarity: 'epic' },
         { id: 'globalShield', name: "Aegis Network", desc: "Grants EVERY ship in your fleet an additional +1 Shield at the start of every round.", maxLevel: 1, rarity: 'epic' },
         { id: 'carrierFleet', name: "Super Carrier", desc: "Spawns a massive Carrier (8 HP, 2 Shields) that fabricates a combat drone every 1 second (Max 6).", maxLevel: 1, rarity: 'epic' },    
         { id: 'quantumLink', name: "Quantum Link", desc: "Tethers 5 ships together. Destroyed tethered ships respawn at 1 HP after 3s, unless all 5 are destroyed.", maxLevel: 1, rarity: 'epic' },
+                { id: 'chaosFleet', name: "Chaos Swarm", desc: "Sacrifices 4 basic fighters to spawn 2 Chaos Ships (5 HP, 2 Shields). Unstable bio-masses that attack with medium-range tentacle swipes, dealing 2 AoE damage.", maxLevel: 1, rarity: 'epic' },
         { id: 'lightningFleet', name: "Storm Callers", desc: "2 ships become Storm Callers. They fire high-speed lightning that hits a target and chains to up to 2 nearby enemies for 1 damage.", maxLevel: 1, rarity: 'epic' },
         { id: 'flameFleet', name: "Pyromancer Protocol", desc: "2 ships become Flame Ships (4 HP, 1 Shield). They shoot fireballs that deal 1 impact damage and burn targets for 1 damage every second.", maxLevel: 1, rarity: 'epic' },
         ];
@@ -2648,7 +2649,7 @@
                 sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0, acePilot: 0, lightningFleet: 0, flameFleet: 0, missileCruiser: 0, expandedLink: 0,
                 pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, stormShield: 0, scorchAura: 0, staticWeb: 0, phantomStrike: 0, gaussCannon: 0, mobileBastion: 0, vampiricSwarm: 0, plasmaWake: 0, empPayload: 0,
                 shrapnelPayload: 0, magneticPayload: 0, twinMines: 0, proximityFuse: 0, singularityCollapse: 0,
-                kineticChain: 0, wraithEngine: 0, aegisOvercharge: 0, sentinelArmor: 0, sentinelAura: 0, etherealForm: 0,
+                kineticChain: 0, wraithEngine: 0, aegisOvercharge: 0, sentinelArmor: 0, sentinelAura: 0, etherealForm: 0, chaosFleet: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -4661,6 +4662,9 @@
                 this.turrets = [{ angle: 0, cooldown: 0 }, { angle: 0, cooldown: 0 }];
                 this.isBounty = false;
                 
+                this.isChaos = false;
+                this.tentacles = []; // Tracks active melee swipes
+                
                 // ORB TRACKERS
                 this.orbAngle = Math.random() * Math.PI * 2;
                 this.orbCooldowns = [0, 0, 0];
@@ -5346,7 +5350,22 @@
                     let canSeeTarget = (walls.length === 0) || hasLineOfSight(this.position.x, this.position.y, nearestEnemy.position.x, nearestEnemy.position.y);
                     
                     if (canSeeTarget) {
-                        if (this.burstsLeft > 0) {
+                        // Chaos Ships override standard firing to use Melee Tentacles
+                        if (this.isChaos) {
+                            if (minDist < this.attackRange && this.laserCooldown <= 0) {
+                                let angle = Math.atan2(nearestEnemy.position.y - this.position.y, nearestEnemy.position.x - this.position.x);
+                                this.tentacles.push({
+                                    angle: angle - 0.8, // Starts swipe slightly to the left
+                                    targetAngle: angle + 0.8, // Sweeps across to the right
+                                    progress: 0,
+                                    length: this.attackRange,
+                                    hitTargets: new Set()
+                                });
+                                playSound('hit'); // Organic fleshy thud
+                                this.laserCooldown = 50; // Sweeps fairly frequently
+                            }
+                        }
+                        else if (this.burstsLeft > 0) {
                             if (this.burstDelay <= 0) {
                                 let angle = Math.atan2(nearestEnemy.position.y - this.position.y, nearestEnemy.position.x - this.position.x);
                                 
@@ -5597,9 +5616,104 @@
                         this.sentinelHealTimer = 180; // Pulses every 3 seconds
                     }
                 }
+                
+                // --- UPDATE CHAOS TENTACLES ---
+                if (this.isChaos) {
+                    for (let i = this.tentacles.length - 1; i >= 0; i--) {
+                        let t = this.tentacles[i];
+                        t.progress += 0.05; // Tentacle swipe speed
+                        let currentAngle = t.angle + (t.targetAngle - t.angle) * t.progress;
+                        
+                        let endX = this.position.x + Math.cos(currentAngle) * t.length;
+                        let endY = this.position.y + Math.sin(currentAngle) * t.length;
+                        let l2 = t.length * t.length;
+                        
+                        // Collision with Ships
+                        for (let j = ships.length - 1; j >= 0; j--) {
+                            let s = ships[j];
+                            if (s.faction !== this.faction && !s.toRemove && !t.hitTargets.has(s) && !(s.isStealth && s.cloakTimer > 0)) {
+                                let maxT = Math.max(0, Math.min(1, ((s.position.x - this.position.x) * (endX - this.position.x) + (s.position.y - this.position.y) * (endY - this.position.y)) / l2));
+                                let projX = this.position.x + maxT * (endX - this.position.x);
+                                let projY = this.position.y + maxT * (endY - this.position.y);
+                                
+                                if (Math.hypot(s.position.x - projX, s.position.y - projY) < s.size + 6) {
+                                    hitShip(j, this, 2); // 2 Damage!
+                                    t.hitTargets.add(s);
+                                    for(let p=0; p<5; p++) particles.push(new Particle(s.position.x, s.position.y, '#aa44ff', 1.5));
+                                }
+                            }
+                        }
+                        
+                        // Collision with Bosses
+                        for (let b of bosses) {
+                            if (b.faction !== this.faction && !b.introPhase && !t.hitTargets.has(b)) {
+                                let maxT = Math.max(0, Math.min(1, ((b.x - this.position.x) * (endX - this.position.x) + (b.y - this.position.y) * (endY - this.position.y)) / l2));
+                                let projX = this.position.x + maxT * (endX - this.position.x);
+                                let projY = this.position.y + maxT * (endY - this.position.y);
+                                
+                                let hitRad = b.size + (b.isPrism && b.state === 'ABSORB' ? 20 : 0);
+                                if (Math.hypot(b.x - projX, b.y - projY) < hitRad + 6) {
+                                    if (b.isPrism && b.state === 'ABSORB') b.absorbedEnergy += 2;
+                                    else b.hp -= 2;
+                                    t.hitTargets.add(b);
+                                    for(let p=0; p<5; p++) particles.push(new Particle(projX, projY, '#aa44ff', 1.5));
+                                }
+                            }
+                        }
+                        
+                        // Collision with Mines
+                        for (let j = mines.length - 1; j >= 0; j--) {
+                            let m = mines[j];
+                            if (m.faction !== this.faction && !t.hitTargets.has(m)) {
+                                let maxT = Math.max(0, Math.min(1, ((m.x - this.position.x) * (endX - this.position.x) + (m.y - this.position.y) * (endY - this.position.y)) / l2));
+                                let projX = this.position.x + maxT * (endX - this.position.x);
+                                let projY = this.position.y + maxT * (endY - this.position.y);
+                                
+                                if (Math.hypot(m.x - projX, m.y - projY) < m.size + 6) {
+                                    m.life = 0; // Destroy the mine instantly
+                                    t.hitTargets.add(m);
+                                }
+                            }
+                        }
+                        
+                        if (t.progress >= 1) this.tentacles.splice(i, 1);
+                    }
+                }
             }
             
             draw() {
+                // --- RENDER CHAOS TENTACLES UNDER THE SHIP ---
+                if (this.isChaos) {
+                    for (let t of this.tentacles) {
+                        let currentAngle = t.angle + (t.targetAngle - t.angle) * t.progress;
+                        let endX = this.position.x + Math.cos(currentAngle) * t.length;
+                        let endY = this.position.y + Math.sin(currentAngle) * t.length;
+                        
+                        ctx.save();
+                        ctx.strokeStyle = factionColors[this.faction];
+                        ctx.lineWidth = 6;
+                        ctx.lineCap = 'round';
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = '#aa44ff'; // Purple chaos glow
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(this.position.x, this.position.y);
+                        
+                        // Add some organic wiggle to the tentacle
+                        let ctrl1X = this.position.x + Math.cos(currentAngle - 0.5) * (t.length * 0.3);
+                        let ctrl1Y = this.position.y + Math.sin(currentAngle - 0.5) * (t.length * 0.3);
+                        let ctrl2X = this.position.x + Math.cos(currentAngle + 0.5) * (t.length * 0.7);
+                        let ctrl2Y = this.position.y + Math.sin(currentAngle + 0.5) * (t.length * 0.7);
+                        
+                        ctx.bezierCurveTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, endX, endY);
+                        ctx.stroke();
+                        
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#fff';
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
                 // RENDER APEX BOUNTY GLOW (Drawn underneath the ship)
                 if (this.isBounty) {
                     ctx.save();
@@ -5632,12 +5746,43 @@
                 else if (this.isVoidWasp) { s = 6; typeKey = 'wasp'; }
                 else if (this.isEliteDrone) { s = 5.5; typeKey = 'elitedrn'; } 
                 else if (this.isDrone) { s = 4.5; typeKey = 'drn'; }
-                // Create a distinct cache for basic ships that achieved Ace status!
-                else if (this.isAce) { s *= 0.85; typeKey = 'ace'; } // Scales the elongated geometry down to fit a Veteran footprint
+                else if (this.isAce) { s *= 0.85; typeKey = 'ace'; } 
+                
+                let skipCacheDraw = false;
+                if (this.isChaos) {
+                    skipCacheDraw = true;
+                    // Draw Dynamic Shifting Bio-Mass
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = factionColors[this.faction];
+                    ctx.fillStyle = '#110022'; // Dark fleshy base
+                    
+                    ctx.beginPath();
+                    let time = Date.now() * 0.005;
+                    for (let a = 0; a < Math.PI * 2; a += 0.4) {
+                        let r = s + Math.sin(a * 3 + time) * 3 + Math.cos(a * 4 - time) * 2;
+                        let px = Math.cos(a) * r;
+                        let py = Math.sin(a) * r;
+                        if (a === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = factionColors[this.faction];
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Pulsing Core
+                    ctx.fillStyle = factionColors[this.faction];
+                    ctx.globalAlpha = 0.5 + Math.sin(time * 2) * 0.3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, s * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
                 
                 let cacheKey = `ship_${this.faction}_${typeKey}`;
                 
-                if (!globalCache[cacheKey]) {
+                if (!globalCache[cacheKey] && !skipCacheDraw) {
                     const c = document.createElement('canvas');
                     const pad = s * 6; // Padding for shadowBlur and extended parts
                     c.width = pad * 2; c.height = pad * 2;
@@ -6074,11 +6219,12 @@
                     globalCache[cacheKey] = c;
                 }
                 
-                // Draw Cached Hull
-                const cache = globalCache[cacheKey];
-                ctx.globalAlpha = (this.isStealth && this.cloakTimer > 0) ? 0.25 : 1.0;
-                ctx.drawImage(cache, -cache.width/2, -cache.height/2);
-                ctx.globalAlpha = 1.0;
+                if (!skipCacheDraw) {
+                    const cache = globalCache[cacheKey];
+                    ctx.globalAlpha = (this.isStealth && this.cloakTimer > 0) ? 0.25 : 1.0;
+                    ctx.drawImage(cache, -cache.width/2, -cache.height/2);
+                    ctx.globalAlpha = 1.0;
+                }
                 
                 // Gauss Cannon Charging Visual
                 if (this.isCharging) {
@@ -6885,6 +7031,27 @@
                             s.maxHp = 4; s.hp = 4; s.size = 9; 
                             if (hasStormShield) s.shield += 1; 
                             lightningMade++;
+                        }
+                    }
+                }
+                // Chaos Fleet Transformation (Sacrifice 4 basics for 2 Chaos Ships)
+                if (perksEnabled && factionPerks[f].chaosFleet > 0) {
+                    let basics = [];
+                    for (let i = actualNumShips - 1; i >= 0; i--) {
+                        let s = ships[factionSpawnStartIndex + i];
+                        if (s && !s.isFlagship && !s.isSniper && !s.isSentinel && !s.isStealth && !s.isFlame && !s.isLightning && !s.isCarrier && !s.isChaos) {
+                            basics.push(s);
+                        }
+                    }
+                    if (basics.length >= 4) {
+                        for (let i = 0; i < 2; i++) {
+                            basics[i].isChaos = true;
+                            basics[i].maxHp = 5; basics[i].hp = 5; basics[i].shield += 2; basics[i].size = 14;
+                            basics[i].attackRange = 130; // Closer range for tentacle swipes
+                        }
+                        for (let i = 2; i < 4; i++) {
+                            basics[i].toRemove = true; // Sacrificed!
+                            basics[i].hp = 0;
                         }
                     }
                 }
