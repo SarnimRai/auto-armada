@@ -132,21 +132,32 @@
         
         #colorGrid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(10, 1fr); /* Upgraded to 10 columns */
+            gap: 12px;
             margin: 15px 0;
+            max-height: 55vh;
+            overflow-y: auto;
+            padding: 10px;
+            width: 100%;
+            max-width: 800px; /* Massively widened modal */
         }
         
         .modal-swatch {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 4px;
             border: 2px solid #333;
             cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .modal-swatch:hover {
+            transform: scale(1.15);
+            z-index: 10;
+            box-shadow: 0 0 8px currentColor;
         }
         
         .modal-swatch.taken {
-            opacity: 0.2;
+            opacity: 0.15;
             cursor: not-allowed;
             border: 2px solid #000;
         }
@@ -351,8 +362,9 @@
             /* Multiplayer Config matches height perfectly */
             .config-panel { padding: 2vh !important; gap: 3vw !important; border-width: 1px !important; flex-direction: row !important; max-height: 100%; }
             .config-col { min-width: 0; flex: 1; padding: 0 1vw !important; gap: 1.5vh !important; }
-            #mpColorGrid { gap: 1vh; }
-            .modal-swatch { width: 5vh; height: 5vh; }
+            #mpColorGrid { gap: 1vh; grid-template-columns: repeat(8, 1fr) !important; max-height: 25vh !important; overflow-y: auto; }
+            #colorGrid { grid-template-columns: repeat(8, 1fr) !important; max-height: 35vh !important; }
+            .modal-swatch { width: 4.5vh; height: 4.5vh; }
             #mpRosterStatusContainer { max-height: 30vh; }
             
             /* Perk Cards squashed into equal fractions of viewport width (vw) */
@@ -663,9 +675,9 @@
                 <button class="btn-secondary" id="btnAddAI" style="display: none; background: #aa44ff; color: white; margin-top: 10px;">+ ADD AI BOT</button>
             </div>
             
-            <div class="config-col" style="display: flex; flex-direction: column; gap: 10px; width: 230px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 30px;">
+            <div class="config-col" style="display: flex; flex-direction: column; gap: 10px; width: 420px; border-left: 1px solid #333; border-right: 1px solid #333; padding: 0 30px;">
                 <h3 style="color: #ffcc00; margin: 0; text-transform: uppercase;">Select Color</h3>
-                <div id="mpColorGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
+                <div id="mpColorGrid" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 5px;"></div>
                 <div style="margin-top: 15px; color: #fff; font-weight: bold; display: flex; align-items: center; gap: 10px;">
                     Your Color: <div id="mySelectedColorBox" style="width:25px; height:25px; border:2px solid #fff; border-radius: 4px;"></div>
                 </div>
@@ -2611,8 +2623,15 @@
         { id: 'kineticChain', name: "Kinetic Chain", desc: "Requires Hyper-Velocity Sabots & Gauss Cannon. Sniper range & projectile speed doubled. Piercing shots that kill a target violently ricochet to a new target for -1 damage.", maxLevel: 1, requires: ['sniperUpgrade', 'gaussCannon'], rarity: 'standard' },
         { id: 'wraithEngine', name: "Wraith Engine", desc: "Requires Phantom Strike. Cloak +1s. Ghost Spectres strictly target specialized enemy ships and gain +60% Speed.", maxLevel: 1, requires: 'phantomStrike', rarity: 'standard' },
         { id: 'etherealForm', name: "Ethereal Form", desc: "Requires Wraith Engine. While cloaked, Spectres gain an additional +60% Speed, phase through all obstacles, and fly straight to targets.", maxLevel: 1, requires: 'wraithEngine', rarity: 'standard' },
+        { id: 'dualAppendages', name: "Dual Appendages", desc: "Requires Chaos Swarm. Chaos Ships attack with two sweeping tentacles simultaneously (Left and Right sweeps).", maxLevel: 1, requires: 'chaosFleet', rarity: 'standard' },
+        { id: 'abyssalGrasp', name: "Abyssal Grasp", desc: "Requires Chaos Swarm. Chaos Ships grow 6 permanent, writhing tentacles that independently strike nearby targets for 2 damage (2s cooldown per tentacle).", maxLevel: 1, requires: 'chaosFleet', rarity: 'standard' },
+        { id: 'abyssalSlingshot', name: "Abyssal Slingshot", desc: "Requires Abyssal Grasp. Every 3s, a tentacle grabs the farthest enemy ship, rapidly ripping the Chaos Ship towards it to close the distance.", maxLevel: 1, requires: 'abyssalGrasp', rarity: 'standard' },
+        { id: 'bioMassAccretion', name: "Bio-mass Accretion", desc: "Requires Chaos Swarm. Sacrifices 2 additional basic fighters to spawn a 3rd Chaos Ship.", maxLevel: 1, requires: 'chaosFleet', rarity: 'standard' },
+        { id: 'eldritchLeviathan', name: "Eldritch Leviathan", desc: "Requires Bio-mass Accretion & Abyssal Grasp. Fuses your 3 Chaos Ships into a massive Leviathan (15 HP, 5 Shields) with double range and 10 passive tentacles.", maxLevel: 1, requires: ['bioMassAccretion', 'abyssalGrasp'], rarity: 'standard' },
+        { id: 'quantumSpecialist', name: "Quantum Specialist", desc: "Requires Quantum Link & Any Specialist. Guarantees that at least 1 Quantum Link tether attaches to a specialized ship.", maxLevel: 1, requires: 'quantumLink', rarity: 'standard' },
         // EPIC PERKS
         { id: 'flagship', name: "The Flagship", desc: "Spawns a heavy Flagship (6 HP, 2 Shields) that buffs fleet FR & Speed by 15%.", maxLevel: 1, rarity: 'epic' },
+        { id: 'eliteAcademy', name: "Elite Academy", desc: "Requires Veteran & Ace Pilot. Instantly promotes 1 ship to Ace and 3 to Veterans at the start of a round (Excludes Carriers).", maxLevel: 1, requires: ['veteran', 'acePilot'], rarity: 'epic' },
         { id: 'singularityCollapse', name: "Singularity Collapse", desc: "Requires Mine Layer. Mines create a 1s gravity well that violently traps enemies at its center, then detonates for double damage (4 AoE).", maxLevel: 1, requires: 'mineLayer', rarity: 'epic' },
         { id: 'sniperFleet', name: "Sniper Squadron", desc: "4 ships become Snipers. +60% Range, +30% Speed, +20% Proj Speed. Lasers pierce. -20% Fire Rate.", maxLevel: 1, rarity: 'epic' },
         { id: 'sentinelFleet', name: "Sentinel Guard", desc: "2 ships become heavy Sentinels (4 HP, 2 Shields) and permanently grant +1 Shield to their 3 nearest allies.", maxLevel: 1, rarity: 'epic' },
@@ -2621,7 +2640,7 @@
         { id: 'globalShield', name: "Aegis Network", desc: "Grants EVERY ship in your fleet an additional +1 Shield at the start of every round.", maxLevel: 1, rarity: 'epic' },
         { id: 'carrierFleet', name: "Super Carrier", desc: "Spawns a massive Carrier (8 HP, 2 Shields) that fabricates a combat drone every 1 second (Max 6).", maxLevel: 1, rarity: 'epic' },    
         { id: 'quantumLink', name: "Quantum Link", desc: "Tethers 5 ships together. Destroyed tethered ships respawn at 1 HP after 3s, unless all 5 are destroyed.", maxLevel: 1, rarity: 'epic' },
-                { id: 'chaosFleet', name: "Chaos Swarm", desc: "Sacrifices 4 basic fighters to spawn 2 Chaos Ships (5 HP, 2 Shields). Unstable bio-masses that attack with medium-range tentacle swipes, dealing 2 AoE damage.", maxLevel: 1, rarity: 'epic' },
+        { id: 'chaosFleet', name: "Chaos Swarm", desc: "Sacrifices 4 basic fighters to spawn 2 Chaos Ships (5 HP, 2 Shields). Unstable bio-masses that attack with medium-range tentacle swipes, dealing 2 AoE damage.", maxLevel: 1, rarity: 'epic' },
         { id: 'lightningFleet', name: "Storm Callers", desc: "2 ships become Storm Callers. They fire high-speed lightning that hits a target and chains to up to 2 nearby enemies for 1 damage.", maxLevel: 1, rarity: 'epic' },
         { id: 'flameFleet', name: "Pyromancer Protocol", desc: "2 ships become Flame Ships (4 HP, 1 Shield). They shoot fireballs that deal 1 impact damage and burn targets for 1 damage every second.", maxLevel: 1, rarity: 'epic' },
         ];
@@ -2649,7 +2668,9 @@
                 sentinelUpgrade: 0, sniperUpgrade: 0, veteranMissile: 0, carrierFleet: 0, droneFormation: 0, carrierSplit: 0, capitalEscort: 0, quantumLink: 0, acePilot: 0, lightningFleet: 0, flameFleet: 0, missileCruiser: 0, expandedLink: 0,
                 pointDefense: 0, eliteDrones: 0, stormOrbs: 0, infernoOrbs: 0, stormShield: 0, scorchAura: 0, staticWeb: 0, phantomStrike: 0, gaussCannon: 0, mobileBastion: 0, vampiricSwarm: 0, plasmaWake: 0, empPayload: 0,
                 shrapnelPayload: 0, magneticPayload: 0, twinMines: 0, proximityFuse: 0, singularityCollapse: 0,
-                kineticChain: 0, wraithEngine: 0, aegisOvercharge: 0, sentinelArmor: 0, sentinelAura: 0, etherealForm: 0, chaosFleet: 0,
+                kineticChain: 0, wraithEngine: 0, aegisOvercharge: 0, sentinelArmor: 0, sentinelAura: 0, etherealForm: 0,
+                chaosFleet: 0, dualAppendages: 0, abyssalGrasp: 0, abyssalSlingshot: 0, bioMassAccretion: 0, eldritchLeviathan: 0,
+                quantumSpecialist: 0, eliteAcademy: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -3206,14 +3227,14 @@
                 let hasSingularity = perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].singularityCollapse > 0;
                 
                 let renderSize = this.size + 2;
-
+                
                 ctx.save();
                 ctx.translate(this.x, this.y);
-
+                
                 // Menacing slow rotation
                 let rot = Date.now() * 0.001;
                 ctx.rotate(rot);
-
+                
                 // 1. Protrusions / Spikes / Sensor Nodes
                 if (hasShrapnel) {
                     // Mechanical fragmentation barrels
@@ -3236,7 +3257,7 @@
                         ctx.rotate(Math.PI / 2);
                     }
                 }
-
+                
                 // 2. Heavy Armor Casing
                 ctx.fillStyle = '#161a22'; 
                 ctx.strokeStyle = '#444';
@@ -3257,14 +3278,14 @@
                 }
                 ctx.fill();
                 ctx.stroke();
-
+                
                 // 3. Inner Mechanical Ring Groove
                 ctx.strokeStyle = '#0a0d14';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.arc(0, 0, renderSize * 0.55, 0, Math.PI*2);
                 ctx.stroke();
-
+                
                 // 4. Subtle Faction Accents (Inner painted markings)
                 ctx.fillStyle = fColor;
                 ctx.globalAlpha = 0.7;
@@ -3276,7 +3297,7 @@
                     ctx.rotate((Math.PI * 2) / accentCount);
                 }
                 ctx.globalAlpha = 1.0;
-
+                
                 // 5. Blinking Sci-Fi Armed LED (Dead center)
                 // Blinks aggressively every 200ms
                 let isBlinkOn = (Math.floor(Date.now() / 200) % 2) === 0;
@@ -3294,7 +3315,7 @@
                     ctx.arc(0, 0, 2, 0, Math.PI*2);
                     ctx.fill();
                 }
-
+                
                 ctx.restore();
                 
                 // 6. Epic Singularity Aura Visuals (Drawn outside rotation matrix)
@@ -4182,9 +4203,10 @@
                 
                 let cache = globalCache['prismBoss'];
                 if(cache) {
+                    ctx.save();
                     ctx.rotate(Date.now() * 0.0005);
                     ctx.drawImage(cache, -cache.width/2, -cache.height/2);
-                    ctx.rotate(-Date.now() * 0.0005); 
+                    ctx.restore(); 
                 }
                 
                 // 360-Degree Shield Bubble during ABSORB
@@ -4473,6 +4495,42 @@
             }
             return buffer;
         }
+        
+        function createChaosShipCache(color, s) {
+            let frames = [];
+            for (let f = 0; f < 6; f++) {
+                const c = document.createElement('canvas');
+                let pad = s * 4; 
+                c.width = pad * 2; c.height = pad * 2;
+                const cctx = c.getContext('2d');
+                cctx.translate(pad, pad);
+                
+                cctx.shadowBlur = 15;
+                cctx.shadowColor = color;
+                cctx.fillStyle = '#110022';
+                
+                cctx.beginPath();
+                let time = f * (Math.PI*2 / 6); // Split into 6 perfect animation frames
+                for (let a = 0; a < Math.PI * 2; a += 0.4) {
+                    let r = s + Math.sin(a * 3 + time) * 3 + Math.cos(a * 4 - time) * 2;
+                    let px = Math.cos(a) * r;
+                    let py = Math.sin(a) * r;
+                    if (a === 0) cctx.moveTo(px, py);
+                    else cctx.lineTo(px, py);
+                }
+                cctx.closePath(); cctx.fill();
+                
+                cctx.strokeStyle = color; cctx.lineWidth = 2; cctx.stroke();
+                
+                cctx.fillStyle = color;
+                cctx.globalAlpha = 0.5 + Math.sin(time * 2) * 0.3;
+                cctx.beginPath(); cctx.arc(0, 0, s * 0.5, 0, Math.PI * 2); cctx.fill();
+                
+                frames.push(c);
+            }
+            return frames;
+        }
+        
         // Helper functions sit safely OUTSIDE the class
         function createWormBodyCache(radius) {
             const c = document.createElement('canvas');
@@ -4663,7 +4721,11 @@
                 this.isBounty = false;
                 
                 this.isChaos = false;
+                this.isChaosLeviathan = false;
                 this.tentacles = []; // Tracks active melee swipes
+                this.slingshotTimer = 180;
+                this.isSlingshotting = false;
+                this.slingshotTarget = null;
                 
                 // ORB TRACKERS
                 this.orbAngle = Math.random() * Math.PI * 2;
@@ -4725,6 +4787,8 @@
             }
             
             flock(ships) {
+                if (this.isSlingshotting) return; // Completely ignore normal steering while being ripped across space!
+                
                 let align = { x: 0, y: 0 }, cohere = { x: 0, y: 0 }, separ = { x: 0, y: 0 };
                 let totalAlly = 0, totalSepar = 0;
                 
@@ -5180,7 +5244,7 @@
                     let hasWraith = factionPerks[this.faction].wraithEngine > 0;
                     let hasEthereal = factionPerks[this.faction].etherealForm > 0;
                     let isCloaked = this.cloakTimer > 0;
-
+                    
                     if (hasWraith) {
                         // Wraith Engine STRICTLY locks onto specialized ships above all else.
                         // If they are cloaked AND Ethereal, they completely ignore walls to acquire targets.
@@ -5275,7 +5339,7 @@
                     
                     // Calculate attack bounds by adding the target's physical size so ships don't fly inside bosses
                     let effectiveAttackRange = this.attackRange + (nearestEnemy.size || 0);
-
+                    
                     // --- KITING & STRAFING TACTICS (Snipers OR ANY Ship Attacking a Boss) ---
                     let isSpecialTarget = nearestEnemy.isBoss || nearestEnemy.isWorm;
                     
@@ -5285,7 +5349,7 @@
                         
                         // 1% chance per frame to Juke (reverse strafe direction) for unpredictable flight paths
                         if (Math.random() < 0.01) this.strafeDir *= -1;
-
+                        
                         // Normal ships orbit closer, snipers orbit further away
                         let idealMin = this.isSniper ? effectiveAttackRange * 0.55 : effectiveAttackRange * 0.5; 
                         let idealMax = this.isSniper ? effectiveAttackRange * 0.85 : effectiveAttackRange * 0.9;
@@ -5354,13 +5418,23 @@
                         if (this.isChaos) {
                             if (minDist < this.attackRange && this.laserCooldown <= 0) {
                                 let angle = Math.atan2(nearestEnemy.position.y - this.position.y, nearestEnemy.position.x - this.position.x);
+                                
+                                let hasDual = perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].dualAppendages > 0;
+                                
+                                // Base Tentacle (Sweeps Left to Right)
                                 this.tentacles.push({
-                                    angle: angle - 0.8, // Starts swipe slightly to the left
-                                    targetAngle: angle + 0.8, // Sweeps across to the right
-                                    progress: 0,
-                                    length: this.attackRange,
-                                    hitTargets: new Set()
+                                    angle: angle - 0.8, targetAngle: angle + 0.8,
+                                    progress: 0, length: this.attackRange, hitTargets: new Set()
                                 });
+                                
+                                // Dual Appendages (Sweeps Right to Left simultaneously)
+                                if (hasDual) {
+                                    this.tentacles.push({
+                                        angle: angle + 0.8, targetAngle: angle - 0.8,
+                                        progress: 0, length: this.attackRange, hitTargets: new Set()
+                                    });
+                                }
+                                
                                 playSound('hit'); // Organic fleshy thud
                                 this.laserCooldown = 50; // Sweeps fairly frequently
                             }
@@ -5544,6 +5618,11 @@
                 this.velocity.x += this.acceleration.x;
                 this.velocity.y += this.acceleration.y;
                 
+                if (this.isSlingshotting) {
+                    this.velocity.x *= 0.5; // Dampen drift while the tentacle is actively pulling
+                    this.velocity.y *= 0.5;
+                }
+                
                 let speed = Math.hypot(this.velocity.x, this.velocity.y);
                 let effectiveMax = this.isCrashing ? 5.5 : this.maxSpeed;
                 if (speed > effectiveMax) {
@@ -5678,42 +5757,280 @@
                         
                         if (t.progress >= 1) this.tentacles.splice(i, 1);
                     }
+                    
+                    // --- ABYSSAL SLINGSHOT LOGIC ---
+                    if (perksEnabled && factionPerks[this.faction].abyssalSlingshot > 0) {
+                        if (this.isSlingshotting) {
+                            if (!this.slingshotTarget || this.slingshotTarget.hp <= 0 || this.slingshotTarget.toRemove) {
+                                this.isSlingshotting = false;
+                                this.slingshotTimer = 180;
+                            } else {
+                                this.slingshotTimer--;
+                                let dx = this.slingshotTarget.position.x - this.position.x;
+                                let dy = this.slingshotTarget.position.y - this.position.y;
+                                let dist = Math.hypot(dx, dy);
+                                
+                                // Yank the ship toward the target rapidly!
+                                if (dist > this.size + this.slingshotTarget.size + 15 && this.slingshotTimer > 0) {
+                                    this.position.x += (dx / dist) * 16; 
+                                    this.position.y += (dy / dist) * 16;
+                                } else {
+                                    this.isSlingshotting = false;
+                                    this.slingshotTimer = 180;
+                                }
+                            }
+                        } else {
+                            this.slingshotTimer--;
+                            if (this.slingshotTimer <= 0) {
+                                let farthest = null;
+                                let maxD = 0;
+                                // Find the FARTHEST enemy within a 700px radius to close massive distances (perfect against Snipers)
+                                for (let s of ships) {
+                                    if (s.faction !== this.faction && !s.toRemove && s.hp > 0 && !(s.isStealth && s.cloakTimer > 0)) {
+                                        let d = Math.hypot(s.position.x - this.position.x, s.position.y - this.position.y);
+                                        if (d > maxD && d > 150 && d < 700) { maxD = d; farthest = s; }
+                                    }
+                                }
+                                if (farthest) {
+                                    this.isSlingshotting = true;
+                                    this.slingshotTarget = farthest;
+                                    this.slingshotTimer = 35; // Maximum pull time before it snaps
+                                    playSound('laser'); 
+                                } else {
+                                    this.slingshotTimer = 60; // Try again soon if no targets are in range
+                                }
+                            }
+                        }
+                    }
+                    
+                    // --- ABYSSAL GRASP PASSIVE TENTACLE LOGIC ---
+                    if (perksEnabled && factionPerks[this.faction].abyssalGrasp > 0) {
+                        let tCount = this.isChaosLeviathan ? 10 : 6;
+                        if (!this.passiveTentacles || this.passiveTentacles.length !== tCount) {
+                            this.passiveTentacles = [];
+                            for(let i=0; i<tCount; i++) {
+                                this.passiveTentacles.push({ baseAngle: (Math.PI*2/tCount)*i, cooldown: 0, strikeTimer: 0, strikePos: null, targetObj: null });
+                            }
+                        }
+                        
+                        let validTargets = [];
+                        let pRange = this.isChaosLeviathan ? 280 : 140; // Double range for Leviathan!
+                        
+                        // Collect ships
+                        for (let j = ships.length - 1; j >= 0; j--) {
+                            let s = ships[j];
+                            if (s.faction !== this.faction && !s.toRemove && s.hp > 0 && !(s.isStealth && s.cloakTimer > 0)) {
+                                if (Math.hypot(s.position.x - this.position.x, s.position.y - this.position.y) < pRange + s.size) validTargets.push({type: 'ship', idx: j, obj: s});
+                            }
+                        }
+                        // Collect bosses
+                        for (let b of bosses) {
+                            if (b.faction !== this.faction && !b.introPhase) {
+                                let hitRad = b.size + (b.isPrism && b.state === 'ABSORB' ? 20 : 0);
+                                if (Math.hypot(b.x - this.position.x, b.y - this.position.y) < pRange + hitRad) validTargets.push({type: 'boss', obj: b});
+                            }
+                        }
+                        // Collect worms
+                        for (let w of worms) {
+                            if (w.faction !== this.faction) {
+                                for(let s=0; s<w.segments.length; s++) {
+                                    let seg = w.segments[s];
+                                    if(Math.hypot(seg.x - this.position.x, seg.y - this.position.y) < pRange + w.segmentRadius) {
+                                        validTargets.push({type: 'worm', obj: seg, wRef: w, sIdx: s});
+                                    }
+                                }
+                            }
+                        }
+                        
+                        let targetedSet = new Set();
+                        
+                        for (let pT of this.passiveTentacles) {
+                            if (pT.cooldown > 0) pT.cooldown--;
+                            
+                            if (pT.strikeTimer > 0) {
+                                pT.strikeTimer--;
+                                if (pT.strikeTimer === 5 && pT.targetObj) { // Apply damage exactly at the visual apex of the strike
+                                    let tObj = pT.targetObj;
+                                    if (tObj.type === 'ship' && !tObj.obj.toRemove && tObj.obj.hp > 0) {
+                                        hitShip(tObj.idx, this, 2);
+                                        for(let p=0; p<5; p++) particles.push(new Particle(tObj.obj.position.x, tObj.obj.position.y, '#aa44ff', 1.5));
+                                    } else if (tObj.type === 'boss') {
+                                        if (tObj.obj.isPrism && tObj.obj.state === 'ABSORB') tObj.obj.absorbedEnergy += 2;
+                                        else tObj.obj.hp -= 2;
+                                        for(let p=0; p<5; p++) particles.push(new Particle(tObj.obj.x, tObj.obj.y, '#aa44ff', 1.5));
+                                    } else if (tObj.type === 'worm') {
+                                        tObj.obj.hp -= 2;
+                                        if (tObj.obj.hp <= 0) tObj.wRef.splitAt(tObj.sIdx);
+                                        for(let p=0; p<5; p++) particles.push(new Particle(tObj.obj.x, tObj.obj.y, '#aa44ff', 1.5));
+                                    }
+                                    playSound('hit');
+                                }
+                            } else if (pT.cooldown <= 0) {
+                                // Try to find a target
+                                for (let vt of validTargets) {
+                                    if (!targetedSet.has(vt.obj)) {
+                                        targetedSet.add(vt.obj);
+                                        pT.strikeTimer = 10;
+                                        pT.cooldown = 120; // 2 seconds
+                                        pT.targetObj = vt;
+                                        pT.strikePos = {x: vt.obj.x || vt.obj.position.x, y: vt.obj.y || vt.obj.position.y};
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             
             draw() {
                 // --- RENDER CHAOS TENTACLES UNDER THE SHIP ---
                 if (this.isChaos) {
+                    // 0. Abyssal Slingshot Tether
+                    if (this.isSlingshotting && this.slingshotTarget) {
+                        ctx.save();
+                        ctx.strokeStyle = factionColors[this.faction];
+                        ctx.lineWidth = 6; ctx.lineCap = 'round';
+                        ctx.shadowBlur = 10; ctx.shadowColor = '#aa44ff';
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(this.position.x, this.position.y);
+                        // Draws a taut, vibrating straight line to the target
+                        ctx.lineTo(this.slingshotTarget.position.x + (Math.random()*4 - 2), this.slingshotTarget.position.y + (Math.random()*4 - 2));
+                        ctx.stroke();
+                        
+                        ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+                        ctx.restore();
+                    }
+                    
+                    // 1. Main Sweep Tentacles (Uncoiling Whiplash)
                     for (let t of this.tentacles) {
                         let currentAngle = t.angle + (t.targetAngle - t.angle) * t.progress;
-                        let endX = this.position.x + Math.cos(currentAngle) * t.length;
-                        let endY = this.position.y + Math.sin(currentAngle) * t.length;
+                        
+                        // Whiplash curve: extends outward and pulls back organically
+                        let whip = Math.sin(t.progress * Math.PI); // 0 -> 1 -> 0
+                        let endX = this.position.x + Math.cos(currentAngle) * (t.length * (0.4 + whip * 0.6));
+                        let endY = this.position.y + Math.sin(currentAngle) * (t.length * (0.4 + whip * 0.6));
                         
                         ctx.save();
                         ctx.strokeStyle = factionColors[this.faction];
-                        ctx.lineWidth = 6;
-                        ctx.lineCap = 'round';
-                        ctx.shadowBlur = 10;
-                        ctx.shadowColor = '#aa44ff'; // Purple chaos glow
+                        ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                        ctx.shadowBlur = 10; ctx.shadowColor = '#aa44ff';
                         
                         ctx.beginPath();
                         ctx.moveTo(this.position.x, this.position.y);
                         
-                        // Add some organic wiggle to the tentacle
-                        let ctrl1X = this.position.x + Math.cos(currentAngle - 0.5) * (t.length * 0.3);
-                        let ctrl1Y = this.position.y + Math.sin(currentAngle - 0.5) * (t.length * 0.3);
-                        let ctrl2X = this.position.x + Math.cos(currentAngle + 0.5) * (t.length * 0.7);
-                        let ctrl2Y = this.position.y + Math.sin(currentAngle + 0.5) * (t.length * 0.7);
+                        // Dynamic S-curve that coils and uncoils during the sweep
+                        let uncoil = (1 - t.progress); // 1 to 0
+                        let ctrl1X = this.position.x + Math.cos(currentAngle - 1.5 * uncoil) * (t.length * 0.4 * whip);
+                        let ctrl1Y = this.position.y + Math.sin(currentAngle - 1.5 * uncoil) * (t.length * 0.4 * whip);
+                        let ctrl2X = this.position.x + Math.cos(currentAngle + 1.5 * uncoil) * (t.length * 0.7 * whip);
+                        let ctrl2Y = this.position.y + Math.sin(currentAngle + 1.5 * uncoil) * (t.length * 0.7 * whip);
                         
                         ctx.bezierCurveTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, endX, endY);
                         ctx.stroke();
                         
-                        ctx.lineWidth = 2;
-                        ctx.strokeStyle = '#fff';
-                        ctx.stroke();
+                        ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+                        
+                        // Draw sharp organic bone-blade at the tip
+                        ctx.fillStyle = '#fff';
+                        ctx.translate(endX, endY);
+                        ctx.rotate(currentAngle + (Math.PI/4 * uncoil));
+                        ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(14, 0); ctx.lineTo(0, 3); ctx.closePath(); ctx.fill();
+                        
                         ctx.restore();
                     }
+                    
+                    // 2. Passive Abyssal Tentacles (Organic S-Curve Wiggle & 3-Phase Strike)
+                    if (this.passiveTentacles) {
+                        let time = Date.now() * 0.003; 
+                        let shipAngle = Math.atan2(this.velocity.y, this.velocity.x);
+                        
+                        for (let pT of this.passiveTentacles) {
+                            ctx.save();
+                            ctx.strokeStyle = factionColors[this.faction];
+                            ctx.lineWidth = 4; ctx.lineCap = 'round';
+                            ctx.shadowBlur = 5; ctx.shadowColor = '#aa44ff';
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(this.position.x, this.position.y);
+                            
+                            if (pT.strikeTimer > 0 && pT.strikePos) {
+                                let pX = pT.strikePos.x;
+                                let pY = pT.strikePos.y;
+                                let targetDist = Math.hypot(pX - this.position.x, pY - this.position.y);
+                                let targetAng = Math.atan2(pY - this.position.y, pX - this.position.x);
+                                
+                                let drawX, drawY, c1X, c1Y, c2X, c2Y;
+                                
+                                if (pT.strikeTimer > 6) {
+                                    // PHASE 1: Wind-up (Coil tightly backwards)
+                                    let windUp = (10 - pT.strikeTimer) / 4; // 0 to 1
+                                    let coilDist = this.size * 2 * windUp;
+                                    drawX = this.position.x + Math.cos(targetAng + Math.PI) * coilDist;
+                                    drawY = this.position.y + Math.sin(targetAng + Math.PI) * coilDist;
+                                    
+                                    c1X = this.position.x + Math.cos(targetAng + Math.PI - 1) * coilDist * 0.5;
+                                    c1Y = this.position.y + Math.sin(targetAng + Math.PI - 1) * coilDist * 0.5;
+                                    c2X = this.position.x + Math.cos(targetAng + Math.PI + 1) * coilDist * 0.8;
+                                    c2Y = this.position.y + Math.sin(targetAng + Math.PI + 1) * coilDist * 0.8;
+                                } else if (pT.strikeTimer > 3) {
+                                    // PHASE 2: Snap/Strike (Shoots forward violently like a spear)
+                                    let snap = (6 - pT.strikeTimer) / 3; // 0 to 1
+                                    drawX = this.position.x + Math.cos(targetAng) * (targetDist * snap);
+                                    drawY = this.position.y + Math.sin(targetAng) * (targetDist * snap);
+                                    
+                                    c1X = this.position.x + Math.cos(targetAng) * (targetDist * snap * 0.3);
+                                    c1Y = this.position.y + Math.sin(targetAng) * (targetDist * snap * 0.3);
+                                    c2X = this.position.x + Math.cos(targetAng) * (targetDist * snap * 0.6);
+                                    c2Y = this.position.y + Math.sin(targetAng) * (targetDist * snap * 0.6);
+                                } else {
+                                    // PHASE 3: Retract (Loose, wavy organic slink backwards)
+                                    let retract = pT.strikeTimer / 3; // 1 to 0
+                                    drawX = this.position.x + Math.cos(targetAng) * (targetDist * retract);
+                                    drawY = this.position.y + Math.sin(targetAng) * (targetDist * retract);
+                                    
+                                    c1X = this.position.x + Math.cos(targetAng + 1) * (targetDist * retract * 0.4);
+                                    c1Y = this.position.y + Math.sin(targetAng + 1) * (targetDist * retract * 0.4);
+                                    c2X = this.position.x + Math.cos(targetAng - 1) * (targetDist * retract * 0.7);
+                                    c2Y = this.position.y + Math.sin(targetAng - 1) * (targetDist * retract * 0.7);
+                                }
+                                
+                                ctx.bezierCurveTo(c1X, c1Y, c2X, c2Y, drawX, drawY);
+                                ctx.stroke();
+                                ctx.lineWidth = 1.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+                                
+                                // Draw a jagged spike at the tip during strikes
+                                ctx.fillStyle = '#fff';
+                                ctx.translate(drawX, drawY);
+                                ctx.rotate(targetAng);
+                                ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(10, 0); ctx.lineTo(0, 2); ctx.closePath(); ctx.fill();
+                            } else {
+                                // S-Curve Idle Wiggle (Octopus/Squid style)
+                                let idleLen = this.size * 2.8;
+                                let wave1 = Math.sin(time * 3 + pT.baseAngle * 2);
+                                let wave2 = Math.cos(time * 2.5 + pT.baseAngle * 3);
+                                
+                                let tAngle = shipAngle + pT.baseAngle + (wave1 * 0.4);
+                                
+                                let endX = this.position.x + Math.cos(tAngle) * idleLen;
+                                let endY = this.position.y + Math.sin(tAngle) * idleLen;
+                                
+                                // Double bezier for true S-shape slithering
+                                let c1X = this.position.x + Math.cos(tAngle + wave1 * 1.5) * (idleLen * 0.33);
+                                let c1Y = this.position.y + Math.sin(tAngle + wave1 * 1.5) * (idleLen * 0.33);
+                                let c2X = this.position.x + Math.cos(tAngle + wave2 * 1.5) * (idleLen * 0.66);
+                                let c2Y = this.position.y + Math.sin(tAngle + wave2 * 1.5) * (idleLen * 0.66);
+                                
+                                ctx.bezierCurveTo(c1X, c1Y, c2X, c2Y, endX, endY);
+                                ctx.stroke();
+                                ctx.lineWidth = 1.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+                            }
+                            ctx.restore();
+                        }
+                    }
                 }
+                
                 // RENDER APEX BOUNTY GLOW (Drawn underneath the ship)
                 if (this.isBounty) {
                     ctx.save();
@@ -5746,480 +6063,464 @@
                 else if (this.isVoidWasp) { s = 6; typeKey = 'wasp'; }
                 else if (this.isEliteDrone) { s = 5.5; typeKey = 'elitedrn'; } 
                 else if (this.isDrone) { s = 4.5; typeKey = 'drn'; }
+                else if (this.isChaosLeviathan) { s = this.size; typeKey = 'leviathan'; } 
+                else if (this.isChaos) { s = this.size; typeKey = 'chaos'; } 
                 else if (this.isAce) { s *= 0.85; typeKey = 'ace'; } 
                 
-                let skipCacheDraw = false;
-                if (this.isChaos) {
-                    skipCacheDraw = true;
-                    // Draw Dynamic Shifting Bio-Mass
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = factionColors[this.faction];
-                    ctx.fillStyle = '#110022'; // Dark fleshy base
-                    
-                    ctx.beginPath();
-                    let time = Date.now() * 0.005;
-                    for (let a = 0; a < Math.PI * 2; a += 0.4) {
-                        let r = s + Math.sin(a * 3 + time) * 3 + Math.cos(a * 4 - time) * 2;
-                        let px = Math.cos(a) * r;
-                        let py = Math.sin(a) * r;
-                        if (a === 0) ctx.moveTo(px, py);
-                        else ctx.lineTo(px, py);
-                    }
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    ctx.strokeStyle = factionColors[this.faction];
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    
-                    // Pulsing Core
-                    ctx.fillStyle = factionColors[this.faction];
-                    ctx.globalAlpha = 0.5 + Math.sin(time * 2) * 0.3;
-                    ctx.beginPath();
-                    ctx.arc(0, 0, s * 0.5, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                
                 let cacheKey = `ship_${this.faction}_${typeKey}`;
+                if (this.isChaos || this.isChaosLeviathan) cacheKey += `_${Math.round(this.size)}`; // Separate cache for bigger Chaos sizes
                 
-                if (!globalCache[cacheKey] && !skipCacheDraw) {
-                    const c = document.createElement('canvas');
-                    const pad = s * 6; // Padding for shadowBlur and extended parts
-                    c.width = pad * 2; c.height = pad * 2;
-                    const cctx = c.getContext('2d');
-                    cctx.translate(pad, pad);
-                    
-                    if (this.isFlagship && !this.isMissileCruiser) {
-                        // --- STANDARD FLAGSHIP ---
-                        // 1. Base Dark Metallic Hull (Heavy Cruiser Wedge)
-                        cctx.shadowBlur = 12; cctx.shadowColor = factionColors[this.faction];
-                        cctx.fillStyle = '#0a0d14';
-                        cctx.beginPath();
-                        cctx.moveTo(s * 2.8, 0);           // Extended piercing nose
-                        cctx.lineTo(s * 0.8, s * 1.2);     // Broad shoulders
-                        cctx.lineTo(-s * 1.2, s * 1.8);    // Swept-back heavy wings
-                        cctx.lineTo(-s * 0.8, s * 0.6);    // Engine indent
-                        cctx.lineTo(-s * 1.6, 0);          // Tail thruster block
-                        cctx.lineTo(-s * 0.8, -s * 0.6);
-                        cctx.lineTo(-s * 1.2, -s * 1.8);
-                        cctx.lineTo(s * 0.8, -s * 1.2);
-                        cctx.closePath(); cctx.fill();
-                        cctx.shadowBlur = 0;
-                        cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
+                if (!globalCache[cacheKey]) {
+                    if (this.isChaos) {
+                        // Bake the 6-frame animation into the cache once!
+                        globalCache[cacheKey] = createChaosShipCache(factionColors[this.faction], s);
+                    } else {
+                        const c = document.createElement('canvas');
+                        const pad = s * 6; // Padding for shadowBlur and extended parts
+                        c.width = pad * 2; c.height = pad * 2;
+                        const cctx = c.getContext('2d');
+                        cctx.translate(pad, pad);
                         
-                        // 2. Faction-Colored Interlocking Armor Plates
-                        cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.5, 0); cctx.lineTo(s * 0.2, s * 0.6); cctx.lineTo(-s * 0.6, s * 0.6);
-                        cctx.lineTo(-s * 0.9, 0); cctx.lineTo(-s * 0.6, -s * 0.6); cctx.lineTo(s * 0.2, -s * 0.6);
-                        cctx.closePath(); cctx.fill();
-                        
-                        // Wing Armor Panels
-                        cctx.beginPath(); cctx.moveTo(s * 0.4, s * 0.9); cctx.lineTo(-s * 0.8, s * 1.5); cctx.lineTo(-s * 0.5, s * 0.8); cctx.closePath(); cctx.fill();
-                        cctx.beginPath(); cctx.moveTo(s * 0.4, -s * 0.9); cctx.lineTo(-s * 0.8, -s * 1.5); cctx.lineTo(-s * 0.5, -s * 0.8); cctx.closePath(); cctx.fill();
-                        
-                        // 3. Glowing Command Bridge
-                        cctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
-                        cctx.shadowBlur = 8; cctx.shadowColor = '#00ffff';
-                        cctx.beginPath();
-                        cctx.moveTo(s * 0.8, 0); cctx.lineTo(s * 0.3, s * 0.3); cctx.lineTo(-s * 0.2, s * 0.3);
-                        cctx.lineTo(-s * 0.2, -s * 0.3); cctx.lineTo(s * 0.3, -s * 0.3);
-                        cctx.closePath(); cctx.fill();
-                        cctx.shadowBlur = 0;
-                        
-                        // 4. Base Weapon Ports
-                        cctx.fillStyle = '#ffaa00';
-                        cctx.fillRect(-s * 0.3, s * 0.8, s * 0.5, s * 0.15);
-                        cctx.fillRect(-s * 0.3, -s * 0.95, s * 0.5, s * 0.15);
-                        
-                        // 5. Command Aura
-                        cctx.fillStyle = factionColors[this.faction]; cctx.globalAlpha = 0.15;
-                        cctx.beginPath(); cctx.arc(0, 0, s * 3.5, 0, Math.PI * 2); cctx.fill(); cctx.globalAlpha = 1.0;
-                        
-                    } else if (this.isMissileCruiser) {
-                        // --- MISSILE CRUISER (New Siege Barge Design) ---
-                        // 1. Base Heavy Siege Hull (Blocky, Armored Catamaran style)
-                        cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction];
-                        cctx.fillStyle = '#0e1116';
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.4, s * 0.9);   // Front Right
-                        cctx.lineTo(s * 1.8, s * 0.5);   // Front Right prongs
-                        cctx.lineTo(s * 1.2, s * 0.3);   // Inner cut
-                        cctx.lineTo(s * 1.6, 0);         // Nose center
-                        cctx.lineTo(s * 1.2, -s * 0.3);  // Inner cut
-                        cctx.lineTo(s * 1.8, -s * 0.5);  // Front Left prong
-                        cctx.lineTo(s * 1.4, -s * 0.9);  // Front Left
-                        cctx.lineTo(-s * 1.2, -s * 1.2); // Rear Left Bulkhead
-                        cctx.lineTo(-s * 1.6, -s * 0.8); // Thruster block left
-                        cctx.lineTo(-s * 1.0, 0);        // Center indent
-                        cctx.lineTo(-s * 1.6, s * 0.8);  // Thruster block right
-                        cctx.lineTo(-s * 1.2, s * 1.2);  // Rear Right Bulkhead
-                        cctx.closePath(); cctx.fill();
-                        cctx.shadowBlur = 0;
-                        cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
-                        
-                        // 2. Faction Striping
-                        cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath(); cctx.moveTo(s * 0.8, s * 0.8); cctx.lineTo(-s * 0.8, s * 1.0); cctx.lineTo(-s * 0.5, s * 0.5); cctx.lineTo(s * 0.5, s * 0.4); cctx.closePath(); cctx.fill();
-                        cctx.beginPath(); cctx.moveTo(s * 0.8, -s * 0.8); cctx.lineTo(-s * 0.8, -s * 1.0); cctx.lineTo(-s * 0.5, -s * 0.5); cctx.lineTo(s * 0.5, -s * 0.4); cctx.closePath(); cctx.fill();
-                        
-                        // 3. Command Tower (Rear-mounted)
-                        cctx.fillStyle = '#1c202b';
-                        cctx.fillRect(-s * 0.8, -s * 0.4, s * 0.8, s * 0.8);
-                        cctx.fillStyle = 'rgba(255, 68, 68, 0.9)'; // Aggressive red/orange bridge
-                        cctx.fillRect(-s * 0.4, -s * 0.2, s * 0.1, s * 0.4);
-                        
-                        // 4. Exposed VLS (Vertical Launch System) Missile Tubes
-                        cctx.fillStyle = '#050608';
-                        cctx.fillRect(s * 0.1, -s * 0.65, s * 1.0, s * 1.3);
-                        cctx.strokeStyle = '#444'; cctx.lineWidth = 1;
-                        cctx.strokeRect(s * 0.1, -s * 0.65, s * 1.0, s * 1.3);
-                        
-                        // Draw grid of missile tubes (2 rows, 3 columns)
-                        for (let row = 0; row < 3; row++) {
-                            for (let col = 0; col < 2; col++) {
-                                let tubeX = s * 0.35 + (col * s * 0.5);
-                                let tubeY = -s * 0.4 + (row * s * 0.4);
-                                cctx.fillStyle = '#111';
-                                cctx.beginPath(); cctx.arc(tubeX, tubeY, s * 0.15, 0, Math.PI * 2); cctx.fill(); cctx.stroke();
-                                cctx.fillStyle = '#ff4444'; // Loaded missile tips
-                                cctx.beginPath(); cctx.arc(tubeX, tubeY, s * 0.08, 0, Math.PI * 2); cctx.fill();
+                        if (this.isFlagship && !this.isMissileCruiser) {
+                            // --- STANDARD FLAGSHIP ---
+                            // 1. Base Dark Metallic Hull (Heavy Cruiser Wedge)
+                            cctx.shadowBlur = 12; cctx.shadowColor = factionColors[this.faction];
+                            cctx.fillStyle = '#0a0d14';
+                            cctx.beginPath();
+                            cctx.moveTo(s * 2.8, 0);           // Extended piercing nose
+                            cctx.lineTo(s * 0.8, s * 1.2);     // Broad shoulders
+                            cctx.lineTo(-s * 1.2, s * 1.8);    // Swept-back heavy wings
+                            cctx.lineTo(-s * 0.8, s * 0.6);    // Engine indent
+                            cctx.lineTo(-s * 1.6, 0);          // Tail thruster block
+                            cctx.lineTo(-s * 0.8, -s * 0.6);
+                            cctx.lineTo(-s * 1.2, -s * 1.8);
+                            cctx.lineTo(s * 0.8, -s * 1.2);
+                            cctx.closePath(); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
+                            
+                            // 2. Faction-Colored Interlocking Armor Plates
+                            cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.5, 0); cctx.lineTo(s * 0.2, s * 0.6); cctx.lineTo(-s * 0.6, s * 0.6);
+                            cctx.lineTo(-s * 0.9, 0); cctx.lineTo(-s * 0.6, -s * 0.6); cctx.lineTo(s * 0.2, -s * 0.6);
+                            cctx.closePath(); cctx.fill();
+                            
+                            // Wing Armor Panels
+                            cctx.beginPath(); cctx.moveTo(s * 0.4, s * 0.9); cctx.lineTo(-s * 0.8, s * 1.5); cctx.lineTo(-s * 0.5, s * 0.8); cctx.closePath(); cctx.fill();
+                            cctx.beginPath(); cctx.moveTo(s * 0.4, -s * 0.9); cctx.lineTo(-s * 0.8, -s * 1.5); cctx.lineTo(-s * 0.5, -s * 0.8); cctx.closePath(); cctx.fill();
+                            
+                            // 3. Glowing Command Bridge
+                            cctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
+                            cctx.shadowBlur = 8; cctx.shadowColor = '#00ffff';
+                            cctx.beginPath();
+                            cctx.moveTo(s * 0.8, 0); cctx.lineTo(s * 0.3, s * 0.3); cctx.lineTo(-s * 0.2, s * 0.3);
+                            cctx.lineTo(-s * 0.2, -s * 0.3); cctx.lineTo(s * 0.3, -s * 0.3);
+                            cctx.closePath(); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            
+                            // 4. Base Weapon Ports
+                            cctx.fillStyle = '#ffaa00';
+                            cctx.fillRect(-s * 0.3, s * 0.8, s * 0.5, s * 0.15);
+                            cctx.fillRect(-s * 0.3, -s * 0.95, s * 0.5, s * 0.15);
+                            
+                            // 5. Command Aura
+                            cctx.fillStyle = factionColors[this.faction]; cctx.globalAlpha = 0.15;
+                            cctx.beginPath(); cctx.arc(0, 0, s * 3.5, 0, Math.PI * 2); cctx.fill(); cctx.globalAlpha = 1.0;
+                            
+                        } else if (this.isMissileCruiser) {
+                            // --- MISSILE CRUISER (New Siege Barge Design) ---
+                            // 1. Base Heavy Siege Hull (Blocky, Armored Catamaran style)
+                            cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction];
+                            cctx.fillStyle = '#0e1116';
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.4, s * 0.9);   // Front Right
+                            cctx.lineTo(s * 1.8, s * 0.5);   // Front Right prongs
+                            cctx.lineTo(s * 1.2, s * 0.3);   // Inner cut
+                            cctx.lineTo(s * 1.6, 0);         // Nose center
+                            cctx.lineTo(s * 1.2, -s * 0.3);  // Inner cut
+                            cctx.lineTo(s * 1.8, -s * 0.5);  // Front Left prong
+                            cctx.lineTo(s * 1.4, -s * 0.9);  // Front Left
+                            cctx.lineTo(-s * 1.2, -s * 1.2); // Rear Left Bulkhead
+                            cctx.lineTo(-s * 1.6, -s * 0.8); // Thruster block left
+                            cctx.lineTo(-s * 1.0, 0);        // Center indent
+                            cctx.lineTo(-s * 1.6, s * 0.8);  // Thruster block right
+                            cctx.lineTo(-s * 1.2, s * 1.2);  // Rear Right Bulkhead
+                            cctx.closePath(); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
+                            
+                            // 2. Faction Striping
+                            cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath(); cctx.moveTo(s * 0.8, s * 0.8); cctx.lineTo(-s * 0.8, s * 1.0); cctx.lineTo(-s * 0.5, s * 0.5); cctx.lineTo(s * 0.5, s * 0.4); cctx.closePath(); cctx.fill();
+                            cctx.beginPath(); cctx.moveTo(s * 0.8, -s * 0.8); cctx.lineTo(-s * 0.8, -s * 1.0); cctx.lineTo(-s * 0.5, -s * 0.5); cctx.lineTo(s * 0.5, -s * 0.4); cctx.closePath(); cctx.fill();
+                            
+                            // 3. Command Tower (Rear-mounted)
+                            cctx.fillStyle = '#1c202b';
+                            cctx.fillRect(-s * 0.8, -s * 0.4, s * 0.8, s * 0.8);
+                            cctx.fillStyle = 'rgba(255, 68, 68, 0.9)'; // Aggressive red/orange bridge
+                            cctx.fillRect(-s * 0.4, -s * 0.2, s * 0.1, s * 0.4);
+                            
+                            // 4. Exposed VLS (Vertical Launch System) Missile Tubes
+                            cctx.fillStyle = '#050608';
+                            cctx.fillRect(s * 0.1, -s * 0.65, s * 1.0, s * 1.3);
+                            cctx.strokeStyle = '#444'; cctx.lineWidth = 1;
+                            cctx.strokeRect(s * 0.1, -s * 0.65, s * 1.0, s * 1.3);
+                            
+                            // Draw grid of missile tubes (2 rows, 3 columns)
+                            for (let row = 0; row < 3; row++) {
+                                for (let col = 0; col < 2; col++) {
+                                    let tubeX = s * 0.35 + (col * s * 0.5);
+                                    let tubeY = -s * 0.4 + (row * s * 0.4);
+                                    cctx.fillStyle = '#111';
+                                    cctx.beginPath(); cctx.arc(tubeX, tubeY, s * 0.15, 0, Math.PI * 2); cctx.fill(); cctx.stroke();
+                                    cctx.fillStyle = '#ff4444'; // Loaded missile tips
+                                    cctx.beginPath(); cctx.arc(tubeX, tubeY, s * 0.08, 0, Math.PI * 2); cctx.fill();
+                                }
                             }
-                        }
-                        
-                        // 5. Command Aura
-                        cctx.fillStyle = factionColors[this.faction]; cctx.globalAlpha = 0.15;
-                        cctx.beginPath(); cctx.arc(0, 0, s * 3.5, 0, Math.PI * 2); cctx.fill(); cctx.globalAlpha = 1.0;
-                        
-                    } else if (this.isSniper) {
-                        cctx.shadowBlur = 12; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 0.2, s * 0.6); cctx.lineTo(-s * 1.0, s * 0.8); cctx.lineTo(-s * 0.6, s * 0.3);
-                        cctx.lineTo(-s * 0.8, 0); cctx.lineTo(-s * 0.6, -s * 0.3); cctx.lineTo(-s * 1.0, -s * 0.8); cctx.lineTo(-s * 0.2, -s * 0.6);
-                        cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
-                        cctx.fillStyle = '#222'; cctx.fillRect(s * 0.5, -s * 0.15, s * 2.8, s * 0.12); cctx.fillRect(s * 0.5, s * 0.03, s * 2.8, s * 0.12);
-                        cctx.fillStyle = '#ffaa00'; cctx.shadowBlur = 5; cctx.shadowColor = '#ffaa00';
-                        for(let i=0; i<5; i++) cctx.fillRect(s * 1.0 + (i * s * 0.4), -s * 0.2, s * 0.15, s * 0.4);
-                        cctx.shadowBlur = 0;
-                        cctx.strokeStyle = 'rgba(255,255,255,0.4)'; cctx.lineWidth = 1;
-                        cctx.beginPath(); cctx.moveTo(-s * 0.2, s * 0.6); cctx.lineTo(-s * 0.6, 0); cctx.lineTo(-s * 0.2, -s * 0.6); cctx.stroke();
-                        cctx.fillStyle = 'rgba(200, 240, 255, 0.9)'; cctx.beginPath();
-                        cctx.moveTo(s * 0.4, 0); cctx.lineTo(-s * 0.2, s * 0.2); cctx.lineTo(-s * 0.4, 0); cctx.lineTo(-s * 0.2, -s * 0.2); cctx.fill();
-                    } else if (this.isSentinel) {
-                        cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.2, -s * 0.6); cctx.lineTo(s * 1.2, s * 0.6); cctx.lineTo(s * 0.4, s * 1.4); cctx.lineTo(-s * 1.2, s * 1.4);
-                        cctx.lineTo(-s * 1.2, -s * 1.4); cctx.lineTo(s * 0.4, -s * 1.4); cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
-                        cctx.fillStyle = '#222'; cctx.beginPath();
-                        cctx.moveTo(s * 0.8, -s * 0.4); cctx.lineTo(s * 0.8, s * 0.4); cctx.lineTo(s * 0.2, s * 1.0); cctx.lineTo(-s * 0.8, s * 1.0);
-                        cctx.lineTo(-s * 0.8, -s * 1.0); cctx.lineTo(s * 0.2, -s * 1.0); cctx.closePath(); cctx.fill();
-                        cctx.fillStyle = '#00ffff'; cctx.shadowBlur = 10; cctx.shadowColor = '#00ffff';
-                        const nodes = [{x: s * 1.2, y: -s * 0.6}, {x: s * 1.2, y: s * 0.6}, {x: -s * 1.2, y: s * 1.4}, {x: -s * 1.2, y: -s * 1.4}];
-                        nodes.forEach(n => { cctx.beginPath(); cctx.arc(n.x, n.y, s * 0.25, 0, Math.PI*2); cctx.fill(); });
-                        cctx.shadowBlur = 0;
-                        cctx.fillStyle = factionColors[this.faction]; cctx.beginPath(); cctx.arc(0, 0, s * 0.4, 0, Math.PI*2); cctx.fill();
-                    } else if (this.isCarrier) {
-                        // --- SUPER CARRIER (U-Shaped Launch Harbor) ---
-                        // 1. Base Massive Hull
-                        cctx.shadowBlur = 18; cctx.shadowColor = factionColors[this.faction];
-                        cctx.fillStyle = '#0a0d14';
-                        cctx.beginPath();
-                        cctx.moveTo(s * 2.0, s * 1.3);    // Front Right Outer
-                        cctx.lineTo(s * 2.0, s * 0.6);    // Front Right Inner
-                        cctx.lineTo(-s * 0.2, s * 0.6);   // Harbor Right Wall
-                        cctx.lineTo(-s * 0.2, -s * 0.6);  // Harbor Back Wall
-                        cctx.lineTo(s * 2.0, -s * 0.6);   // Front Left Inner
-                        cctx.lineTo(s * 2.0, -s * 1.3);   // Front Left Outer
-                        cctx.lineTo(-s * 1.6, -s * 1.5);  // Rear Left
-                        cctx.lineTo(-s * 1.6, s * 1.5);   // Rear Right
-                        cctx.closePath(); cctx.fill();
-                        cctx.shadowBlur = 0;
-                        cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
-                        
-                        // 2. Prominent Faction-Colored Plating
-                        cctx.fillStyle = factionColors[this.faction];
-                        // Right Prong Armor
-                        cctx.beginPath(); cctx.moveTo(s * 1.8, s * 1.2); cctx.lineTo(s * 0.5, s * 1.2); cctx.lineTo(s * 0.5, s * 0.7); cctx.lineTo(s * 1.8, s * 0.7); cctx.closePath(); cctx.fill();
-                        // Left Prong Armor
-                        cctx.beginPath(); cctx.moveTo(s * 1.8, -s * 1.2); cctx.lineTo(s * 0.5, -s * 1.2); cctx.lineTo(s * 0.5, -s * 0.7); cctx.lineTo(s * 1.8, -s * 0.7); cctx.closePath(); cctx.fill();
-                        // Heavy Rear Faction Core
-                        cctx.fillRect(-s * 1.2, -s * 0.5, s * 0.6, s * 1.0);
-                        
-                        // 3. Central Launch Harbor (Dark Deck)
-                        cctx.fillStyle = 'rgba(10, 15, 25, 0.9)';
-                        cctx.fillRect(-s * 0.2, -s * 0.6, s * 2.0, s * 1.2);
-                        
-                        // Faction-colored launch rails inside the harbor
-                        cctx.strokeStyle = factionColors[this.faction];
-                        cctx.lineWidth = 1.5;
-                        cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction];
-                        cctx.setLineDash([s * 0.2, s * 0.1]);
-                        cctx.beginPath(); cctx.moveTo(-s * 0.1, s * 0.3); cctx.lineTo(s * 1.8, s * 0.3); cctx.stroke();
-                        cctx.beginPath(); cctx.moveTo(-s * 0.1, -s * 0.3); cctx.lineTo(s * 1.8, -s * 0.3); cctx.stroke();
-                        cctx.setLineDash([]);
-                        cctx.shadowBlur = 0;
-                        
-                        // 4. ATC / Command Bridge
-                        cctx.fillStyle = '#1c202b';
-                        cctx.fillRect(-s * 0.8, -s * 0.2, s * 0.4, s * 0.4);
-                        cctx.fillStyle = 'rgba(0, 255, 255, 0.8)'; // Windows
-                        cctx.fillRect(-s * 0.5, -s * 0.1, s * 0.1, s * 0.2);
-                        
-                        // 5. Heavy Engine Vents
-                        cctx.fillStyle = '#ffaa00';
-                        cctx.fillRect(-s * 1.8, s * 0.8, s * 0.2, s * 0.5);
-                        cctx.fillRect(-s * 1.8, -s * 1.3, s * 0.2, s * 0.5);
-                    } else if (this.isDrone || this.isEliteDrone) {
-                        cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; 
-                        cctx.strokeStyle = '#333'; cctx.lineWidth = s * 0.4;
-                        cctx.beginPath(); cctx.moveTo(-s*1.5, -s*1.5); cctx.lineTo(s*1.5, s*1.5); cctx.stroke();
-                        cctx.beginPath(); cctx.moveTo(s*1.5, -s*1.5); cctx.lineTo(-s*1.5, s*1.5); cctx.stroke();
-                        
-                        cctx.strokeStyle = factionColors[this.faction]; 
-                        cctx.lineWidth = 1.5;
-                        if (this.isEliteDrone) cctx.strokeStyle = '#ffcc00'; // Gold plating
-                        
-                        cctx.fillStyle = '#111';
-                        let rotors = [ {x: -s*1.5, y: -s*1.5}, {x: s*1.5, y: -s*1.5}, {x: -s*1.5, y: s*1.5}, {x: s*1.5, y: s*1.5} ];
-                        rotors.forEach(r => {
-                            cctx.beginPath(); cctx.arc(r.x, r.y, s*0.8, 0, Math.PI*2); cctx.fill(); cctx.stroke();
-                            cctx.fillStyle = this.isEliteDrone ? 'rgba(255, 204, 0, 0.6)' : 'rgba(200, 240, 255, 0.6)';
-                            cctx.beginPath(); cctx.arc(r.x, r.y, s*0.5, 0, Math.PI*2); cctx.fill();
-                            cctx.fillStyle = '#111'; 
-                        });
-                        cctx.fillStyle = '#1a1d22';
-                        cctx.beginPath(); cctx.ellipse(0, 0, s*1.1, s*0.9, 0, 0, Math.PI*2); cctx.fill();
-                        cctx.stroke();
-                        
-                        cctx.fillStyle = this.isEliteDrone ? '#ffcc00' : '#00ffff'; 
-                        cctx.shadowBlur = 5; cctx.shadowColor = this.isEliteDrone ? '#ffcc00' : '#00ffff';
-                        cctx.beginPath(); cctx.arc(s*0.7, 0, s*0.3, 0, Math.PI*2); cctx.fill();
-                        cctx.shadowBlur = 0;
-                        
-                        // RENDER MOBILE BASTION SHIELD ON DRONES
-                        // Drones don't use the global shield drawing block, so we bake it into their cache!
-                        if (this.shield > 0) {
+                            
+                            // 5. Command Aura
+                            cctx.fillStyle = factionColors[this.faction]; cctx.globalAlpha = 0.15;
+                            cctx.beginPath(); cctx.arc(0, 0, s * 3.5, 0, Math.PI * 2); cctx.fill(); cctx.globalAlpha = 1.0;
+                            
+                        } else if (this.isSniper) {
+                            cctx.shadowBlur = 12; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 0.2, s * 0.6); cctx.lineTo(-s * 1.0, s * 0.8); cctx.lineTo(-s * 0.6, s * 0.3);
+                            cctx.lineTo(-s * 0.8, 0); cctx.lineTo(-s * 0.6, -s * 0.3); cctx.lineTo(-s * 1.0, -s * 0.8); cctx.lineTo(-s * 0.2, -s * 0.6);
+                            cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
+                            cctx.fillStyle = '#222'; cctx.fillRect(s * 0.5, -s * 0.15, s * 2.8, s * 0.12); cctx.fillRect(s * 0.5, s * 0.03, s * 2.8, s * 0.12);
+                            cctx.fillStyle = '#ffaa00'; cctx.shadowBlur = 5; cctx.shadowColor = '#ffaa00';
+                            for(let i=0; i<5; i++) cctx.fillRect(s * 1.0 + (i * s * 0.4), -s * 0.2, s * 0.15, s * 0.4);
+                            cctx.shadowBlur = 0;
+                            cctx.strokeStyle = 'rgba(255,255,255,0.4)'; cctx.lineWidth = 1;
+                            cctx.beginPath(); cctx.moveTo(-s * 0.2, s * 0.6); cctx.lineTo(-s * 0.6, 0); cctx.lineTo(-s * 0.2, -s * 0.6); cctx.stroke();
+                            cctx.fillStyle = 'rgba(200, 240, 255, 0.9)'; cctx.beginPath();
+                            cctx.moveTo(s * 0.4, 0); cctx.lineTo(-s * 0.2, s * 0.2); cctx.lineTo(-s * 0.4, 0); cctx.lineTo(-s * 0.2, -s * 0.2); cctx.fill();
+                        } else if (this.isSentinel) {
+                            cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.2, -s * 0.6); cctx.lineTo(s * 1.2, s * 0.6); cctx.lineTo(s * 0.4, s * 1.4); cctx.lineTo(-s * 1.2, s * 1.4);
+                            cctx.lineTo(-s * 1.2, -s * 1.4); cctx.lineTo(s * 0.4, -s * 1.4); cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
+                            cctx.fillStyle = '#222'; cctx.beginPath();
+                            cctx.moveTo(s * 0.8, -s * 0.4); cctx.lineTo(s * 0.8, s * 0.4); cctx.lineTo(s * 0.2, s * 1.0); cctx.lineTo(-s * 0.8, s * 1.0);
+                            cctx.lineTo(-s * 0.8, -s * 1.0); cctx.lineTo(s * 0.2, -s * 1.0); cctx.closePath(); cctx.fill();
+                            cctx.fillStyle = '#00ffff'; cctx.shadowBlur = 10; cctx.shadowColor = '#00ffff';
+                            const nodes = [{x: s * 1.2, y: -s * 0.6}, {x: s * 1.2, y: s * 0.6}, {x: -s * 1.2, y: s * 1.4}, {x: -s * 1.2, y: -s * 1.4}];
+                            nodes.forEach(n => { cctx.beginPath(); cctx.arc(n.x, n.y, s * 0.25, 0, Math.PI*2); cctx.fill(); });
+                            cctx.shadowBlur = 0;
+                            cctx.fillStyle = factionColors[this.faction]; cctx.beginPath(); cctx.arc(0, 0, s * 0.4, 0, Math.PI*2); cctx.fill();
+                        } else if (this.isCarrier) {
+                            // --- SUPER CARRIER (U-Shaped Launch Harbor) ---
+                            // 1. Base Massive Hull
+                            cctx.shadowBlur = 18; cctx.shadowColor = factionColors[this.faction];
+                            cctx.fillStyle = '#0a0d14';
+                            cctx.beginPath();
+                            cctx.moveTo(s * 2.0, s * 1.3);    // Front Right Outer
+                            cctx.lineTo(s * 2.0, s * 0.6);    // Front Right Inner
+                            cctx.lineTo(-s * 0.2, s * 0.6);   // Harbor Right Wall
+                            cctx.lineTo(-s * 0.2, -s * 0.6);  // Harbor Back Wall
+                            cctx.lineTo(s * 2.0, -s * 0.6);   // Front Left Inner
+                            cctx.lineTo(s * 2.0, -s * 1.3);   // Front Left Outer
+                            cctx.lineTo(-s * 1.6, -s * 1.5);  // Rear Left
+                            cctx.lineTo(-s * 1.6, s * 1.5);   // Rear Right
+                            cctx.closePath(); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
+                            
+                            // 2. Prominent Faction-Colored Plating
+                            cctx.fillStyle = factionColors[this.faction];
+                            // Right Prong Armor
+                            cctx.beginPath(); cctx.moveTo(s * 1.8, s * 1.2); cctx.lineTo(s * 0.5, s * 1.2); cctx.lineTo(s * 0.5, s * 0.7); cctx.lineTo(s * 1.8, s * 0.7); cctx.closePath(); cctx.fill();
+                            // Left Prong Armor
+                            cctx.beginPath(); cctx.moveTo(s * 1.8, -s * 1.2); cctx.lineTo(s * 0.5, -s * 1.2); cctx.lineTo(s * 0.5, -s * 0.7); cctx.lineTo(s * 1.8, -s * 0.7); cctx.closePath(); cctx.fill();
+                            // Heavy Rear Faction Core
+                            cctx.fillRect(-s * 1.2, -s * 0.5, s * 0.6, s * 1.0);
+                            
+                            // 3. Central Launch Harbor (Dark Deck)
+                            cctx.fillStyle = 'rgba(10, 15, 25, 0.9)';
+                            cctx.fillRect(-s * 0.2, -s * 0.6, s * 2.0, s * 1.2);
+                            
+                            // Faction-colored launch rails inside the harbor
                             cctx.strokeStyle = factionColors[this.faction];
                             cctx.lineWidth = 1.5;
-                            for (let k = 0; k < this.shield; k++) {
-                                cctx.beginPath();
-                                // Widened the base radius to 3.5 and the layer spacing to 4 to clear the drone's rotor tips
-                                cctx.arc(0, 0, s * 3.5 + (k * 4), 0, Math.PI * 2); 
-                                cctx.stroke();
+                            cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction];
+                            cctx.setLineDash([s * 0.2, s * 0.1]);
+                            cctx.beginPath(); cctx.moveTo(-s * 0.1, s * 0.3); cctx.lineTo(s * 1.8, s * 0.3); cctx.stroke();
+                            cctx.beginPath(); cctx.moveTo(-s * 0.1, -s * 0.3); cctx.lineTo(s * 1.8, -s * 0.3); cctx.stroke();
+                            cctx.setLineDash([]);
+                            cctx.shadowBlur = 0;
+                            
+                            // 4. ATC / Command Bridge
+                            cctx.fillStyle = '#1c202b';
+                            cctx.fillRect(-s * 0.8, -s * 0.2, s * 0.4, s * 0.4);
+                            cctx.fillStyle = 'rgba(0, 255, 255, 0.8)'; // Windows
+                            cctx.fillRect(-s * 0.5, -s * 0.1, s * 0.1, s * 0.2);
+                            
+                            // 5. Heavy Engine Vents
+                            cctx.fillStyle = '#ffaa00';
+                            cctx.fillRect(-s * 1.8, s * 0.8, s * 0.2, s * 0.5);
+                            cctx.fillRect(-s * 1.8, -s * 1.3, s * 0.2, s * 0.5);
+                        } else if (this.isDrone || this.isEliteDrone) {
+                            cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; 
+                            cctx.strokeStyle = '#333'; cctx.lineWidth = s * 0.4;
+                            cctx.beginPath(); cctx.moveTo(-s*1.5, -s*1.5); cctx.lineTo(s*1.5, s*1.5); cctx.stroke();
+                            cctx.beginPath(); cctx.moveTo(s*1.5, -s*1.5); cctx.lineTo(-s*1.5, s*1.5); cctx.stroke();
+                            
+                            cctx.strokeStyle = factionColors[this.faction]; 
+                            cctx.lineWidth = 1.5;
+                            if (this.isEliteDrone) cctx.strokeStyle = '#ffcc00'; // Gold plating
+                            
+                            cctx.fillStyle = '#111';
+                            let rotors = [ {x: -s*1.5, y: -s*1.5}, {x: s*1.5, y: -s*1.5}, {x: -s*1.5, y: s*1.5}, {x: s*1.5, y: s*1.5} ];
+                            rotors.forEach(r => {
+                                cctx.beginPath(); cctx.arc(r.x, r.y, s*0.8, 0, Math.PI*2); cctx.fill(); cctx.stroke();
+                                cctx.fillStyle = this.isEliteDrone ? 'rgba(255, 204, 0, 0.6)' : 'rgba(200, 240, 255, 0.6)';
+                                cctx.beginPath(); cctx.arc(r.x, r.y, s*0.5, 0, Math.PI*2); cctx.fill();
+                                cctx.fillStyle = '#111'; 
+                            });
+                            cctx.fillStyle = '#1a1d22';
+                            cctx.beginPath(); cctx.ellipse(0, 0, s*1.1, s*0.9, 0, 0, Math.PI*2); cctx.fill();
+                            cctx.stroke();
+                            
+                            cctx.fillStyle = this.isEliteDrone ? '#ffcc00' : '#00ffff'; 
+                            cctx.shadowBlur = 5; cctx.shadowColor = this.isEliteDrone ? '#ffcc00' : '#00ffff';
+                            cctx.beginPath(); cctx.arc(s*0.7, 0, s*0.3, 0, Math.PI*2); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            
+                            // RENDER MOBILE BASTION SHIELD ON DRONES
+                            // Drones don't use the global shield drawing block, so we bake it into their cache!
+                            if (this.shield > 0) {
+                                cctx.strokeStyle = factionColors[this.faction];
+                                cctx.lineWidth = 1.5;
+                                for (let k = 0; k < this.shield; k++) {
+                                    cctx.beginPath();
+                                    // Widened the base radius to 3.5 and the layer spacing to 4 to clear the drone's rotor tips
+                                    cctx.arc(0, 0, s * 3.5 + (k * 4), 0, Math.PI * 2); 
+                                    cctx.stroke();
+                                }
                             }
+                        } else if (this.isStealth) {
+                            // --- GHOST SPECTRE (Large High-Tech Stealth Bomber) ---
+                            let scale = 1.3; // Visually scales up the ship without breaking collision logic
+                            
+                            cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction]; 
+                            
+                            // 1. Base Hull (Elongated, massive wingspan)
+                            cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath();
+                            cctx.moveTo(s * 2.4 * scale, 0);                 // Piercing long nose
+                            cctx.lineTo(s * 0.4 * scale, s * 0.6 * scale);   // Forward swept shoulders
+                            cctx.lineTo(-s * 0.8 * scale, s * 2.0 * scale);  // Massive swept wings
+                            cctx.lineTo(-s * 0.5 * scale, s * 0.7 * scale);  // Wing inner joint
+                            cctx.lineTo(-s * 1.4 * scale, 0);                // Deep engine bay cutout
+                            cctx.lineTo(-s * 0.5 * scale, -s * 0.7 * scale); 
+                            cctx.lineTo(-s * 0.8 * scale, -s * 2.0 * scale); 
+                            cctx.lineTo(s * 0.4 * scale, -s * 0.6 * scale);
+                            cctx.closePath(); cctx.fill(); 
+                            cctx.shadowBlur = 0;
+                            
+                            // Crisp dark outline
+                            cctx.strokeStyle = '#11151c'; 
+                            cctx.lineWidth = 1.5; 
+                            cctx.stroke();
+                            
+                            // 2. Dark Radar-Absorbent Inner Plating (Segmented Core)
+                            cctx.fillStyle = '#161a22'; 
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.2 * scale, 0); 
+                            cctx.lineTo(s * 0.2 * scale, s * 0.3 * scale); 
+                            cctx.lineTo(-s * 0.6 * scale, s * 0.3 * scale);
+                            cctx.lineTo(-s * 0.4 * scale, 0);
+                            cctx.lineTo(-s * 0.6 * scale, -s * 0.3 * scale);
+                            cctx.lineTo(s * 0.2 * scale, -s * 0.3 * scale); 
+                            cctx.fill();
+                            
+                            // Add a subtle metallic rim to the inner plating
+                            cctx.strokeStyle = '#2a3040'; 
+                            cctx.lineWidth = 1.5;
+                            cctx.stroke();
+                            
+                            // 3. Stealth "V" Visor / Forward Optical Array
+                            cctx.shadowBlur = 10; cctx.shadowColor = '#00ffff';
+                            cctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.5 * scale, 0);
+                            cctx.lineTo(s * 0.8 * scale, s * 0.25 * scale);
+                            cctx.lineTo(s * 0.9 * scale, 0);
+                            cctx.lineTo(s * 0.8 * scale, -s * 0.25 * scale);
+                            cctx.closePath();
+                            cctx.fill();
+                            
+                            // 4. Cloak Emitters (Glowing nodes on the wings)
+                            cctx.fillStyle = '#ffffff';
+                            cctx.beginPath(); cctx.arc(-s * 0.4 * scale, s * 1.2 * scale, s * 0.15 * scale, 0, Math.PI*2); cctx.fill();
+                            cctx.beginPath(); cctx.arc(-s * 0.4 * scale, -s * 1.2 * scale, s * 0.15 * scale, 0, Math.PI*2); cctx.fill();
+                            
+                            // 5. Twin Sub-Thrusters (Energy coils)
+                            cctx.fillStyle = 'rgba(0, 255, 255, 0.6)';
+                            cctx.fillRect(-s * 1.0 * scale, s * 0.2 * scale, s * 0.4 * scale, s * 0.15 * scale); 
+                            cctx.fillRect(-s * 1.0 * scale, -s * 0.35 * scale, s * 0.4 * scale, s * 0.15 * scale);
+                            cctx.shadowBlur = 0;
+                            
+                            // 6. Hull Paneling & Geometric Lines
+                            cctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+                            cctx.lineWidth = 1.5;
+                            cctx.beginPath();
+                            // Wing cut lines
+                            cctx.moveTo(0, s * 0.6 * scale); cctx.lineTo(-s * 0.5 * scale, s * 1.8 * scale);
+                            cctx.moveTo(0, -s * 0.6 * scale); cctx.lineTo(-s * 0.5 * scale, -s * 1.8 * scale);
+                            // Center spine
+                            cctx.moveTo(s * 1.5 * scale, 0); cctx.lineTo(-s * 0.4 * scale, 0);
+                            cctx.stroke();
+                        } else if (this.isLightning) {
+                            // THE STORM CALLER: High-tech Tuning Fork / Railgun Chassis
+                            cctx.shadowBlur = 15; cctx.shadowColor = '#00ffff'; cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.2, 0); 
+                            cctx.lineTo(s * 0.2, s * 0.8); 
+                            cctx.lineTo(-s * 1.0, s * 0.6); 
+                            cctx.lineTo(-s * 0.5, 0); 
+                            cctx.lineTo(-s * 1.0, -s * 0.6); 
+                            cctx.lineTo(s * 0.2, -s * 0.8); 
+                            cctx.closePath(); cctx.fill();
+                            
+                            // Forward Conducting Prongs
+                            cctx.strokeStyle = '#00ffff'; cctx.lineWidth = 2.5;
+                            cctx.beginPath(); cctx.moveTo(s * 0.2, s * 0.6); cctx.lineTo(s * 1.8, s * 0.4); cctx.stroke();
+                            cctx.beginPath(); cctx.moveTo(s * 0.2, -s * 0.6); cctx.lineTo(s * 1.8, -s * 0.4); cctx.stroke();
+                            
+                            // Internal Reactor
+                            cctx.fillStyle = '#ffffff';
+                            cctx.beginPath(); cctx.arc(s * 0.2, 0, s * 0.25, 0, Math.PI * 2); cctx.fill();
+                            cctx.shadowBlur = 0;
+                        } else if (this.isFlame) {
+                            // --- PYROMANCER (Inferno Twin-Prong Cruiser) ---
+                            // 1. Base Dark Hull (Scorched, heat-resistant plating)
+                            cctx.shadowBlur = 15; cctx.shadowColor = '#ff3300';
+                            cctx.fillStyle = '#110500'; // Very dark reddish-black
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.8, s * 0.8);   // Right igniter tip
+                            cctx.lineTo(s * 0.8, s * 0.8);   // Right inner
+                            cctx.lineTo(s * 0.4, s * 0.3);   // Flame nozzle base right
+                            cctx.lineTo(s * 0.4, -s * 0.3);  // Flame nozzle base left
+                            cctx.lineTo(s * 0.8, -s * 0.8);  // Left inner
+                            cctx.lineTo(s * 1.8, -s * 0.8);  // Left igniter tip
+                            cctx.lineTo(s * 0.2, -s * 1.4);  // Left swept wing
+                            cctx.lineTo(-s * 1.4, -s * 1.0); // Rear left
+                            cctx.lineTo(-s * 1.0, 0);        // Engine indent
+                            cctx.lineTo(-s * 1.4, s * 1.0);  // Rear right
+                            cctx.lineTo(s * 0.2, s * 1.4);   // Right swept wing
+                            cctx.closePath(); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            
+                            // Trim the hull in the faction's color so we know whose ship it is
+                            cctx.strokeStyle = factionColors[this.faction]; 
+                            cctx.lineWidth = 1.5; 
+                            cctx.stroke();
+                            
+                            // 2. Heavy Faction Plating on the wings
+                            cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath(); cctx.moveTo(-s * 0.8, s * 0.4); cctx.lineTo(-s * 1.2, s * 0.9); cctx.lineTo(-s * 0.2, s * 1.2); cctx.closePath(); cctx.fill();
+                            cctx.beginPath(); cctx.moveTo(-s * 0.8, -s * 0.4); cctx.lineTo(-s * 1.2, -s * 0.9); cctx.lineTo(-s * 0.2, -s * 1.2); cctx.closePath(); cctx.fill();
+                            
+                            // 3. Central Magma Chamber / Volatile Fuel Tank
+                            cctx.fillStyle = '#1c0a00';
+                            cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.6, 0, Math.PI * 2); cctx.fill();
+                            cctx.shadowBlur = 10; cctx.shadowColor = '#ff4400';
+                            cctx.fillStyle = '#ff6600'; // Outer glow of the tank
+                            cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.4, 0, Math.PI * 2); cctx.fill();
+                            cctx.fillStyle = '#ffffff'; // White-hot core
+                            cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.15, 0, Math.PI * 2); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            
+                            // 4. Glowing Igniter Coils (Forward Prongs)
+                            cctx.strokeStyle = '#ffaa00'; cctx.lineWidth = 2.5;
+                            cctx.lineCap = 'round';
+                            cctx.beginPath(); cctx.moveTo(s * 0.8, s * 0.8); cctx.lineTo(s * 1.8, s * 0.8); cctx.stroke();
+                            cctx.beginPath(); cctx.moveTo(s * 0.8, -s * 0.8); cctx.lineTo(s * 1.8, -s * 0.8); cctx.stroke();
+                            
+                            // 5. Rear Thermal Vents bleeding off excess heat
+                            cctx.fillStyle = '#ff2200';
+                            cctx.fillRect(-s * 1.2, s * 0.3, s * 0.4, s * 0.15);
+                            cctx.fillRect(-s * 1.2, -s * 0.45, s * 0.4, s * 0.15);
+                        } else if (this.isVoidWasp) {
+                            // THE VOID WASP: High-Tech Energy Dart
+                            cctx.shadowBlur = 12; cctx.shadowColor = '#ff0044'; 
+                            
+                            // Main hull (Black metallic arrowhead)
+                            cctx.fillStyle = '#080808';
+                            cctx.beginPath();
+                            cctx.moveTo(s * 2.5, 0); // Extended sharp nose
+                            cctx.lineTo(-s * 1.2, s * 1.2); 
+                            cctx.lineTo(-s * 0.6, 0); // Deep cut in the back
+                            cctx.lineTo(-s * 1.2, -s * 1.2); 
+                            cctx.closePath(); cctx.fill();
+                            
+                            // Crimson Energy Blades along the wings
+                            cctx.strokeStyle = '#ff0044'; cctx.lineWidth = 2;
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, s * 1.0);
+                            cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, -s * 1.0);
+                            cctx.stroke();
+                            
+                            // Blazing white-hot core
+                            cctx.fillStyle = '#ffffff';
+                            cctx.beginPath();
+                            cctx.ellipse(s * 0.5, 0, s * 0.6, s * 0.2, 0, 0, Math.PI * 2);
+                            cctx.fill();
+                            
+                            cctx.shadowBlur = 0; // Reset
+                        } else if (typeKey === 'ace') {
+                            // --- ELITE ACE FIGHTER ---
+                            cctx.shadowBlur = 12; cctx.shadowColor = factionColors[this.faction];
+                            cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath();
+                            cctx.moveTo(s * 2.2, 0); // Sharp dart nose
+                            cctx.lineTo(s * 0.2, s * 0.8); // Swept forward shoulders
+                            cctx.lineTo(-s * 0.6, s * 1.5); // Extended wings
+                            cctx.lineTo(-s * 1.2, s * 0.4); // Forward swept inner wing
+                            cctx.lineTo(-s * 0.8, 0); 
+                            cctx.lineTo(-s * 1.2, -s * 0.4);
+                            cctx.lineTo(-s * 0.6, -s * 1.5);
+                            cctx.lineTo(s * 0.2, -s * 0.8);
+                            cctx.closePath(); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            
+                            cctx.strokeStyle = '#fff'; cctx.lineWidth = 1; cctx.stroke();
+                            
+                            // Golden Ace Accents
+                            cctx.fillStyle = '#ffcc00';
+                            cctx.beginPath(); cctx.moveTo(s * 0.6, 0); cctx.lineTo(-s * 0.2, s * 0.3); cctx.lineTo(-s * 0.2, -s * 0.3); cctx.fill();
+                            cctx.fillStyle = '#111';
+                            cctx.fillRect(-s * 0.4, -s * 0.2, s * 0.4, s * 0.4); // Cockpit
+                        } else {
+                            // Standard Ship
+                            cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.8, 0); cctx.lineTo(-s * 0.5, s * 0.6); cctx.lineTo(-s * 1.2, s * 0.9); cctx.lineTo(-s * 0.8, s * 0.4);
+                            cctx.lineTo(-s * 1.0, 0); cctx.lineTo(-s * 0.8, -s * 0.4); cctx.lineTo(-s * 1.2, -s * 0.9); cctx.lineTo(-s * 0.5, -s * 0.6);
+                            cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
+                            cctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; cctx.lineWidth = 1; cctx.stroke();
+                            cctx.fillStyle = '#fff'; cctx.fillRect(-s * 1.2, s * 0.8, s * 0.4, s * 0.2); cctx.fillRect(-s * 1.2, -s * 1.0, s * 0.4, s * 0.2);
+                            cctx.fillStyle = 'rgba(200, 240, 255, 0.8)'; cctx.beginPath();
+                            cctx.moveTo(s * 0.8, 0); cctx.lineTo(s * 0.2, s * 0.25); cctx.lineTo(-s * 0.2, 0); cctx.lineTo(s * 0.2, -s * 0.25);
+                            cctx.closePath(); cctx.fill();
+                            cctx.fillStyle = '#ffffff'; cctx.beginPath(); cctx.arc(s * 0.4, -s * 0.05, s * 0.08, 0, Math.PI * 2); cctx.fill();
                         }
-                    } else if (this.isStealth) {
-                        // --- GHOST SPECTRE (Large High-Tech Stealth Bomber) ---
-                        let scale = 1.3; // Visually scales up the ship without breaking collision logic
                         
-                        cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction]; 
-                        
-                        // 1. Base Hull (Elongated, massive wingspan)
-                        cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath();
-                        cctx.moveTo(s * 2.4 * scale, 0);                 // Piercing long nose
-                        cctx.lineTo(s * 0.4 * scale, s * 0.6 * scale);   // Forward swept shoulders
-                        cctx.lineTo(-s * 0.8 * scale, s * 2.0 * scale);  // Massive swept wings
-                        cctx.lineTo(-s * 0.5 * scale, s * 0.7 * scale);  // Wing inner joint
-                        cctx.lineTo(-s * 1.4 * scale, 0);                // Deep engine bay cutout
-                        cctx.lineTo(-s * 0.5 * scale, -s * 0.7 * scale); 
-                        cctx.lineTo(-s * 0.8 * scale, -s * 2.0 * scale); 
-                        cctx.lineTo(s * 0.4 * scale, -s * 0.6 * scale);
-                        cctx.closePath(); cctx.fill(); 
-                        cctx.shadowBlur = 0;
-                        
-                        // Crisp dark outline
-                        cctx.strokeStyle = '#11151c'; 
-                        cctx.lineWidth = 1.5; 
-                        cctx.stroke();
-                        
-                        // 2. Dark Radar-Absorbent Inner Plating (Segmented Core)
-                        cctx.fillStyle = '#161a22'; 
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.2 * scale, 0); 
-                        cctx.lineTo(s * 0.2 * scale, s * 0.3 * scale); 
-                        cctx.lineTo(-s * 0.6 * scale, s * 0.3 * scale);
-                        cctx.lineTo(-s * 0.4 * scale, 0);
-                        cctx.lineTo(-s * 0.6 * scale, -s * 0.3 * scale);
-                        cctx.lineTo(s * 0.2 * scale, -s * 0.3 * scale); 
-                        cctx.fill();
-                        
-                        // Add a subtle metallic rim to the inner plating
-                        cctx.strokeStyle = '#2a3040'; 
-                        cctx.lineWidth = 1.5;
-                        cctx.stroke();
-                        
-                        // 3. Stealth "V" Visor / Forward Optical Array
-                        cctx.shadowBlur = 10; cctx.shadowColor = '#00ffff';
-                        cctx.fillStyle = 'rgba(0, 255, 255, 0.9)';
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.5 * scale, 0);
-                        cctx.lineTo(s * 0.8 * scale, s * 0.25 * scale);
-                        cctx.lineTo(s * 0.9 * scale, 0);
-                        cctx.lineTo(s * 0.8 * scale, -s * 0.25 * scale);
-                        cctx.closePath();
-                        cctx.fill();
-                        
-                        // 4. Cloak Emitters (Glowing nodes on the wings)
-                        cctx.fillStyle = '#ffffff';
-                        cctx.beginPath(); cctx.arc(-s * 0.4 * scale, s * 1.2 * scale, s * 0.15 * scale, 0, Math.PI*2); cctx.fill();
-                        cctx.beginPath(); cctx.arc(-s * 0.4 * scale, -s * 1.2 * scale, s * 0.15 * scale, 0, Math.PI*2); cctx.fill();
-                        
-                        // 5. Twin Sub-Thrusters (Energy coils)
-                        cctx.fillStyle = 'rgba(0, 255, 255, 0.6)';
-                        cctx.fillRect(-s * 1.0 * scale, s * 0.2 * scale, s * 0.4 * scale, s * 0.15 * scale); 
-                        cctx.fillRect(-s * 1.0 * scale, -s * 0.35 * scale, s * 0.4 * scale, s * 0.15 * scale);
-                        cctx.shadowBlur = 0;
-                        
-                        // 6. Hull Paneling & Geometric Lines
-                        cctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
-                        cctx.lineWidth = 1.5;
-                        cctx.beginPath();
-                        // Wing cut lines
-                        cctx.moveTo(0, s * 0.6 * scale); cctx.lineTo(-s * 0.5 * scale, s * 1.8 * scale);
-                        cctx.moveTo(0, -s * 0.6 * scale); cctx.lineTo(-s * 0.5 * scale, -s * 1.8 * scale);
-                        // Center spine
-                        cctx.moveTo(s * 1.5 * scale, 0); cctx.lineTo(-s * 0.4 * scale, 0);
-                        cctx.stroke();
-                    } else if (this.isLightning) {
-                        // THE STORM CALLER: High-tech Tuning Fork / Railgun Chassis
-                        cctx.shadowBlur = 15; cctx.shadowColor = '#00ffff'; cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.2, 0); 
-                        cctx.lineTo(s * 0.2, s * 0.8); 
-                        cctx.lineTo(-s * 1.0, s * 0.6); 
-                        cctx.lineTo(-s * 0.5, 0); 
-                        cctx.lineTo(-s * 1.0, -s * 0.6); 
-                        cctx.lineTo(s * 0.2, -s * 0.8); 
-                        cctx.closePath(); cctx.fill();
-                        
-                        // Forward Conducting Prongs
-                        cctx.strokeStyle = '#00ffff'; cctx.lineWidth = 2.5;
-                        cctx.beginPath(); cctx.moveTo(s * 0.2, s * 0.6); cctx.lineTo(s * 1.8, s * 0.4); cctx.stroke();
-                        cctx.beginPath(); cctx.moveTo(s * 0.2, -s * 0.6); cctx.lineTo(s * 1.8, -s * 0.4); cctx.stroke();
-                        
-                        // Internal Reactor
-                        cctx.fillStyle = '#ffffff';
-                        cctx.beginPath(); cctx.arc(s * 0.2, 0, s * 0.25, 0, Math.PI * 2); cctx.fill();
-                        cctx.shadowBlur = 0;
-                    } else if (this.isFlame) {
-                        // --- PYROMANCER (Inferno Twin-Prong Cruiser) ---
-                        // 1. Base Dark Hull (Scorched, heat-resistant plating)
-                        cctx.shadowBlur = 15; cctx.shadowColor = '#ff3300';
-                        cctx.fillStyle = '#110500'; // Very dark reddish-black
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.8, s * 0.8);   // Right igniter tip
-                        cctx.lineTo(s * 0.8, s * 0.8);   // Right inner
-                        cctx.lineTo(s * 0.4, s * 0.3);   // Flame nozzle base right
-                        cctx.lineTo(s * 0.4, -s * 0.3);  // Flame nozzle base left
-                        cctx.lineTo(s * 0.8, -s * 0.8);  // Left inner
-                        cctx.lineTo(s * 1.8, -s * 0.8);  // Left igniter tip
-                        cctx.lineTo(s * 0.2, -s * 1.4);  // Left swept wing
-                        cctx.lineTo(-s * 1.4, -s * 1.0); // Rear left
-                        cctx.lineTo(-s * 1.0, 0);        // Engine indent
-                        cctx.lineTo(-s * 1.4, s * 1.0);  // Rear right
-                        cctx.lineTo(s * 0.2, s * 1.4);   // Right swept wing
-                        cctx.closePath(); cctx.fill();
-                        cctx.shadowBlur = 0;
-                        
-                        // Trim the hull in the faction's color so we know whose ship it is
-                        cctx.strokeStyle = factionColors[this.faction]; 
-                        cctx.lineWidth = 1.5; 
-                        cctx.stroke();
-                        
-                        // 2. Heavy Faction Plating on the wings
-                        cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath(); cctx.moveTo(-s * 0.8, s * 0.4); cctx.lineTo(-s * 1.2, s * 0.9); cctx.lineTo(-s * 0.2, s * 1.2); cctx.closePath(); cctx.fill();
-                        cctx.beginPath(); cctx.moveTo(-s * 0.8, -s * 0.4); cctx.lineTo(-s * 1.2, -s * 0.9); cctx.lineTo(-s * 0.2, -s * 1.2); cctx.closePath(); cctx.fill();
-                        
-                        // 3. Central Magma Chamber / Volatile Fuel Tank
-                        cctx.fillStyle = '#1c0a00';
-                        cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.6, 0, Math.PI * 2); cctx.fill();
-                        cctx.shadowBlur = 10; cctx.shadowColor = '#ff4400';
-                        cctx.fillStyle = '#ff6600'; // Outer glow of the tank
-                        cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.4, 0, Math.PI * 2); cctx.fill();
-                        cctx.fillStyle = '#ffffff'; // White-hot core
-                        cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.15, 0, Math.PI * 2); cctx.fill();
-                        cctx.shadowBlur = 0;
-                        
-                        // 4. Glowing Igniter Coils (Forward Prongs)
-                        cctx.strokeStyle = '#ffaa00'; cctx.lineWidth = 2.5;
-                        cctx.lineCap = 'round';
-                        cctx.beginPath(); cctx.moveTo(s * 0.8, s * 0.8); cctx.lineTo(s * 1.8, s * 0.8); cctx.stroke();
-                        cctx.beginPath(); cctx.moveTo(s * 0.8, -s * 0.8); cctx.lineTo(s * 1.8, -s * 0.8); cctx.stroke();
-                        
-                        // 5. Rear Thermal Vents bleeding off excess heat
-                        cctx.fillStyle = '#ff2200';
-                        cctx.fillRect(-s * 1.2, s * 0.3, s * 0.4, s * 0.15);
-                        cctx.fillRect(-s * 1.2, -s * 0.45, s * 0.4, s * 0.15);
-                    } else if (this.isVoidWasp) {
-                        // THE VOID WASP: High-Tech Energy Dart
-                        cctx.shadowBlur = 12; cctx.shadowColor = '#ff0044'; 
-                        
-                        // Main hull (Black metallic arrowhead)
-                        cctx.fillStyle = '#080808';
-                        cctx.beginPath();
-                        cctx.moveTo(s * 2.5, 0); // Extended sharp nose
-                        cctx.lineTo(-s * 1.2, s * 1.2); 
-                        cctx.lineTo(-s * 0.6, 0); // Deep cut in the back
-                        cctx.lineTo(-s * 1.2, -s * 1.2); 
-                        cctx.closePath(); cctx.fill();
-                        
-                        // Crimson Energy Blades along the wings
-                        cctx.strokeStyle = '#ff0044'; cctx.lineWidth = 2;
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, s * 1.0);
-                        cctx.moveTo(s * 1.5, 0); cctx.lineTo(-s * 1.0, -s * 1.0);
-                        cctx.stroke();
-                        
-                        // Blazing white-hot core
-                        cctx.fillStyle = '#ffffff';
-                        cctx.beginPath();
-                        cctx.ellipse(s * 0.5, 0, s * 0.6, s * 0.2, 0, 0, Math.PI * 2);
-                        cctx.fill();
-                        
-                        cctx.shadowBlur = 0; // Reset
-                    } else if (typeKey === 'ace') {
-                        // --- ELITE ACE FIGHTER ---
-                        cctx.shadowBlur = 12; cctx.shadowColor = factionColors[this.faction];
-                        cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath();
-                        cctx.moveTo(s * 2.2, 0); // Sharp dart nose
-                        cctx.lineTo(s * 0.2, s * 0.8); // Swept forward shoulders
-                        cctx.lineTo(-s * 0.6, s * 1.5); // Extended wings
-                        cctx.lineTo(-s * 1.2, s * 0.4); // Forward swept inner wing
-                        cctx.lineTo(-s * 0.8, 0); 
-                        cctx.lineTo(-s * 1.2, -s * 0.4);
-                        cctx.lineTo(-s * 0.6, -s * 1.5);
-                        cctx.lineTo(s * 0.2, -s * 0.8);
-                        cctx.closePath(); cctx.fill();
-                        cctx.shadowBlur = 0;
-                        
-                        cctx.strokeStyle = '#fff'; cctx.lineWidth = 1; cctx.stroke();
-                        
-                        // Golden Ace Accents
-                        cctx.fillStyle = '#ffcc00';
-                        cctx.beginPath(); cctx.moveTo(s * 0.6, 0); cctx.lineTo(-s * 0.2, s * 0.3); cctx.lineTo(-s * 0.2, -s * 0.3); cctx.fill();
-                        cctx.fillStyle = '#111';
-                        cctx.fillRect(-s * 0.4, -s * 0.2, s * 0.4, s * 0.4); // Cockpit
-                    } else {
-                        // Standard Ship
-                        cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction]; cctx.fillStyle = factionColors[this.faction];
-                        cctx.beginPath();
-                        cctx.moveTo(s * 1.8, 0); cctx.lineTo(-s * 0.5, s * 0.6); cctx.lineTo(-s * 1.2, s * 0.9); cctx.lineTo(-s * 0.8, s * 0.4);
-                        cctx.lineTo(-s * 1.0, 0); cctx.lineTo(-s * 0.8, -s * 0.4); cctx.lineTo(-s * 1.2, -s * 0.9); cctx.lineTo(-s * 0.5, -s * 0.6);
-                        cctx.closePath(); cctx.fill(); cctx.shadowBlur = 0;
-                        cctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; cctx.lineWidth = 1; cctx.stroke();
-                        cctx.fillStyle = '#fff'; cctx.fillRect(-s * 1.2, s * 0.8, s * 0.4, s * 0.2); cctx.fillRect(-s * 1.2, -s * 1.0, s * 0.4, s * 0.2);
-                        cctx.fillStyle = 'rgba(200, 240, 255, 0.8)'; cctx.beginPath();
-                        cctx.moveTo(s * 0.8, 0); cctx.lineTo(s * 0.2, s * 0.25); cctx.lineTo(-s * 0.2, 0); cctx.lineTo(s * 0.2, -s * 0.25);
-                        cctx.closePath(); cctx.fill();
-                        cctx.fillStyle = '#ffffff'; cctx.beginPath(); cctx.arc(s * 0.4, -s * 0.05, s * 0.08, 0, Math.PI * 2); cctx.fill();
+                        // FIX: We must actually save the normal ship canvas into the cache!
+                        globalCache[cacheKey] = c;
                     }
-                    globalCache[cacheKey] = c;
                 }
                 
-                if (!skipCacheDraw) {
+                // Draw Cached Hull
+                if (this.isChaos) {
+                    // Loop through the 6 pre-baked frames seamlessly
+                    let frame = Math.floor(Date.now() / 100) % 6;
+                    const cache = globalCache[cacheKey][frame];
+                    ctx.drawImage(cache, -cache.width/2, -cache.height/2);
+                } else {
                     const cache = globalCache[cacheKey];
                     ctx.globalAlpha = (this.isStealth && this.cloakTimer > 0) ? 0.25 : 1.0;
                     ctx.drawImage(cache, -cache.width/2, -cache.height/2);
@@ -6399,7 +6700,7 @@
                     ctx.stroke();
                     ctx.restore();
                 }
-
+                
                 // --- RENDER RESTORATION AURA ---
                 if (perksEnabled && this.isSentinel && factionPerks[this.faction] && factionPerks[this.faction].sentinelAura > 0) {
                     let healRadius = s * 12.0; 
@@ -6685,18 +6986,26 @@
                     
                     if (shooter.kills >= 3 && !shooter.isVeteran && perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].veteran > 0) {
                         shooter.isVeteran = true;
-                        shooter.maxHp = 4;
-                        shooter.hp = 4; 
-                        shooter.size = 15; 
+                        if (shooter.isChaos || shooter.isChaosLeviathan) {
+                            shooter.maxHp += 1; shooter.hp += 1;
+                            shooter.size *= 1.2;
+                        } else {
+                            shooter.maxHp = 4; shooter.hp = 4; 
+                            shooter.size = 15; 
+                        }
                         for(let p=0; p<15; p++) particles.push(new Particle(shooter.position.x, shooter.position.y, '#00ff00'));
                     }
                     
                     // ACE UPGRADE PROTOCOL
                     if (shooter.kills >= 7 && !shooter.isAce && perksEnabled && shooter.faction >= 0 && shooter.faction < 4 && factionPerks[shooter.faction].acePilot > 0) {
                         shooter.isAce = true;
-                        shooter.maxHp += 2; // Extra health
-                        shooter.hp += 2; 
-                        shooter.size = 16; // Slightly larger than a Veteran (15)
+                        if (shooter.isChaos || shooter.isChaosLeviathan) {
+                            shooter.maxHp += 2; shooter.hp += 2;
+                            shooter.size *= 1.2;
+                        } else {
+                            shooter.maxHp += 2; shooter.hp += 2; 
+                            shooter.size = 16; 
+                        }
                         for(let p=0; p<25; p++) particles.push(new Particle(shooter.position.x, shooter.position.y, '#ffcc00', 2.0));
                     }
                 }
@@ -7034,8 +7343,14 @@
                         }
                     }
                 }
-                // Chaos Fleet Transformation (Sacrifice 4 basics for 2 Chaos Ships)
+                // Chaos Fleet Transformation (Sacrifice basics for Chaos Ships / Leviathan)
                 if (perksEnabled && factionPerks[f].chaosFleet > 0) {
+                    let hasAccretion = factionPerks[f].bioMassAccretion > 0;
+                    let hasLeviathan = hasAccretion && factionPerks[f].abyssalGrasp > 0 && factionPerks[f].eldritchLeviathan > 0;
+                    
+                    let neededBasics = (hasAccretion || hasLeviathan) ? 6 : 4;
+                    let numChaosSpawns = hasLeviathan ? 1 : (hasAccretion ? 3 : 2);
+
                     let basics = [];
                     for (let i = actualNumShips - 1; i >= 0; i--) {
                         let s = ships[factionSpawnStartIndex + i];
@@ -7043,13 +7358,20 @@
                             basics.push(s);
                         }
                     }
-                    if (basics.length >= 4) {
-                        for (let i = 0; i < 2; i++) {
+                    
+                    if (basics.length >= neededBasics) {
+                        for (let i = 0; i < numChaosSpawns; i++) {
                             basics[i].isChaos = true;
-                            basics[i].maxHp = 5; basics[i].hp = 5; basics[i].shield += 2; basics[i].size = 14;
-                            basics[i].attackRange = 130; // Closer range for tentacle swipes
+                            if (hasLeviathan) {
+                                basics[i].isChaosLeviathan = true;
+                                basics[i].maxHp = 15; basics[i].hp = 15; basics[i].shield += 5; basics[i].size = 28;
+                                basics[i].attackRange = 260; // Double range
+                            } else {
+                                basics[i].maxHp = 5; basics[i].hp = 5; basics[i].shield += 2; basics[i].size = 14;
+                                basics[i].attackRange = 130; 
+                            }
                         }
-                        for (let i = 2; i < 4; i++) {
+                        for (let i = numChaosSpawns; i < neededBasics; i++) {
                             basics[i].toRemove = true; // Sacrificed!
                             basics[i].hp = 0;
                         }
@@ -7094,12 +7416,50 @@
                 if (perksEnabled && factionPerks[f].quantumLink > 0) {
                     let tetheredMade = 0;
                     let maxTethers = 5 + (factionPerks[f].expandedLink * 2);
+                    let hasQS = factionPerks[f].quantumSpecialist > 0;
+                    
+                    if (hasQS) {
+                        let specShip = ships.find(s => s.faction === f && !s.isFlagship && !s.isCarrier && !s.isTethered && (s.isSniper || s.isSentinel || s.isStealth || s.isFlame || s.isLightning || s.isChaos));
+                        if (specShip) {
+                            specShip.isTethered = true;
+                            tetheredMade++;
+                        }
+                    }
+                    
                     for (let i = 0; i < actualNumShips; i++) {
                         let s = ships[factionSpawnStartIndex + i];
-                        if (!s.isFlagship && !s.isCarrier && !s.isSentinel && !s.isSniper && !s.isStealth && !s.isTethered) { 
+                        // Basic tethers skip all specialists natively to preserve them
+                        if (!s.isFlagship && !s.isCarrier && !s.isSentinel && !s.isSniper && !s.isStealth && !s.isFlame && !s.isLightning && !s.isChaos && !s.isTethered) { 
                             s.isTethered = true; 
                             tetheredMade++; 
                             if (tetheredMade >= maxTethers) break; 
+                        }
+                    }
+                }
+                
+                // Elite Academy Promotions (Runs last so it can promote anyone)
+                if (perksEnabled && factionPerks[f].eliteAcademy > 0) {
+                    let eligibleForPromo = ships.filter(s => s.faction === f && !s.toRemove && !s.isCarrier && !s.isAce);
+                    eligibleForPromo.sort(() => 0.5 - Math.random()); // Randomize promotion targets
+                    
+                    let acePromoted = 0;
+                    let vetPromoted = 0;
+                    
+                    for (let s of eligibleForPromo) {
+                        if (acePromoted < 1) {
+                            s.isVeteran = true; s.isAce = true; s.kills = 7;
+                            s.maxHp += 3; s.hp += 3; 
+                            if (s.isChaos || s.isChaosLeviathan) s.size *= 1.44; // Stacks +20% and +20%
+                            else s.size = 16;
+                            acePromoted++;
+                        } else if (vetPromoted < 3) {
+                            s.isVeteran = true; s.kills = 3;
+                            s.maxHp += 1; s.hp += 1;
+                            if (s.isChaos || s.isChaosLeviathan) s.size *= 1.2;
+                            else s.size = 15;
+                            vetPromoted++;
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -7403,8 +7763,12 @@
                 swatch.className = 'modal-swatch';
                 swatch.style.background = hex;
                 
-                if (claimedColors.includes(hex)) {
-                    swatch.classList.add('taken'); // Darken taken selections
+                if (hex === myMpColor) {
+                    // Clearly highlight YOUR selected color so you know what you clicked
+                    swatch.style.border = '3px solid #00ffff';
+                    swatch.style.boxShadow = '0 0 10px #00ffff';
+                } else if (claimedColors.includes(hex)) {
+                    swatch.classList.add('taken'); // Darken taken selections from other players
                 } else {
                     swatch.addEventListener('click', () => {
                         myMpColor = hex;
@@ -7613,9 +7977,51 @@
         });
         
         const availableColors = {
-            Red: '#ff4444', Blue: '#44aaff', Cyan: '#00ffff', 
-            Pink: '#ff66cc', Purple: '#aa44ff', Orange: '#ff8800', 
-            Yellow: '#ffcc00', Brown: '#8b4513', Green: '#22cc22', White: '#ffffff'
+            // Reds & Pinks
+            'True Red': '#e8282b', 'Crimson': '#e6194b', 'Ruby': '#ff0055', 'Red': '#ff4444', 
+            'Blood': '#990000', 'Maroon': '#800000', 'Rose': '#ff007f', 'Neon Pink': '#ff1493', 
+            'Hot Pink': '#ff66cc', 'Magenta': '#f032e6', 'Fuchsia': '#ff00ff',
+            
+            // Oranges & Yellows
+            'Coral': '#ff8c00', 'Orange': '#ffaa00', 'Solar Flare': '#ff5500', 'Rust': '#b7410e',
+            'Gold': '#ffcc00', 'Yellow': '#ffff00', 'Lemon': '#ccff00', 'Amber': '#ffbf00', 
+            'Mustard': '#ffdb58',
+            
+            // Greens
+            'Neon Green': '#3cb44b', 'Green': '#22cc22', 'Mint': '#00ff88', 'Emerald': '#00cc66', 
+            'Acid Green': '#88ff00', 'Forest': '#006600', 'Olive': '#808000', 'Jade': '#00a86b',
+            'Malachite': '#0bda51',
+            
+            // Cyans & Blues
+            'Aqua Sky': '#7bc4c4', 'Icy Blue': '#99ffff', 'Cyan': '#00ffff', 'Aqua': '#00e5ff', 
+            'Teal': '#008080', 'Sky Blue': '#44ccff', 'Blue': '#44aaff', 'Ultramarine Blue': '#4166f5',
+            'Persian Blue': '#1c39bb', 'Electric Blue': '#2962ff', 'Cobalt': '#0047ab', 
+            'Deep Navy': '#000080', 'Midnight Blue': '#191970',
+            
+            // Purples
+            'Indigo': '#4b0082', 'Purple': '#aa44ff', 'Violet': '#8a2be2', 'Cyber Purple': '#b200ff', 
+            'Amethyst': '#9966cc', 'Plum': '#dda0dd', 'Deep Purple': '#330066', 'Void Purple': '#1a0033',
+            
+            // Neutrals & Metals
+            'White': '#ffffff', 'Silver': '#cccccc', 'Gray': '#888888', 'Steel': '#555555', 
+            'Graphite': '#383838', 'Brown': '#9a6324', 'Bronze': '#cd7f32', 'Copper': '#b87333',
+            'Obsidian': '#222222',
+
+            // --- EXOTIC COLORS ---
+            'Powder Blue': '#B0E0E6', 'Ice Blue': '#A3BFFA', 'Soft Cyan': '#88D8C0',
+            'Turquoise': '#40E0D0', 'Chartreuse': '#7FFF00', 'Fern': '#4F7942',
+            'Pistachio': '#93C572', 'Barn Red': '#7C0A02', 'Chili Red': '#C21E17',
+            'Fire Brick': '#B22222', 'Redwood': '#A45A52', 'Carmine': '#960018',
+            'Wine': '#722F37', 'Scarlet': '#FF2400', 'Flamingo': '#FC8EAC',
+            'Heliotrope': '#DF73FF', 'Dewberry': '#754C78', 'Salmon': '#FA8072',
+            'Bubblegum': '#FFC1CC', 'Rouge': '#DC143C', 'Blush': '#DE5D83',
+            'Saffron': '#F4C430', 'Sienna': '#A0522D', 'Terracotta': '#E2725B',
+            'Burnt Orange': '#CC5500', 'Metallic Orange': '#E26310', 'Carrot Orange': '#ED9121',
+            'Orioles Orange': '#FB4F14', 'Canary Yellow': '#FFEF00', 'Goldenrod': '#DAA520',
+            'Lemon Chiffon': '#FFFACD', 'Pale Goldenrod': '#EEE8AA', 'Light Khaki': '#F0E68C',
+            'Royal Yellow': '#FADA5E', 'Exotic Gold': '#FFD700', 'Dove': '#D6D6D6',
+            'Pewter': '#99AABB', 'Exotic Steel': '#71797E', 'Arsenic': '#3B444B',
+            'Ash Gray': '#B2BEB5', 'Carbon Gray': '#625D5D', 'Davy’s Gray': '#555555'
         };
         
         let selectedColors = ['#ff4444', '#44aaff', '#ffcc00', '#ffffff'];
@@ -7655,15 +8061,32 @@
                     swatch.style.background = hex;
                     swatch.title = name;
                     
-                    if (currentlyTaken.includes(hex) && selectedColors[activePlayerIndex] !== hex) {
-                        swatch.classList.add('taken');
-                    } else {
-                        swatch.addEventListener('click', () => {
-                            selectedColors[activePlayerIndex] = hex;
-                            document.getElementById('color' + (activePlayerIndex + 1)).style.background = hex;
-                            document.getElementById('colorModal').style.display = 'none';
-                        });
-                    }
+                    if (currentlyTaken.includes(hex)) {
+                        if (selectedColors[activePlayerIndex] === hex) {
+                            // Highlight the color the player CURRENTLY has selected
+                            swatch.style.border = '3px solid #00ffff';
+                            swatch.style.boxShadow = '0 0 10px #00ffff';
+                        } else {
+                            // Visually indicate another bot/player has this color equipped
+                            swatch.style.border = '2px dashed #ff4444';
+                        }
+                    } 
+                    
+                    // UNLOCK EVERY COLOR: Click to select, or swap if taken
+                    swatch.addEventListener('click', () => {
+                        let existingIndex = currentlyTaken.indexOf(hex);
+                        
+                        // If this color is actively held by a bot, SWAP your old color to the bot!
+                        if (existingIndex !== -1 && existingIndex !== activePlayerIndex) {
+                            selectedColors[existingIndex] = selectedColors[activePlayerIndex];
+                            document.getElementById('color' + (existingIndex + 1)).style.background = selectedColors[existingIndex];
+                        }
+                        
+                        selectedColors[activePlayerIndex] = hex;
+                        document.getElementById('color' + (activePlayerIndex + 1)).style.background = hex;
+                        document.getElementById('colorModal').style.display = 'none';
+                    });
+                    
                     colorGrid.appendChild(swatch);
                 }
                 document.getElementById('colorModal').style.display = 'flex';
@@ -8119,7 +8542,8 @@
             
             // Wipe last round's temporary consumables!
             resetTempPerks();
-            
+            // Filter wrapper for Quantum Specialist (Requires AT LEAST 1 Specialist Perk)
+            let hasSpec = (fId) => factionPerks[fId].sniperFleet > 0 || factionPerks[fId].chaosFleet > 0 || factionPerks[fId].sentinelFleet > 0 || factionPerks[fId].stealthFleet > 0 || factionPerks[fId].flameFleet > 0 || factionPerks[fId].lightningFleet > 0 || factionPerks[fId].missileCruiser > 0;
             // Auto-level AI perks instantly
             for (let f = 0; f < activeFactionCount; f++) {
                 if (f === playerFactionId || (isMultiplayer && f < activeFactionCount - mpAiCount)) continue; 
@@ -8129,13 +8553,7 @@
                     if (isEpicRound && p.rarity !== 'epic') return false;
                     if (!isEpicRound && p.rarity === 'epic') return false;
                     if (factionPerks[f][p.id] >= p.maxLevel) return false;
-                    if (p.requires) {
-                        if (Array.isArray(p.requires)) {
-                            if (p.requires.some(r => factionPerks[f][r] === 0)) return false;
-                        } else {
-                            if (factionPerks[f][p.requires] === 0) return false;
-                        }
-                    }
+                    if (p.id === 'quantumSpecialist' && !hasSpec(f)) return false;
                     return true;
                 });
                 
@@ -8154,14 +8572,8 @@
                 if (isEpicRound && p.rarity !== 'epic') return false;
                 if (!isEpicRound && p.rarity === 'epic') return false;
                 if (factionPerks[playerFactionId][p.id] >= p.maxLevel) return false;
-                if (p.requires) {
-                    if (Array.isArray(p.requires)) {
-                        if (p.requires.some(r => factionPerks[playerFactionId][r] === 0)) return false;
-                    } else {
-                        if (factionPerks[playerFactionId][p.requires] === 0) return false;
-                    }
-                }
-                return true;
+                if (p.id === 'quantumSpecialist' && !hasSpec(playerFactionId)) return false;
+                    return true;
             });
             validPlayerPerks.sort(() => 0.5 - Math.random());
             let permChoices = validPlayerPerks.slice(0, 3);
@@ -8391,7 +8803,7 @@
                             let dist = Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1);
                             let angle = Math.atan2(seg.y2 - seg.y1, seg.x2 - seg.x1);
                             
-                            // Replaced heavy save/restore with direct matrix reversals
+                            ctx.save();
                             ctx.translate(seg.x1, seg.y1);
                             ctx.rotate(angle);
                             
@@ -8399,9 +8811,7 @@
                             ctx.drawImage(cacheToUse, 0, -15, dist, 30);
                             ctx.drawImage(cacheToUse, 0, -15, dist, 30);
                             
-                            // Reverse the matrix for the next segment
-                            ctx.rotate(-angle);
-                            ctx.translate(-seg.x1, -seg.y1);
+                            ctx.restore();
                         }
                         ctx.restore();
                     } else {
@@ -8885,7 +9295,7 @@
                     fastRemove(pdLasers, i);
                 }
             }
-
+            
             // Update Mines
             for (let i = mines.length - 1; i >= 0; i--) {
                 let m = mines[i];
@@ -8925,7 +9335,7 @@
                         
                         let hasShrapnel = perksEnabled && factionPerks[m.faction] && factionPerks[m.faction].shrapnelPayload > 0;
                         
-                       // Push a true AoE explosion
+                        // Push a true AoE explosion
                         explosions.push({
                             x: m.x, 
                             y: m.y, 
@@ -8984,7 +9394,7 @@
                 if (hit || pw.life <= 0) fastRemove(plasmaWakes, i);
             }
             
-           // Render Nova Core, EMP, and Singularity Explosions
+            // Render Nova Core, EMP, and Singularity Explosions
             for (let i = explosions.length - 1; i >= 0; i--) {
                 let ex = explosions[i];
                 
@@ -9135,7 +9545,7 @@
                         }
                     }
                     ctx.shadowBlur = 0;
-               } else {
+                } else {
                     // Standard Nova Core & Mine Explosion
                     ex.radius += 4;
                     ctx.beginPath();
