@@ -2601,6 +2601,7 @@
         { id: 'necrovirus', name: "Necrovirus", desc: "10% chance per level on kill to convert enemy ship to your faction.", maxLevel: 2, rarity: 'standard' },
         { id: 'explosiveDeath', name: "Nova Core", desc: "20% chance to explode on death (1 AoE dmg to ships/mines).", maxLevel: 1, rarity: 'standard' },
         { id: 'missileCruiser', name: "Missile Cruiser", desc: "Requires Flagship. The flagship stops firing lasers and shoots 4 missiles per second. -40% Speed, +2 HP, +1 Shield.", maxLevel: 1, requires: 'flagship', rarity: 'standard' },
+        { id: 'minigunDrop', name: "Automated Emplacements", desc: "Requires Missile Cruiser. The Cruiser drops a stationary Minigun Turret (3 HP) every 3 seconds.", maxLevel: 1, requires: 'missileCruiser', rarity: 'standard' },
         { id: 'expandedLink', name: "Expanded Link", desc: "Requires Quantum Link. Increases the maximum number of tethered ships by 2 per level.", maxLevel: 1, requires: 'quantumLink', rarity: 'standard' },
         { id: 'sentinelUpgrade', name: "Aegis Command", desc: "Requires Sentinel Guard. +1 Sentinel. Sentinels shield 5 nearest allies every 3s (Max 5 shields. Excludes Sentinels).", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
         { id: 'aegisOvercharge', name: "Aegis Overcharge", desc: "Requires Aegis Command. Shield pulse time decreased to 2s. Targets increased to 7. Max shield limit increased to 8 (Excludes Sentinels).", maxLevel: 1, requires: 'sentinelUpgrade', rarity: 'standard' },
@@ -2608,6 +2609,8 @@
         { id: 'sentinelAura', name: "Restoration Aura", desc: "Requires Sentinel Guard. Sentinels project an aura that heals nearby allies for 1 HP every 3s (Excludes Sentinels).", maxLevel: 1, requires: 'sentinelFleet', rarity: 'standard' },
         { id: 'reflectiveShields', name: "Reflective Aegis", desc: "Requires Aegis Command. Shields provided by Sentinels gain a hexagonal matrix that reflects projectiles back at attackers.", maxLevel: 1, requires: 'sentinelUpgrade', rarity: 'standard' },
         { id: 'sniperUpgrade', name: "Hyper-Velocity Sabots", desc: "Requires Sniper Squadron. Snipers gain +40% Range and +20% additional Projectile Speed.", maxLevel: 1, requires: 'sniperFleet', rarity: 'standard' },
+        { id: 'wrapAroundSabots', name: "Wrap-Around Sabots", desc: "Requires Gauss Cannon. Missed sniper projectiles that exit the screen wrap around to the opposite side up to 3 times.", maxLevel: 1, requires: 'gaussCannon', rarity: 'standard' },
+        { id: 'lastStand', name: "Last Stand", desc: "The last remaining ship gains +20% Speed/FR/Proj Speed, +2 Temp HP/Shield, & unlocks Twin/Burst Shot and Mines.", maxLevel: 1, rarity: 'standard' },
         { id: 'veteranFireRate', name: "Bloodlust", desc: "Requires Veteran. Every kill a ship gets increases its fire rate by 10%.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         { id: 'veteranMissile', name: "Macross Pods", desc: "Requires Veteran. Veterans fire 2 homing missiles instead of 1.", maxLevel: 1, requires: 'veteran', rarity: 'standard' },
         { id: 'splitFlagship', name: "Escape Pods", desc: "Requires Flagship. When destroyed, the Flagship splits into basic fighters based on level.", maxLevel: 3, requires: 'flagship', rarity: 'standard' },
@@ -2659,6 +2662,7 @@
         // NEW: Temporary Perk Pool
         const tempPerkDefs = [
         { id: 'temp_speed', name: "Overdrive Engines", desc: "Double the movement speed of all your ships for this round.", rarity: 'temp' },
+        { id: 'temp_veteran', name: "Veteran Override", desc: "For this round, all your basic ships are upgraded to Veterans (+1 HP, Missiles).", rarity: 'temp' },
         { id: 'temp_fireRate', name: "Hyper Capacitors", desc: "Double the fire rate of all your ships for this round.", rarity: 'temp' },
         { id: 'temp_shield', name: "Deflector Surge", desc: "All your ships gain a +1 HP Shield for this round.", rarity: 'temp' },
         { id: 'temp_extraShips', name: "Mercenary Squadron", desc: "Gain +10 extra ships instantly for this round.", rarity: 'temp' },
@@ -2682,6 +2686,7 @@
                 kineticChain: 0, wraithEngine: 0, aegisOvercharge: 0, sentinelArmor: 0, sentinelAura: 0, etherealForm: 0,
                 chaosFleet: 0, dualAppendages: 0, abyssalGrasp: 0, abyssalSlingshot: 0, bioMassAccretion: 0, eldritchLeviathan: 0,
                 quantumSpecialist: 0, eliteAcademy: 0, reflectiveShields: 0,
+                wrapAroundSabots: 0, lastStand: 0,
                 // Temps
                 temp_speed: 0, temp_fireRate: 0, temp_shield: 0, temp_extraShips: 0, temp_extraFlagship: 0,
                 temp_missileSwarm: 0, temp_kamikaze: 0, temp_railgun: 0
@@ -2960,6 +2965,7 @@
             constructor(x, y, angle, faction, shooter) {
                 this.x = x; this.y = y;
                 let speedMult = (perksEnabled && faction >= 0 && faction < 4) ? 1 + (factionPerks[faction].projSpeed * 0.10) : 1;
+                if (shooter && shooter.hasLastStandBuff) speedMult *= 1.2; // Last Stand Buff
                 this.vx = Math.cos(angle) * 7 * speedMult;
                 this.vy = Math.sin(angle) * 7 * speedMult;
                 this.faction = faction;
@@ -3012,6 +3018,10 @@
                 this.extraSpeedBuff = extraSpeedBuff; // Save for ricochets
                 
                 let speedMult = (perksEnabled && faction >= 0 && faction < 4) ? 1 + (factionPerks[faction].projSpeed * 0.10) : 1;
+                if (shooter && shooter.hasLastStandBuff) speedMult *= 1.2; // Last Stand Buff
+                
+                // Wrap-Around Sabots setup
+                this.wrapsRemaining = (shooter && shooter.isSniper && perksEnabled && faction >= 0 && faction < 4 && factionPerks[faction].wrapAroundSabots > 0) ? 3 : 0;
                 
                 // Snipers get +20% projectile speed, (+40% total if upgraded)
                 if (shooter && shooter.isSniper) {
@@ -3109,6 +3119,7 @@
                 this.y = y;
                 // Lightning is blindingly fast
                 let speedMult = (perksEnabled && faction >= 0 && faction < 4) ? 1 + (factionPerks[faction].projSpeed * 0.10) : 1;
+                if (shooter && shooter.hasLastStandBuff) speedMult *= 1.2; // Last Stand Buff
                 this.vx = Math.cos(angle) * 16 * speedMult; 
                 this.vy = Math.sin(angle) * 16 * speedMult;
                 this.faction = faction;
@@ -3144,6 +3155,7 @@
                 this.isEMP = isEMP; // Flag for shield-stripping payload
                 
                 let speedMult = (perksEnabled && faction >= 0) ? 1 + (factionPerks[faction].projSpeed * 0.10) : 1;
+                if (shooter && shooter.hasLastStandBuff) speedMult *= 1.2; // Last Stand Buff
                 this.speed = 5 * speedMult;
                 this.turnRate = 0.08;
                 
@@ -4755,6 +4767,7 @@
                 this.isMineLayer = false;
                 this.mineCooldown = Math.random() * 120 + 60; 
                 this.hasPhaseArmor = false;
+                this.hasLastStandBuff = false;
                 this.isFlagship = false;
                 this.isSniper = false;
                 this.isSentinel = false;
@@ -4802,6 +4815,7 @@
             }
             
             edges() {
+                if (this.isMinigun) return; // Do not bounce
                 let minX = 0, maxX = canvas.width;
                 let minY = 0, maxY = canvas.height;
                 
@@ -4849,7 +4863,7 @@
             }
             
             flock(ships) {
-                if (this.isSlingshotting) return; // Completely ignore normal steering while being ripped across space!
+                if (this.isSlingshotting || this.isMinigun) return; // Completely ignore normal steering
                 
                 let align = { x: 0, y: 0 }, cohere = { x: 0, y: 0 }, separ = { x: 0, y: 0 };
                 let totalAlly = 0, totalSepar = 0;
@@ -4981,6 +4995,38 @@
             combat(ships) {
                 if (isCountingDown) return;
                 
+                // --- MINIGUN TURRET BEHAVIOR ---
+                if (this.isMinigun) {
+                    if (this.laserCooldown > 0) this.laserCooldown--; // Always tick down cooldown!
+                    
+                    let target = null;
+                    let minDist = Infinity;
+                    for (let s of ships) {
+                        if (s.faction !== this.faction && s.hp > 0 && !s.toRemove && !(s.isStealth && s.cloakTimer > 0)) {
+                            let d = Math.hypot(this.position.x - s.position.x, this.position.y - s.position.y);
+                            if (d < minDist) { minDist = d; target = s; }
+                        }
+                    }
+                    
+                    if (target && minDist <= this.attackRange) {
+                        let targetAngle = Math.atan2(target.position.y - this.position.y, target.position.x - this.position.x);
+                        
+                        // Smoothly rotate turret toward target
+                        if (this.mgAngle === undefined) this.mgAngle = targetAngle;
+                        let diff = targetAngle - this.mgAngle;
+                        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                        this.mgAngle += diff * 0.3; // Snappy lerp rotation
+                        
+                        // Only fire if looking at the target
+                        if (this.laserCooldown <= 0 && Math.abs(diff) < 0.2) {
+                            lasers.push(new Laser(this.position.x, this.position.y, this.mgAngle, this.faction, this, 1, 1.5));
+                            playSound('laser');
+                            this.laserCooldown = 8; // Extreme fire rate
+                        }
+                    }
+                    return; // Skip normal combat entirely
+                }
+
                 // --- REVOLVING ORBS LOGIC ---
                 if (perksEnabled && this.faction >= 0 && this.faction < 4) {
                     let hasStormOrbs = this.isLightning && factionPerks[this.faction].stormOrbs > 0;
@@ -5467,6 +5513,8 @@
                         baseSpeed *= 0.5;
                     }
                     
+                    if (this.hasLastStandBuff) baseSpeed *= 1.2; // Last Stand +20% Speed
+                    
                     // While actively threading a corridor, let pathfinding win out over
                     // flocking/wall-separation instead of fighting it the whole way
                     if (inMazeNav) activeSteerWeight *= 2.2;
@@ -5535,6 +5583,26 @@
                         
                         // Missile Cruiser overwrites the normal laser combat entirely!
                         if (this.isMissileCruiser) {
+                            
+                            // Automated Minigun Emplacements
+                            if (perksEnabled && factionPerks[this.faction] && factionPerks[this.faction].minigunDrop > 0) {
+                                if (this.minigunDropTimer === undefined) this.minigunDropTimer = 180;
+                                this.minigunDropTimer--;
+                                if (this.minigunDropTimer <= 0) {
+                                    let mg = new Ship(this.position.x, this.position.y, this.faction);
+                                    mg.isMinigun = true;
+                                    mg.maxHp = 3; mg.hp = 3; mg.size = 8; mg.attackRange = 200; mg.laserCooldown = 0;
+                                    
+                                    // FORCE STATIONARY (Prevents drifting)
+                                    mg.velocity = {x: 0, y: 0};
+                                    mg.acceleration = {x: 0, y: 0};
+                                    mg.maxSpeed = 0; 
+                                    
+                                    ships.push(mg);
+                                    this.minigunDropTimer = 180;
+                                }
+                            }
+                            
                             if (this.missileCooldown <= 0) {
                                 // Calculate the exact world coordinates of the left and right launch pods
                                 let angle = Math.atan2(this.velocity.y, this.velocity.x);
@@ -5614,6 +5682,8 @@
                             
                             // Phantom Strike Fire Rate Buff (+50% Fire Rate)
                             if (isPhantomCloaked) finalCooldown /= 1.5;
+                            
+                            if (this.hasLastStandBuff) finalCooldown /= 1.2; // Last Stand +20% Fire Rate
                             
                             this.laserCooldown = finalCooldown; 
                         }
@@ -5953,6 +6023,88 @@
             }
             
             draw() {
+                if (this.isMinigun) {
+                    ctx.save();
+                    // Highly visible Tech Range Ring
+                    ctx.strokeStyle = `rgba(255, 255, 255, 0.25)`;
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([6, 8]);
+                    ctx.beginPath();
+                    ctx.arc(this.position.x, this.position.y, this.attackRange, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    ctx.translate(this.position.x, this.position.y);
+                    
+                    // Base Heavy Platform (Octagon)
+                    ctx.fillStyle = '#0a0d14';
+                    ctx.strokeStyle = factionColors[this.faction];
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    for (let i=0; i<8; i++) {
+                        let a = (Math.PI/4) * i;
+                        let px = Math.cos(a) * (this.size + 3);
+                        let py = Math.sin(a) * (this.size + 3);
+                        if (i===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill(); ctx.stroke();
+                    
+                    // Inner Base Design (Mechanical interlocking gear ring)
+                    ctx.fillStyle = '#11151c';
+                    ctx.beginPath(); ctx.arc(0, 0, this.size, 0, Math.PI*2); ctx.fill();
+                    
+                    // Faction colored segmented lock-ring
+                    ctx.fillStyle = factionColors[this.faction];
+                    ctx.globalAlpha = 0.6;
+                    for(let i=0; i<6; i++) {
+                        ctx.beginPath();
+                        ctx.arc(0, 0, this.size * 0.85, (i * Math.PI / 3), (i * Math.PI / 3) + 0.35);
+                        ctx.lineTo(0, 0);
+                        ctx.fill();
+                    }
+                    ctx.globalAlpha = 1.0;
+                    
+                    // Central Pivot joint
+                    ctx.fillStyle = '#333b4d';
+                    ctx.beginPath(); ctx.arc(0, 0, this.size * 0.5, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.stroke();
+                    
+                    // Rotating Gun Mount & Barrels
+                    ctx.rotate(this.mgAngle || 0);
+                    
+                    // Central Ammo Drum
+                    ctx.fillStyle = '#111';
+                    ctx.beginPath(); ctx.arc(-2, 0, this.size * 0.7, 0, Math.PI*2); ctx.fill();
+                    ctx.lineWidth = 1; ctx.strokeStyle = factionColors[this.faction]; ctx.stroke();
+
+                    // Multi-barrel Rotary Cannon
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(this.size * 0.4, -3.5, this.size * 1.5, 2);
+                    ctx.fillRect(this.size * 0.4, 1.5, this.size * 1.5, 2);
+                    ctx.fillStyle = '#777';
+                    ctx.fillRect(this.size * 0.4, -1, this.size * 1.8, 2); // Center barrel extending further
+                    
+                    // Muzzle flash / Heat if firing
+                    if (this.laserCooldown > 4) {
+                        ctx.shadowBlur = 10; ctx.shadowColor = '#ffcc00';
+                        ctx.fillStyle = '#ffaa00';
+                        ctx.beginPath(); ctx.arc(this.size * 2.3, 0, 3 + Math.random()*2, 0, Math.PI*2); ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.restore();
+                    
+                    // Draw HP Pips cleanly underneath
+                    if (this.hp < this.maxHp) {
+                        ctx.fillStyle = '#fff';
+                        for (let i = 0; i < this.hp; i++) {
+                            ctx.fillRect(this.position.x - 4 + (i * 3), this.position.y + 14, 2, 2);
+                        }
+                    }
+                    return; // Skip drawing standard hull
+                }
+
                 // --- RENDER CHAOS TENTACLES UNDER THE SHIP ---
                 if (this.isChaos) {
                     // 0. Abyssal Slingshot Tether
@@ -6132,9 +6284,11 @@
                 else if (this.isVoidWasp) { s = 6; typeKey = 'wasp'; }
                 else if (this.isEliteDrone) { s = 5.5; typeKey = 'elitedrn'; } 
                 else if (this.isDrone) { s = 4.5; typeKey = 'drn'; }
+                else if (this.isAce) { s = this.size; typeKey = 'ace'; } // Unmodified scale, exactly size 11
+                else if (this.isVeteran) { s = this.size; typeKey = 'vet'; } // Unmodified scale, exactly size 10
                 else if (this.isChaosLeviathan) { s = this.size; typeKey = 'leviathan'; } 
                 else if (this.isChaos) { s = this.size; typeKey = 'chaos'; } 
-                else if (this.isAce) { s *= 0.85; typeKey = 'ace'; } 
+                
                 
                 let cacheKey = `ship_${this.faction}_${typeKey}`;
                 if (this.isChaos || this.isChaosLeviathan) cacheKey += `_${Math.round(this.size)}`; // Separate cache for bigger Chaos sizes
@@ -6198,57 +6352,84 @@
                             cctx.beginPath(); cctx.arc(0, 0, s * 3.5, 0, Math.PI * 2); cctx.fill(); cctx.globalAlpha = 1.0;
                             
                         } else if (this.isMissileCruiser) {
-                            // --- MISSILE CRUISER (New Siege Barge Design) ---
-                            // 1. Base Heavy Siege Hull (Blocky, Armored Catamaran style)
+                            // --- ADVANCED SCI-FI MISSILE CRUISER ---
+                            let isLight = getLuminance(factionColors[this.faction]) > 130;
+                            let detailStroke = isLight ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.4)';
+                            let hullBase     = isLight ? '#1c202a' : '#0a0d14'; 
+
+                            // 1. Sleek, sweeping stealth hull
                             cctx.shadowBlur = 15; cctx.shadowColor = factionColors[this.faction];
-                            cctx.fillStyle = '#0e1116';
+                            cctx.fillStyle = hullBase;
+                            
                             cctx.beginPath();
-                            cctx.moveTo(s * 1.4, s * 0.9);   // Front Right
-                            cctx.lineTo(s * 1.8, s * 0.5);   // Front Right prongs
-                            cctx.lineTo(s * 1.2, s * 0.3);   // Inner cut
-                            cctx.lineTo(s * 1.6, 0);         // Nose center
-                            cctx.lineTo(s * 1.2, -s * 0.3);  // Inner cut
-                            cctx.lineTo(s * 1.8, -s * 0.5);  // Front Left prong
-                            cctx.lineTo(s * 1.4, -s * 0.9);  // Front Left
-                            cctx.lineTo(-s * 1.2, -s * 1.2); // Rear Left Bulkhead
-                            cctx.lineTo(-s * 1.6, -s * 0.8); // Thruster block left
-                            cctx.lineTo(-s * 1.0, 0);        // Center indent
-                            cctx.lineTo(-s * 1.6, s * 0.8);  // Thruster block right
-                            cctx.lineTo(-s * 1.2, s * 1.2);  // Rear Right Bulkhead
+                            cctx.moveTo(s * 2.5, 0);              // Sharp elongated nose
+                            cctx.lineTo(s * 0.8, s * 0.5);        // Neck
+                            cctx.lineTo(s * 1.4, s * 1.5);        // Forward-swept missile wing tip
+                            cctx.lineTo(-s * 0.2, s * 1.2);       // Wing trailing edge
+                            cctx.lineTo(-s * 1.5, s * 1.5);       // Rear stabilizer
+                            cctx.lineTo(-s * 1.0, s * 0.4);       // Engine bay outer
+                            cctx.lineTo(-s * 1.6, 0);             // Engine bay center cutout
+                            cctx.lineTo(-s * 1.0, -s * 0.4);
+                            cctx.lineTo(-s * 1.5, -s * 1.5);
+                            cctx.lineTo(-s * 0.2, -s * 1.2);
+                            cctx.lineTo(s * 1.4, -s * 1.5);
+                            cctx.lineTo(s * 0.8, -s * 0.5);
                             cctx.closePath(); cctx.fill();
+                            
                             cctx.shadowBlur = 0;
-                            cctx.strokeStyle = '#222633'; cctx.lineWidth = 2; cctx.stroke();
+                            cctx.strokeStyle = detailStroke; cctx.lineWidth = 1.5; cctx.stroke();
                             
-                            // 2. Faction Striping
+                            // 2. Heavy Faction-Colored Chevron Armor Core
                             cctx.fillStyle = factionColors[this.faction];
-                            cctx.beginPath(); cctx.moveTo(s * 0.8, s * 0.8); cctx.lineTo(-s * 0.8, s * 1.0); cctx.lineTo(-s * 0.5, s * 0.5); cctx.lineTo(s * 0.5, s * 0.4); cctx.closePath(); cctx.fill();
-                            cctx.beginPath(); cctx.moveTo(s * 0.8, -s * 0.8); cctx.lineTo(-s * 0.8, -s * 1.0); cctx.lineTo(-s * 0.5, -s * 0.5); cctx.lineTo(s * 0.5, -s * 0.4); cctx.closePath(); cctx.fill();
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.2, 0);
+                            cctx.lineTo(s * 0.2, s * 0.6);
+                            cctx.lineTo(-s * 0.6, s * 0.6);
+                            cctx.lineTo(-s * 0.9, 0);
+                            cctx.lineTo(-s * 0.6, -s * 0.6);
+                            cctx.lineTo(s * 0.2, -s * 0.6);
+                            cctx.closePath(); cctx.fill();
                             
-                            // 3. Command Tower (Rear-mounted)
-                            cctx.fillStyle = '#1c202b';
-                            cctx.fillRect(-s * 0.8, -s * 0.4, s * 0.8, s * 0.8);
-                            cctx.fillStyle = 'rgba(255, 68, 68, 0.9)'; // Aggressive red/orange bridge
-                            cctx.fillRect(-s * 0.4, -s * 0.2, s * 0.1, s * 0.4);
-                            
-                            // 4. Exposed VLS (Vertical Launch System) Missile Tubes
+                            cctx.strokeStyle = isLight ? '#000' : '#fff'; cctx.lineWidth = 1.5; cctx.stroke();
+
+                            // 3. Central Sci-Fi Fusion Reactor
+                            cctx.shadowBlur = 10; cctx.shadowColor = '#00ffff';
+                            cctx.fillStyle = '#000';
+                            cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.5, 0, Math.PI * 2); cctx.fill(); cctx.stroke();
+                            cctx.fillStyle = '#00ffff';
+                            cctx.beginPath(); cctx.arc(-s * 0.2, 0, s * 0.25, 0, Math.PI * 2); cctx.fill();
+                            cctx.shadowBlur = 0;
+
+                            // 4. Integrated VLS Missile Pods (Mounted on the forward wings!)
                             cctx.fillStyle = '#050608';
-                            cctx.fillRect(s * 0.1, -s * 0.65, s * 1.0, s * 1.3);
-                            cctx.strokeStyle = '#444'; cctx.lineWidth = 1;
-                            cctx.strokeRect(s * 0.1, -s * 0.65, s * 1.0, s * 1.3);
+                            cctx.strokeStyle = detailStroke;
                             
-                            // Draw grid of missile tubes (2 rows, 3 columns)
-                            for (let row = 0; row < 3; row++) {
-                                for (let col = 0; col < 2; col++) {
-                                    let tubeX = s * 0.35 + (col * s * 0.5);
-                                    let tubeY = -s * 0.4 + (row * s * 0.4);
-                                    cctx.fillStyle = '#111';
-                                    cctx.beginPath(); cctx.arc(tubeX, tubeY, s * 0.15, 0, Math.PI * 2); cctx.fill(); cctx.stroke();
-                                    cctx.fillStyle = '#ff4444'; // Loaded missile tips
-                                    cctx.beginPath(); cctx.arc(tubeX, tubeY, s * 0.08, 0, Math.PI * 2); cctx.fill();
-                                }
+                            // Right Wing Pod
+                            cctx.beginPath(); cctx.moveTo(s * 0.6, s * 0.9); cctx.lineTo(s * 1.1, s * 1.25); cctx.lineTo(s * 0.2, s * 1.05); cctx.closePath(); cctx.fill(); cctx.stroke();
+                            // Left Wing Pod
+                            cctx.beginPath(); cctx.moveTo(s * 0.6, -s * 0.9); cctx.lineTo(s * 1.1, -s * 1.25); cctx.lineTo(s * 0.2, -s * 1.05); cctx.closePath(); cctx.fill(); cctx.stroke();
+
+                            // Glowing Missile Silo Tips
+                            cctx.fillStyle = '#ff4444'; 
+                            let podX = [s * 0.7, s * 0.85, s * 1.0];
+                            let podY = [s * 0.95, s * 1.05, s * 1.15];
+                            for(let i=0; i<3; i++) {
+                                // Right silos
+                                cctx.beginPath(); cctx.arc(podX[i], podY[i], s*0.08, 0, Math.PI*2); cctx.fill();
+                                // Left silos
+                                cctx.beginPath(); cctx.arc(podX[i], -podY[i], s*0.08, 0, Math.PI*2); cctx.fill();
                             }
-                            
-                            // 5. Command Aura
+
+                            // 5. Sleek Integrated Canopy
+                            cctx.fillStyle = isLight ? 'rgba(10, 15, 25, 0.9)' : 'rgba(200, 240, 255, 0.9)';
+                            cctx.beginPath(); cctx.ellipse(s * 0.8, 0, s * 0.4, s * 0.15, 0, 0, Math.PI * 2); cctx.fill();
+
+                            // 6. Rear High-Tech Energy Vents
+                            cctx.fillStyle = '#00ffff';
+                            cctx.fillRect(-s * 1.4, s * 0.3, s * 0.4, s * 0.1);
+                            cctx.fillRect(-s * 1.4, -s * 0.4, s * 0.4, s * 0.1);
+
+                            // 7. Command Aura
                             cctx.fillStyle = factionColors[this.faction]; cctx.globalAlpha = 0.15;
                             cctx.beginPath(); cctx.arc(0, 0, s * 3.5, 0, Math.PI * 2); cctx.fill(); cctx.globalAlpha = 1.0;
                             
@@ -6540,6 +6721,47 @@
                             cctx.fill();
                             
                             cctx.shadowBlur = 0; // Reset
+                        } else if (typeKey === 'vet') {
+                            // --- VETERAN FIGHTER (Heavy Assault Dart) ---
+                            let isLight = getLuminance(factionColors[this.faction]) > 130;
+                            let detailStroke = isLight ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.4)';
+                            let detailFill   = isLight ? '#1a1a1a' : '#ffffff';
+                            let canopyColor  = isLight ? 'rgba(10, 15, 25, 0.9)' : 'rgba(200, 240, 255, 0.9)';
+
+                            cctx.shadowBlur = 10; cctx.shadowColor = factionColors[this.faction];
+                            cctx.fillStyle = factionColors[this.faction];
+                            
+                            cctx.beginPath();
+                            cctx.moveTo(s * 2.0, 0); // Thicker nose
+                            cctx.lineTo(s * 0.2, s * 0.7); // Wider shoulders
+                            cctx.lineTo(-s * 0.5, s * 1.2); // Outer wing
+                            cctx.lineTo(-s * 0.9, s * 1.2); // Flat wing tip
+                            cctx.lineTo(-s * 0.7, s * 0.4); // Inner wing base
+                            cctx.lineTo(-s * 1.1, 0); // Tail engine mount
+                            cctx.lineTo(-s * 0.7, -s * 0.4);
+                            cctx.lineTo(-s * 0.9, -s * 1.2);
+                            cctx.lineTo(-s * 0.5, -s * 1.2);
+                            cctx.lineTo(s * 0.2, -s * 0.7);
+                            cctx.closePath(); cctx.fill();
+                            cctx.shadowBlur = 0;
+                            
+                            cctx.strokeStyle = detailStroke; cctx.lineWidth = 1.5; cctx.stroke();
+                            
+                            // Heavy Armor Plating
+                            cctx.fillStyle = detailFill;
+                            cctx.globalAlpha = 0.7;
+                            cctx.beginPath(); cctx.moveTo(-s * 0.6, s * 0.8); cctx.lineTo(-s * 0.8, s * 1.0); cctx.lineTo(-s * 0.4, s * 0.4); cctx.closePath(); cctx.fill();
+                            cctx.beginPath(); cctx.moveTo(-s * 0.6, -s * 0.8); cctx.lineTo(-s * 0.8, -s * 1.0); cctx.lineTo(-s * 0.4, -s * 0.4); cctx.closePath(); cctx.fill();
+                            cctx.globalAlpha = 1.0;
+                            
+                            // Larger, sturdier canopy
+                            cctx.fillStyle = canopyColor;
+                            cctx.beginPath();
+                            cctx.moveTo(s * 1.0, 0); cctx.lineTo(s * 0.2, s * 0.35); cctx.lineTo(-s * 0.4, 0); cctx.lineTo(s * 0.2, -s * 0.35);
+                            cctx.closePath(); cctx.fill();
+                            cctx.fillStyle = isLight ? '#000' : '#fff';
+                            cctx.beginPath(); cctx.arc(s * 0.5, 0, s * 0.12, 0, Math.PI*2); cctx.fill();
+
                         } else if (typeKey === 'ace') {
                             // --- ELITE ACE FIGHTER REDESIGN ---
                             let isLight = getLuminance(factionColors[this.faction]) > 130;
@@ -7040,7 +7262,15 @@
                         let currentQueue = respawnQueue.filter(rq => rq.faction === s.faction).length;
                         let maxTethers = 5 + (perksEnabled && s.faction >= 0 && s.faction < 4 ? factionPerks[s.faction].expandedLink * 2 : 0);
                         if (livingTethers.length + currentQueue < maxTethers) {
-                            respawnQueue.push({ faction: s.faction, timer: 180, maxHp: s.maxHp });
+                            respawnQueue.push({ 
+                                faction: s.faction, timer: 180, maxHp: s.maxHp,
+                                props: {
+                                    isSniper: s.isSniper, isSentinel: s.isSentinel, isStealth: s.isStealth,
+                                    isLightning: s.isLightning, isFlame: s.isFlame, isChaos: s.isChaos,
+                                    isChaosLeviathan: s.isChaosLeviathan, size: s.size, attackRange: s.attackRange,
+                                    maxSpeed: s.maxSpeed
+                                }
+                            });
                         }
                     } else {
                         respawnQueue = respawnQueue.filter(rq => rq.faction !== s.faction);
@@ -7119,7 +7349,7 @@
                             shooter.size *= 1.2;
                         } else {
                             shooter.maxHp = 4; shooter.hp = 4; 
-                            shooter.size = 15; 
+                            shooter.size = 10; // Just slightly larger than basic 8
                         }
                         for(let p=0; p<15; p++) particles.push(new Particle(shooter.position.x, shooter.position.y, '#00ff00'));
                     }
@@ -7132,7 +7362,7 @@
                             shooter.size *= 1.2;
                         } else {
                             shooter.maxHp += 2; shooter.hp += 2; 
-                            shooter.size = 16; 
+                            shooter.size = 11; // Slightly larger than Veteran
                         }
                         for(let p=0; p<25; p++) particles.push(new Particle(shooter.position.x, shooter.position.y, '#ffcc00', 2.0));
                     }
@@ -7578,17 +7808,28 @@
                         if (acePromoted < 1) {
                             s.isVeteran = true; s.isAce = true; s.kills = 7;
                             s.maxHp += 3; s.hp += 3; 
-                            if (s.isChaos || s.isChaosLeviathan) s.size *= 1.44; // Stacks +20% and +20%
-                            else s.size = 16;
+                            if (s.isChaos || s.isChaosLeviathan) s.size *= 1.44; 
+                            else s.size = 11; // Ace size fix
                             acePromoted++;
                         } else if (vetPromoted < 3) {
                             s.isVeteran = true; s.kills = 3;
                             s.maxHp += 1; s.hp += 1;
                             if (s.isChaos || s.isChaosLeviathan) s.size *= 1.2;
-                            else s.size = 15;
+                            else s.size = 10; // Veteran size fix
                             vetPromoted++;
                         } else {
                             break;
+                        }
+                    }
+                }
+                
+                // Temp Veteran Override
+                if (perksEnabled && factionPerks[f].temp_veteran > 0) {
+                    for (let i = 0; i < actualNumShips; i++) {
+                        let s = ships[factionSpawnStartIndex + i];
+                        if (s && !s.isFlagship && !s.isSniper && !s.isSentinel && !s.isStealth && !s.isFlame && !s.isLightning && !s.isChaos && !s.isCarrier && !s.isDrone) {
+                            s.isVeteran = true;
+                            s.maxHp += 1; s.hp += 1; s.size = 10; // Veteran size fix
                         }
                     }
                 }
@@ -9057,6 +9298,31 @@
                 }
             }
             
+            // --- LAST STAND TRIGGER ---
+            if (perksEnabled && !isCountingDown) {
+                for (let f = 0; f < activeFactionCount; f++) {
+                    if (factionPerks[f].lastStand > 0) {
+                        // Check how many non-drone ships are left alive
+                        let livingShips = ships.filter(s => s.faction === f && !s.toRemove && s.hp > 0 && !s.isDrone);
+                        if (livingShips.length === 1) {
+                            let lastShip = livingShips[0];
+                            if (!lastShip.hasLastStandBuff) {
+                                lastShip.hasLastStandBuff = true;
+                                lastShip.hp += 2; 
+                                lastShip.maxHp += 2;
+                                lastShip.shield += 2;
+                                lastShip.hasDualShot = true;
+                                lastShip.hasBurstShot = true;
+                                lastShip.isMineLayer = true;
+                                
+                                playSound('hit'); // Powerup sound
+                                for(let p=0; p<30; p++) particles.push(new Particle(lastShip.position.x, lastShip.position.y, '#ffcc00', 3.0));
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Update Lasers
             for (let i = lasers.length - 1; i >= 0; i--) {
                 let l = lasers[i];
@@ -9174,7 +9440,19 @@
                     }
                 }
                 
-                if (hit || l.life <= 0 || l.x < 0 || l.x > canvas.width || l.y < 0 || l.y > canvas.height) {
+                let outOfBounds = (l.x < 0 || l.x > canvas.width || l.y < 0 || l.y > canvas.height);
+                
+                if (outOfBounds && l.wrapsRemaining > 0) {
+                    // Warp to the exact opposite side of the screen and keep flying!
+                    l.wrapsRemaining--;
+                    l.life += 100; // Refill its lifespan so it can make the trip
+                    
+                    if (l.x < 0) l.x = canvas.width + l.x;
+                    else if (l.x > canvas.width) l.x = l.x - canvas.width;
+                    if (l.y < 0) l.y = canvas.height + l.y;
+                    else if (l.y > canvas.height) l.y = l.y - canvas.height;
+                } 
+                else if (hit || l.life <= 0 || outOfBounds) {
                     fastRemove(lasers, i);
                 }
             }
@@ -9999,6 +10277,7 @@
                         newShip.hp = 1; // Respawns critically injured!
                         newShip.shield = 0;
                         newShip.isTethered = true;
+                        Object.assign(newShip, rq.props); // Restores all specialized behaviors instantly!
                         ships.push(newShip);
                         
                         for(let p=0; p<15; p++) particles.push(new Particle(newShip.position.x, newShip.position.y, '#00ffff', 2.0));
